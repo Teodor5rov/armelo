@@ -1,6 +1,5 @@
 /.idea
 /.venv
 /configs
-/prompts
 /random_queries.sql
 /__pycache__
