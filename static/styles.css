@@ -1,0 +1,13 @@
+* {
+    font-family: 'Roboto Mono', monospace;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+

@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block title %}Ranking{% endblock %}
+
+{% block content %}
+
+<div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
+    <a href="{{ url_for('ranking', arm='right') }}" 
+       class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}" role="button" aria-pressed="{{ 'true' if arm == 'right' else 'false' }}">Right Arm</a>
+    <a href="{{ url_for('ranking', arm='left') }}"
+       class="btn btn-primary w-50 {{ 'active' if arm == 'left' else '' }}" role="button" aria-pressed="{{ 'true' if arm == 'left' else 'false' }}">Left Arm</a>
+</div>
+
+<div class="table-responsive rounded">
+    <table class="table">
+        <thead class="table-dark">
+            <tr>
+                <th style="width: 15%;">Rank</th>
+                <th style="width: 30%;">Name</th>
+                <th class="text-end">{{ "Right ELO" if arm == 'right' else "Left ELO" }}</th>
+                {% if username %}
+                <th style="width: 15%;">Action</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for person in armwrestlers %}
+            <tr>
+                <td>#{{ loop.index }}</td>
+                <td>{{ person[0] }}</td>
+                <td class="text-end">{{ person[1] if arm == 'right' else person[2] }}</td>
+                {% if username %}
+                <td>
+                    <form action="{{ url_for('remove_person') }}" method="POST" style="display: inline;">
+                        <input type="hidden" name="name" value="{{ person[0] }}">
+                        <button type="submit" class="btn btn-danger btn-sm remove-btn ms-1">Remove</button>
+                    </form>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

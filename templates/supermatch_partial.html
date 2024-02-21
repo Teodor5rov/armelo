@@ -1,0 +1,77 @@
+<div class="mx-auto" style="max-width: 800px;">
+    <form method="POST" action="{{ url_for('supermatch') }}" hx-post="{{ url_for('supermatch') }}" hx-trigger="change" hx-swap="outerHTML">
+        <!-- Arm selection buttons -->
+        <label for="arm" class="form-label">Chose arm for the supermatch:</label>
+        <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
+            <label class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}">
+                <input type="radio" name="arm" id="armRight" value="right" autocomplete="off" {{ 'checked' if arm == 'right' else '' }} class="visually-hidden">Right Arm
+            </label>
+            <label class="btn btn-primary w-50 {{ 'active' if arm == 'left' else '' }}">
+                <input type="radio" name="arm" id="armLeft" value="left" autocomplete="off" {{ 'checked' if arm == 'left' else '' }} class="visually-hidden">Left Arm
+            </label>
+        </div>
+
+        <!-- Armwrestler selection dropdowns -->
+        <div class="row">
+            <div class="col">
+                <label for="armwrestler1" class="form-label">Armwrestler 1:</label>
+                <select class="form-select" id="armwrestler1" name="armwrestler1" required>
+                    <option value="none">Choose...</option>
+                    {% for armwrestler in armwrestlers %}
+                        <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_1 == armwrestler[0] %}selected{% endif %}>{{ armwrestler[0] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-1 d-flex justify-content-center align-items-center pt-4">
+                <div class="text-center fs-5">
+                    <span class="badge bg-dark">VS</span>
+                </div>
+            </div>
+
+            <div class="col">
+                {% if selected_armwrestler_1 != 'none' %}
+                <label for="armwrestler2" class="form-label">Armwrestler 2:</label>
+                <select class="form-select" id="armwrestler2" name="armwrestler2" required> 
+                    <option value="none">Choose...</option>
+                        {% for armwrestler in armwrestlers_2 %}
+                            <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_2 == armwrestler[0] %}selected{% endif %}>{{ armwrestler[0] }}</option>
+                        {% endfor %}
+                </select>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Submit Match button, shown only if all selections are made and none of them is 'none' -->
+        {% if supermatch_ready %}
+        <label for="arm" class="form-label my-3">Supermatch Result:</label>
+        <div class="row mb-3">
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-4">
+                    <span class="{{ armwrestler_1_color }}">{{ armwrestler_1_diff }}</span>
+                </div>
+            </div>
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-3">
+                    <span class="badge bg-dark">{{ armwrestler_1_score }}</span>
+                </div>
+            </div>
+            
+            <div class="col-1 text-center fs-2">:</div>
+
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-3">
+                    <span class="badge bg-dark">{{ armwrestler_2_score }}</span>
+                </div>
+            </div>
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-4">
+                    <span class="{{ armwrestler_2_color }}">{{ armwrestler_2_diff }}</span>
+                </div>
+            </div>
+        </div>
+        <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="6" value="{{ armwrestler_1_score }}">
+        <button type="submit" name="submit_match" class="btn btn-primary mt-2">Submit Match</button>
+        {% endif %}
+    </form>
+</div>
