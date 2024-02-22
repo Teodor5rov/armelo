@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, g
 from werkzeug.security import check_password_hash
 import sqlite3
 
-from elo import calculate_elo
+from elo import diff_supermatch, calculate_elo_with_bonus
 
 DATABASE = 'database.db'
 
@@ -41,6 +41,15 @@ def serve_robots_txt():
     return send_from_directory(app.static_folder, 'robots.txt')
 
 
+@app.route("/")
+@app.route("/<arm>")
+def ranking(arm='right'):
+    order_by = 'right_elo' if arm == 'right' else 'left_elo'
+    armwrestlers = db_execute(f'SELECT RANK() OVER (ORDER BY {order_by} DESC) AS rank, name, {order_by} FROM armwrestlers')
+    username = session.get('username')
+    return render_template('ranking.html', armwrestlers=armwrestlers, username=username, arm=arm)
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -61,8 +70,8 @@ def logout():
     return redirect(url_for('ranking'))
 
 
-@app.route("/add_new_person", methods=["GET", "POST"])
-def add_new_person():
+@app.route("/add_new_member", methods=["GET", "POST"])
+def add_new_member():
     if not session.get('username'):
         return redirect(url_for('login'))
 
@@ -81,12 +90,12 @@ def add_new_person():
             except sqlite3.DatabaseError as error:
                 print(error)
         else:
-            return render_template('add_new_person.html', error="Name already taken or invalid data")
-    return render_template('add_new_person.html')
+            return render_template('add_new_member.html', error="Name already taken or invalid data")
+    return render_template('add_new_member.html')
 
 
-@app.route("/remove_person", methods=["POST"])
-def remove_person():
+@app.route("/remove_member", methods=["POST"])
+def remove_member():
     if not session.get('username'):
         return redirect(url_for('login'))
 
@@ -96,6 +105,19 @@ def remove_person():
     except sqlite3.DatabaseError as error:
         print(error)
     return redirect(url_for('ranking'))
+
+
+@app.route("/history")
+def history():
+    history = db_execute('SELECT * FROM history ORDER BY id DESC LIMIT 20')
+    colors = []
+    for record in history:
+        armwrestler_1_diff, armwrestler_2_diff = record[10], record[11]
+        armwrestler_1_diff, armwrestler_1_color = (f"+{armwrestler_1_diff}", "text-success") if armwrestler_1_diff > 0 else ((str(armwrestler_1_diff), "text-danger") if armwrestler_1_diff < 0 else ("0", "text-secondary"))
+        armwrestler_2_diff, armwrestler_2_color = (f"+{armwrestler_2_diff}", "text-success") if armwrestler_2_diff > 0 else ((str(armwrestler_2_diff), "text-danger") if armwrestler_2_diff < 0 else ("0", "text-secondary"))
+        colors.append((armwrestler_1_color, armwrestler_2_color, armwrestler_1_diff, armwrestler_2_diff))
+
+    return render_template('history.html', history=history, colors=colors)
 
 
 @app.route("/supermatch", methods=["GET", "POST"])
@@ -127,7 +149,7 @@ def supermatch():
             selected_armwrestler_2 = 'none'
         armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1] if selected_armwrestler_1 != 'none' else None
         armwrestler_1_score = int(request.form.get('score', 3))
-        armwrestler_2_score = 6 - armwrestler_1_score
+        armwrestler_2_score = 5 - armwrestler_1_score
 
         # Checks if all conditions are met for supermatch ready
         armwrestler_names = [aw[0] for aw in armwrestlers]
@@ -135,9 +157,9 @@ def supermatch():
                 selected_armwrestler_1 != selected_armwrestler_2 and \
                 selected_armwrestler_1 in armwrestler_names and \
                 selected_armwrestler_2 in armwrestler_names and \
-                armwrestler_1_score + armwrestler_2_score == 6:
+                armwrestler_1_score + armwrestler_2_score == 5:
             armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
-            armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo)
+            armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
             armwrestler_1_diff, armwrestler_1_color = (f"+{armwrestler_1_diff}", "text-success") if armwrestler_1_diff > 0 else ((str(armwrestler_1_diff), "text-danger") if armwrestler_1_diff < 0 else ("0", "text-secondary"))
             armwrestler_2_diff, armwrestler_2_color = (f"+{armwrestler_2_diff}", "text-success") if armwrestler_2_diff > 0 else ((str(armwrestler_2_diff), "text-danger") if armwrestler_2_diff < 0 else ("0", "text-secondary"))
             supermatch_ready = True
@@ -165,15 +187,6 @@ def supermatch():
                            )
 
 
-@app.route("/")
-@app.route("/<arm>")
-def ranking(arm='right'):
-    order_by = 'right_elo' if arm == 'right' else 'left_elo'
-    armwrestlers = db_execute(f'SELECT * FROM armwrestlers ORDER BY {order_by} DESC')
-    username = session.get('username')
-    return render_template('ranking.html', armwrestlers=armwrestlers, username=username, arm=arm)
-
-
 def get_current_elo(arm, armwrestlers):
     dbarm = 'right_elo' if arm == 'right' else 'left_elo'
     elos = []
@@ -186,22 +199,34 @@ def get_current_elo(arm, armwrestlers):
     return elos
 
 
-def diff_supermatch(armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo):
-    score = (int(armwrestler_1_score), int(armwrestler_2_score))
-    updated_1, updated_2 = calculate_elo(armwrestler_1_elo, armwrestler_2_elo, score)
-
-    diff_1 = updated_1 - armwrestler_1_elo
-    diff_2 = updated_2 - armwrestler_2_elo
-
-    return diff_1, diff_2
-
-
 def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo):
-    score = (int(armwrestler_1_score), int(armwrestler_2_score))
-    dbarm = 'right_elo' if arm == 'right' else 'left_elo'
 
-    updated_1, updated_2 = calculate_elo(armwrestler_1_elo, armwrestler_2_elo, score)
+    # Add bonus for winning
+    # score = add_bonus(armwrestler_1_score, armwrestler_2_score)
+    dbarm = 'right_elo' if arm == 'right' else 'left_elo'
+    updated_1, updated_2 = calculate_elo_with_bonus(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
+
+    armwrestler_1_rank = db_execute(f'SELECT rank FROM ( SELECT RANK() OVER (ORDER BY {dbarm} DESC) AS rank, name FROM armwrestlers ) AS RankedArmwrestlers WHERE name = ?', armwrestler_1)[0][0]
+    armwrestler_2_rank = db_execute(f'SELECT rank FROM ( SELECT RANK() OVER (ORDER BY {dbarm} DESC) AS rank, name FROM armwrestlers ) AS RankedArmwrestlers WHERE name = ?', armwrestler_2)[0][0]
+    armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
+
     try:
+        query = '''
+        INSERT INTO history ( 
+        armwrestler1_name, armwrestler2_name, 
+        arm, 
+        armwrestler1_rank, armwrestler2_rank, 
+        armwrestler1_elo, armwrestler2_elo, 
+        armwrestler1_score, armwrestler2_score, 
+        armwrestler1_elo_diff, armwrestler2_elo_diff ) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        '''
+        db_execute(query, armwrestler_1 ,armwrestler_2, arm, 
+                   armwrestler_1_rank, armwrestler_2_rank, 
+                   armwrestler_1_elo, armwrestler_2_elo, 
+                   armwrestler_1_score, armwrestler_2_score,
+                   armwrestler_1_diff, armwrestler_2_diff)
+        
         db_execute(f"UPDATE armwrestlers SET {dbarm} = ? WHERE name = ?", updated_1, armwrestler_1)
         db_execute(f"UPDATE armwrestlers SET {dbarm} = ? WHERE name = ?", updated_2, armwrestler_2)
     except sqlite3.DatabaseError as error:

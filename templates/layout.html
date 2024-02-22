@@ -20,12 +20,13 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-                    {% if username %}
-                        <div class="navbar-nav">
-                                <a class="nav-link" href="{{ url_for('add_new_person') }}">Add New Person</a>
-                                <a class="nav-link" href="{{ url_for('supermatch') }}">Supermatch</a>
-                        </div>
-                    {% endif %}
+                    <div class="navbar-nav">
+                        {% if username %}
+                            <a class="nav-link" href="{{ url_for('add_new_member') }}">Add new member</a>
+                            <a class="nav-link" href="{{ url_for('supermatch') }}">Supermatch</a>
+                        {% endif %}
+                            <a class="nav-link" href="{{ url_for('history') }}">History</a>
+                    </div>
                     <div class="navbar-nav ms-auto">
                         {% if username %}
                             <a class="nav-link disabled">{{ username }}</a>

@@ -6,9 +6,9 @@
 
 <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
     <a href="{{ url_for('ranking', arm='right') }}" 
-       class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}" role="button" aria-pressed="{{ 'true' if arm == 'right' else 'false' }}">Right Arm</a>
+       class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}" role="button" aria-pressed="{{ 'true' if arm == 'right' else 'false' }}">Right arm</a>
     <a href="{{ url_for('ranking', arm='left') }}"
-       class="btn btn-primary w-50 {{ 'active' if arm == 'left' else '' }}" role="button" aria-pressed="{{ 'true' if arm == 'left' else 'false' }}">Left Arm</a>
+       class="btn btn-primary w-50 {{ 'active' if arm == 'left' else '' }}" role="button" aria-pressed="{{ 'true' if arm == 'left' else 'false' }}">Left arm</a>
 </div>
 
 <div class="table-responsive rounded">
@@ -24,15 +24,15 @@
             </tr>
         </thead>
         <tbody>
-            {% for person in armwrestlers %}
+            {% for armwrestler in armwrestlers %}
             <tr>
-                <td>#{{ loop.index }}</td>
-                <td>{{ person[0] }}</td>
-                <td class="text-end">{{ person[1] if arm == 'right' else person[2] }}</td>
+                <td>#{{ armwrestler[0] }}</td>
+                <td>{{ armwrestler[1] }}</td>
+                <td class="text-end">{{ armwrestler[2] }}</td>
                 {% if username %}
                 <td>
-                    <form action="{{ url_for('remove_person') }}" method="POST" style="display: inline;">
-                        <input type="hidden" name="name" value="{{ person[0] }}">
+                    <form action="{{ url_for('remove_member') }}" method="POST" style="display: inline;">
+                        <input type="hidden" name="name" value="{{ armwrestler[1] }}">
                         <button type="submit" class="btn btn-danger btn-sm remove-btn ms-1">Remove</button>
                     </form>
                 </td>

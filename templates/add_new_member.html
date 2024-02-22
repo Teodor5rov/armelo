@@ -1,10 +1,10 @@
 {% extends "layout.html" %}
 
-{% block title %}Add New Person{% endblock %}
+{% block title %}Add new member{% endblock %}
 
 {% block content %}
 <div class="mx-auto" style="max-width: 300px;">
-    <h2 class="mb-4">Add New Person</h2>
+    <h2 class="mb-4">Add new member</h2>
     <form method="POST">
         <div class="mb-2">
             <label for="password" class="form-label">Name</label>
@@ -21,7 +21,7 @@
         {% if error %}
             <p class="text-danger mb-2">{{ error }}</p>
         {% endif %}
-        <button type="submit" class="btn btn-primary mt-2">Add Person</button>
+        <button type="submit" class="btn btn-primary mt-2">Add member</button>
     </form>
 </div>
 {% endblock %}

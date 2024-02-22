@@ -4,10 +4,10 @@
         <label for="arm" class="form-label">Chose arm for the supermatch:</label>
         <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
             <label class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}">
-                <input type="radio" name="arm" id="armRight" value="right" autocomplete="off" {{ 'checked' if arm == 'right' else '' }} class="visually-hidden">Right Arm
+                <input type="radio" name="arm" id="armRight" value="right" autocomplete="off" {{ 'checked' if arm == 'right' else '' }} class="visually-hidden">Right arm
             </label>
             <label class="btn btn-primary w-50 {{ 'active' if arm == 'left' else '' }}">
-                <input type="radio" name="arm" id="armLeft" value="left" autocomplete="off" {{ 'checked' if arm == 'left' else '' }} class="visually-hidden">Left Arm
+                <input type="radio" name="arm" id="armLeft" value="left" autocomplete="off" {{ 'checked' if arm == 'left' else '' }} class="visually-hidden">Left arm
             </label>
         </div>
 
@@ -44,7 +44,7 @@
 
         <!-- Submit Match button, shown only if all selections are made and none of them is 'none' -->
         {% if supermatch_ready %}
-        <label for="arm" class="form-label my-3">Supermatch Result:</label>
+        <label for="arm" class="form-label my-3">Supermatch result:</label>
         <div class="row mb-3">
             <div class="col d-flex justify-content-center align-items-center">
                 <div class="text-center fs-4">
@@ -70,8 +70,8 @@
                 </div>
             </div>
         </div>
-        <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="6" value="{{ armwrestler_1_score }}">
-        <button type="submit" name="submit_match" class="btn btn-primary mt-2">Submit Match</button>
+        <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="5" value="{{ armwrestler_1_score }}">
+        <button type="submit" name="submit_match" class="btn btn-primary mt-2">Submit match</button>
         {% endif %}
     </form>
 </div>
