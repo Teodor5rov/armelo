@@ -201,8 +201,6 @@ def get_current_elo(arm, armwrestlers):
 
 def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo):
 
-    # Add bonus for winning
-    # score = add_bonus(armwrestler_1_score, armwrestler_2_score)
     dbarm = 'right_elo' if arm == 'right' else 'left_elo'
     updated_1, updated_2 = calculate_elo_with_bonus(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
 

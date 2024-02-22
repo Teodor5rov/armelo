@@ -12,7 +12,7 @@ def calculate_elo(armwrestler_a_elo, armwrestler_b_elo, actual_score):
     total_rounds = sum(actual_score)
     actual_a_elo = actual_score[0] / total_rounds
     actual_b_elo = actual_score[1] / total_rounds
-    print(actual_score)
+    
     expected_a_elo, expected_b_elo = expected_score(armwrestler_a_elo, armwrestler_b_elo)
 
     updated_a_elo = round(armwrestler_a_elo + K * (actual_a_elo - expected_a_elo))
@@ -32,10 +32,10 @@ def add_bonus(actual_score):
 
 def diff_supermatch(armwrestler_a_elo, armwrestler_b_elo, actual_score):
     with_bonus_score = add_bonus(actual_score)
-    updated_a, updated_b = calculate_elo(armwrestler_a_elo, armwrestler_b_elo, with_bonus_score)
+    updated_a_elo, updated_b_elo = calculate_elo(armwrestler_a_elo, armwrestler_b_elo, with_bonus_score)
 
-    diff_a = updated_a - armwrestler_a_elo
-    diff_b = updated_b - armwrestler_b_elo
+    diff_a = updated_a_elo - armwrestler_a_elo
+    diff_b = updated_b_elo - armwrestler_b_elo
 
     return diff_a, diff_b
 
