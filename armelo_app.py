@@ -112,10 +112,14 @@ def history():
     history = db_execute('SELECT * FROM history ORDER BY id DESC LIMIT 20')
     colors = []
     for record in history:
-        armwrestler_1_diff, armwrestler_2_diff = record[10], record[11]
-        armwrestler_1_diff, armwrestler_1_color = (f"+{armwrestler_1_diff}", "text-success") if armwrestler_1_diff > 0 else ((str(armwrestler_1_diff), "text-danger") if armwrestler_1_diff < 0 else ("0", "text-secondary"))
-        armwrestler_2_diff, armwrestler_2_color = (f"+{armwrestler_2_diff}", "text-success") if armwrestler_2_diff > 0 else ((str(armwrestler_2_diff), "text-danger") if armwrestler_2_diff < 0 else ("0", "text-secondary"))
-        colors.append((armwrestler_1_color, armwrestler_2_color, armwrestler_1_diff, armwrestler_2_diff))
+        armwrestler_1_diff_format, armwrestler_2_diff_format = record[10], record[11]
+        armwrestler_1_score_color, armwrestler_2_score_color = record[8], record[9]
+
+        armwrestler_1_diff_format, armwrestler_1_diff_color = (f"+{armwrestler_1_diff_format}", "text-success") if armwrestler_1_diff_format > 0 else ((str(armwrestler_1_diff_format), "text-danger") if armwrestler_1_diff_format < 0 else ("0", "text-secondary"))
+        armwrestler_2_diff_format, armwrestler_2_diff_color = (f"+{armwrestler_2_diff_format}", "text-success") if armwrestler_2_diff_format > 0 else ((str(armwrestler_2_diff_format), "text-danger") if armwrestler_2_diff_format < 0 else ("0", "text-secondary"))
+        armwrestler_1_score_color, armwrestler_2_score_color = ("bg-success", "bg-danger") if armwrestler_1_score_color > armwrestler_2_score_color else (("bg-danger", "bg-success") if armwrestler_1_score_color < armwrestler_2_score_color else ("bg-secondary", "bg-secondary"))
+
+        colors.append((armwrestler_1_score_color, armwrestler_2_score_color, armwrestler_1_diff_color, armwrestler_2_diff_color, armwrestler_1_diff_format, armwrestler_2_diff_format))
 
     return render_template('history.html', history=history, colors=colors)
 

@@ -10,23 +10,29 @@
                 <th style="width: 20%;">Armwrestlers</th>
                 <th style="width: 2%;"></th>
                 <th style="width: 20%;"></th>
-                <th class='ms-auto' style="width: 10%;">Arm</th>
-                <th class='ms-auto' style="width: 10%;">Score</th>
-                <th class='ms-auto' style="width: 10%;">ELO</th>
+                <th class='text-center' style="width: 10%;">Arm</th>
+                <th class='text-center' style="width: 10%;">Score</th>
+                <th class='text-center' style="width: 10%;">ELO</th>
             </tr>
         </thead>
         <tbody>
             {% for record in history %}
             <tr>
-                <td style="width: 20%;"><span class="{{ colors[loop.index - 1][0] }}">#{{ record[4] }} {{ record[1] }}({{ record[6] }})</span></td>
+                <td style="width: 20%;">#{{ record[4] }} {{ record[1] }}({{ record[6] }})</td>
                 <td style="width: 2%;"> vs </td>
-                <td style="width: 20%;"><span class="{{ colors[loop.index - 1][1] }}">#{{ record[5] }} {{ record[2] }}({{ record[7] }})</span></td>
-                <td class='ms-auto' style="width: 10%;">{{ record[3] }}</td>
-                <td class='ms-auto' style="width: 10%;"><span class="{{ colors[loop.index - 1][0] }}">{{ record[8] }}</span> : <span class="{{ colors[loop.index - 1][1] }}">{{ record[9] }}</span></td>
-                <td class='ms-auto' style="width: 10%;"><span class="{{ colors[loop.index - 1][0] }}">{{ colors[loop.index - 1][2] }}</span> <span class="{{ colors[loop.index - 1][1] }}">{{ colors[loop.index - 1][3] }}</span></td>
+                <td style="width: 20%;">#{{ record[5] }} {{ record[2] }}({{ record[7] }})</td>
+                <td class='text-center' style="width: 10%;">{{ record[3] }}</td>
+                <td class='text-nowrap text-center' style="width: 10%;">
+                    <span class="fs-6 badge {{ colors[loop.index - 1][0] }}">{{ record[8] }}</span> : 
+                    <span class="fs-6 badge {{ colors[loop.index - 1][1] }}">{{ record[9] }}</span>
+                </td>
+                <td class='text-nowrap text-center' style="width: 10%;">
+                    <span class="fs-6 badge {{ colors[loop.index - 1][2] }}">{{ colors[loop.index - 1][4] }}</span>|<span class="fs-6 badge {{ colors[loop.index - 1][3] }}">{{ colors[loop.index - 1][5] }}</span>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+
 {% endblock %}
