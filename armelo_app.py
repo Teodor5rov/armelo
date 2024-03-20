@@ -53,8 +53,8 @@ def ranking(arm='right'):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form.get('username')
+        password = request.form.get('password')
         user = db_execute("SELECT * FROM users WHERE username = ?", username)
         if user and check_password_hash(user[0][1], password):
             session['username'] = username
@@ -76,30 +76,38 @@ def add_new_member():
         return redirect(url_for('login'))
 
     if request.method == "POST":
-        name = request.form['name']
-        right_elo = int(request.form['right_elo'])
-        left_elo = int(request.form['left_elo'])
+
+        name = request.form.get('name')
+        right_elo = request.form.get('right_elo')
+        left_elo = request.form.get('left_elo')
+
+        try:
+            right_elo, left_elo = int(right_elo), int(left_elo)
+            if not name or right_elo <= 0 or left_elo <= 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            return render_template('add_new_member.html', error="Invalid data")
 
         armwrestlers = db_execute('SELECT name FROM armwrestlers')
-        armwrestler_names = [aw[0] for aw in armwrestlers]
+        if name in (aw[0] for aw in armwrestlers):
+            return render_template('add_new_member.html', error="Name already taken")
 
-        if 0 < right_elo < 10000 and 0 < left_elo < 10000 and name not in armwrestler_names:
-            try:
-                db_execute("INSERT INTO armwrestlers (name, right_elo, left_elo) VALUES (?, ?, ?)", name, right_elo, left_elo)
-                return redirect(url_for('ranking', arm='right'))
-            except sqlite3.DatabaseError as error:
-                print(error)
-        else:
-            return render_template('add_new_member.html', error="Name already taken or invalid data")
+        try:
+            db_execute("INSERT INTO armwrestlers (name, right_elo, left_elo) VALUES (?, ?, ?)", name, right_elo, left_elo)
+        except sqlite3.DatabaseError as error:
+            print(error)
+            return render_template('add_new_member.html', error="An error occurred while adding the member")
+
+        return redirect(url_for('ranking', arm='right'))
+    
     return render_template('add_new_member.html')
-
 
 @app.route("/remove_member", methods=["POST"])
 def remove_member():
     if not session.get('username'):
         return redirect(url_for('login'))
 
-    name = request.form['name']
+    name = request.form.get('name')
     try:
         db_execute("DELETE FROM armwrestlers WHERE name = ?", name)
     except sqlite3.DatabaseError as error:
@@ -152,7 +160,15 @@ def supermatch():
         if selected_armwrestler_1 == selected_armwrestler_2:
             selected_armwrestler_2 = 'none'
         armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1] if selected_armwrestler_1 != 'none' else None
-        armwrestler_1_score = int(request.form.get('score', 3))
+
+        try:
+            armwrestler_1_score = int(request.form.get('score', 3))
+            if armwrestler_1_score < 0 or armwrestler_1_score > 5:
+                raise ValueError
+        except (ValueError, TypeError):
+            armwrestler_1_score = 3
+
+
         armwrestler_2_score = 5 - armwrestler_1_score
 
         # Checks if all conditions are met for supermatch ready
