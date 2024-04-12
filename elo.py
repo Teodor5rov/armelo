@@ -1,5 +1,10 @@
+import math
+
+CONTRAST = 500
+
+
 def expected_score(armwrestler_a_elo, armwrestler_b_elo):
-    expected_a_elo = 1 / (1 + pow(10, ((armwrestler_b_elo - armwrestler_a_elo) / 500)))
+    expected_a_elo = 1 / (1 + pow(10, ((armwrestler_b_elo - armwrestler_a_elo) / CONTRAST)))
     expected_b_elo = 1 - expected_a_elo
 
     return expected_a_elo, expected_b_elo
@@ -16,6 +21,17 @@ def calculate_elo(armwrestler_a_elo, armwrestler_b_elo, actual_score, k = 100):
     updated_b_elo = round(armwrestler_b_elo + k * (actual_b_elo - expected_b_elo))
 
     return updated_a_elo, updated_b_elo
+
+def calculate_elo_from_score(armwrestler_b_elo, actual_score):
+    total_rounds = sum(actual_score)
+    actual_a_elo = actual_score[0] / total_rounds
+    if actual_a_elo == 1 or actual_a_elo == 0:
+        return None
+    else:
+        armwrestler_a_elo = -CONTRAST * math.log10((1 - actual_a_elo) /  actual_a_elo) + armwrestler_b_elo
+        armwrestler_a_elo = round(armwrestler_a_elo)
+
+    return armwrestler_a_elo
 
 
 def add_bonus(actual_score):
@@ -42,3 +58,13 @@ def calculate_elo_with_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score)
     updated_a_elo, updated_b_elo = calculate_elo(armwrestler_a_elo, armwrestler_b_elo, with_bonus_score)
 
     return updated_a_elo, updated_b_elo
+
+def prediction_in_percent(armwrestler_a_elo, armwrestler_b_elo):
+    predicted_a, predicted_b = expected_score(armwrestler_a_elo, armwrestler_b_elo)
+    predicted_a = round(predicted_a * 100, 1)
+    predicted_b = round(predicted_b * 100, 1)
+
+    return predicted_a, predicted_b
+
+
+print(calculate_elo_from_score(2000, (10, 0)))

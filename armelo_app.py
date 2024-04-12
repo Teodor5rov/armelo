@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, g
 from werkzeug.security import check_password_hash
 import sqlite3
 
-from elo import diff_supermatch, calculate_elo_with_bonus
+from elo import diff_supermatch, calculate_elo_with_bonus, prediction_in_percent
 
 DATABASE = 'database.db'
 
@@ -205,6 +205,53 @@ def supermatch():
                            armwrestlers=armwrestlers,
                            selected_armwrestler_1=selected_armwrestler_1
                            )
+
+
+
+@app.route("/prediction", methods=["GET", "POST"])
+def prediction():
+
+    arm = 'right'
+    selected_armwrestler_1 = 'none'
+    armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
+
+    if request.method == "POST":
+
+        # Get the values from the form 
+        arm = request.form.get('arm', arm)
+        selected_armwrestler_1 = request.form.get('armwrestler1', 'none')
+        selected_armwrestler_2 = request.form.get('armwrestler2', 'none')
+        if selected_armwrestler_1 == selected_armwrestler_2:
+            selected_armwrestler_2 = 'none'
+        armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1] if selected_armwrestler_1 != 'none' else None
+        armwrestler_names = [aw[0] for aw in armwrestlers]
+        prediction_ready = False
+        predicted_1, predicted_2 = 0, 0
+        armwrestler_color = None
+        if arm in ['left', 'right'] and \
+                selected_armwrestler_1 != selected_armwrestler_2 and \
+                selected_armwrestler_1 in armwrestler_names and \
+                selected_armwrestler_2 in armwrestler_names:
+                armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
+                predicted_1, predicted_2 = prediction_in_percent(armwrestler_1_elo, armwrestler_2_elo)
+                armwrestler_color = (f"bg-success", "bg-danger") if predicted_1 > predicted_2 else ((f"bg-danger", "bg-success") if predicted_1 < predicted_2 else ("bg-secondary", "bg-secondary"))
+                prediction_ready = True
+
+        return render_template('prediction_partial.html',
+                               arm=arm,
+                               armwrestlers=armwrestlers, armwrestlers_2=armwrestlers_2,
+                               selected_armwrestler_1=selected_armwrestler_1, selected_armwrestler_2=selected_armwrestler_2,
+                               prediction_ready=prediction_ready,
+                               predicted_1=predicted_1, predicted_2=predicted_2,
+                               armwrestler_color=armwrestler_color
+                               )
+
+    return render_template('prediction.html',
+                           arm=arm,
+                           armwrestlers=armwrestlers,
+                           selected_armwrestler_1=selected_armwrestler_1
+                           )
+
 
 
 def get_current_elo(arm, armwrestlers):

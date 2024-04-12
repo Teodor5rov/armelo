@@ -1,0 +1,65 @@
+<div class="mx-auto" style="max-width: 800px;">
+    <form method="POST" action="{{ url_for('prediction') }}" hx-post="{{ url_for('prediction') }}" hx-trigger="change" hx-swap="outerHTML">
+        <!-- Arm selection buttons -->
+        <label for="arm" class="form-label">Chose arm for the prediction:</label>
+        <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
+            <label class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}">
+                <input type="radio" name="arm" id="armRight" value="right" autocomplete="off" {{ 'checked' if arm == 'right' else '' }} class="visually-hidden">Right arm
+            </label>
+            <label class="btn btn-primary w-50 {{ 'active' if arm == 'left' else '' }}">
+                <input type="radio" name="arm" id="armLeft" value="left" autocomplete="off" {{ 'checked' if arm == 'left' else '' }} class="visually-hidden">Left arm
+            </label>
+        </div>
+
+        <!-- Armwrestler selection dropdowns -->
+        <div class="row">
+            <div class="col">
+                <label for="armwrestler1" class="form-label">Armwrestler 1:</label>
+                <select class="form-select" id="armwrestler1" name="armwrestler1" required>
+                    <option value="none">Choose...</option>
+                    {% for armwrestler in armwrestlers %}
+                        <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_1 == armwrestler[0] %}selected{% endif %}>{{ armwrestler[0] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-1 d-flex justify-content-center align-items-center pt-4">
+                <div class="text-center fs-5">
+                    <span class="badge bg-dark">VS</span>
+                </div>
+            </div>
+
+            <div class="col">
+                
+                <label for="armwrestler2" class="form-label">Armwrestler 2:</label>
+                {% if selected_armwrestler_1 != 'none' %}
+                    <select class="form-select" id="armwrestler2" name="armwrestler2" required>
+                        <option value="none">Choose...</option>
+                        {% for armwrestler in armwrestlers_2 %}
+                            <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_2 == armwrestler[0] %}selected{% endif %}>{{ armwrestler[0] }}</option>
+                        {% endfor %}
+                    </select>
+                {% else %}
+                    <select class="form-select" id="armwrestler2" name="armwrestler2" required disabled>
+                        <option value="none">Choose Armwrestler 1...</option>
+                    </select>
+                {% endif %}
+                
+                
+            </div>
+        </div>
+
+        <!-- Submit Match button, shown only if all selections are made and none of them is 'none' -->
+        {% if prediction_ready %}
+        <label for="arm" class="form-label my-3">Prediction:</label>
+        <div class="row">
+            <div class="col">
+                <div class="progress" style="height: 2.5rem;" >
+                    <div class="progress-bar {{ armwrestler_color[0] }}" role="progressbar" style="width: {{ predicted_1 }}%" aria-valuenow="{{ predicted_1 }}" aria-valuemin="0" aria-valuemax="100">{{ predicted_1 }}%</div>
+                    <div class="progress-bar {{ armwrestler_color[1] }}" role="progressbar" style="width: {{ predicted_2 }}%" aria-valuenow="{{ predicted_2 }}" aria-valuemin="0" aria-valuemax="100">{{ predicted_2 }}%</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </form>
+</div>
