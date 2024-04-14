@@ -119,13 +119,13 @@ if __name__ == '__main__':
         processed_matches = process_matches(matches)
         # write_csv('output_matches_main.csv', processed_matches)
 
-        k = 64
-        for i in range(256):
-            print(k)
-            if (i + 1) % 4 == 0:
-                k -= 1
-            random.shuffle(processed_matches)
-            for match in processed_matches:
-                supermatch(match[0], match[1], match[2], match[3], k)
+        # k = 64
+        # for i in range(256):
+        #     print(k)
+        #     if (i + 1) % 4 == 0:
+        #         k -= 1
+        #     random.shuffle(processed_matches)
+        #     for match in processed_matches:
+        #         supermatch(match[0], match[1], match[2], match[3], k)
     finally:
         close_db() 

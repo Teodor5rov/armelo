@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, g
 from werkzeug.security import check_password_hash
 import sqlite3
 
-from elo import diff_supermatch, calculate_elo_with_bonus, prediction_in_percent
+from elo import diff_supermatch, calculate_elo_with_bonus, prediction_in_percent, calculate_elo_from_score
 
 DATABASE = 'database.db'
 
@@ -74,33 +74,133 @@ def logout():
 def add_new_member():
     if not session.get('username'):
         return redirect(url_for('login'))
+    
+    arm = 'right'
+    armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
+    armwrestler_names = [aw[0] for aw in armwrestlers]
+    right_elo = 0
+    left_elo = 0
+    refs_right = 0
+    refs_left = 0
+    error = None
 
     if request.method == "POST":
-
         name = request.form.get('name')
+        arm = request.form.get('arm', arm)
+        selected_armwrestler_2 = request.form.get('armwrestler2', 'none')
         right_elo = request.form.get('right_elo')
         left_elo = request.form.get('left_elo')
+        refs_right = request.form.get('refs_right')
+        refs_left = request.form.get('refs_left')
 
-        try:
-            right_elo, left_elo = int(right_elo), int(left_elo)
-            if not name or right_elo <= 0 or left_elo <= 0:
-                raise ValueError
-        except (ValueError, TypeError):
-            return render_template('add_new_member.html', error="Invalid data")
+        if not name:
+            error = "No name entered"
 
-        armwrestlers = db_execute('SELECT name FROM armwrestlers')
-        if name in (aw[0] for aw in armwrestlers):
-            return render_template('add_new_member.html', error="Name already taken")
+        if name in armwrestler_names:
+            error = "Name already taken"
+        
+        calculation_ready = False
+        member_ready = False
+        armwrestler_1_score, armwrestler_2_score = 3, 2
+        elo_from_match = None
+        if arm in ['left', 'right'] and \
+                name != selected_armwrestler_2 and \
+                selected_armwrestler_2 in armwrestler_names:
+                calculation_ready = True
 
-        try:
-            db_execute("INSERT INTO armwrestlers (name, right_elo, left_elo) VALUES (?, ?, ?)", name, right_elo, left_elo)
-        except sqlite3.DatabaseError as error:
-            print(error)
-            return render_template('add_new_member.html', error="An error occurred while adding the member")
+        if calculation_ready:
+            try:
+                armwrestler_1_score = int(request.form.get('score', 3))
+                if armwrestler_1_score < 0 or armwrestler_1_score > 5:
+                    raise ValueError
+            except (ValueError):
+                error="Invalid score data"
+                armwrestler_1_score = 3
+            
+            armwrestler_2_score = 5 - armwrestler_1_score
+            armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_2])[0]
+            elo_from_match = calculate_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
 
-        return redirect(url_for('ranking', arm='right'))
-    
-    return render_template('add_new_member.html')
+            reset_pressed = request.form.get('reset', False) 
+            if reset_pressed:
+                return render_template('add_new_member_partial.html',
+                                        arm=arm,
+                                        armwrestlers=armwrestlers,
+                                        selected_armwrestler_2=None,
+                                        name=name,
+                                        right_elo = 0,
+                                        left_elo = 0,
+                                        refs_right=0,
+                                        refs_left=0,
+                                        error = error
+                                        )
+
+            add_to_avg_pressed = request.form.get('add_to_avg', False)            
+            if add_to_avg_pressed:
+                try:
+                    if not right_elo.isdigit() or not left_elo.isdigit():
+                        raise ValueError
+                    right_elo, left_elo = int(right_elo), int(left_elo)
+                    refs_right, refs_left = int(refs_right), int(refs_left)
+
+                    if arm == 'right':
+                        if refs_right == 0:
+                            right_elo += calculate_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
+                        else:
+                            right_elo = ((right_elo * refs_right) + calculate_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))) / (refs_right + 1)
+                            
+                        refs_right += 1
+                    else:
+                        if refs_left == 0:
+                            left_elo += calculate_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
+                        else:
+                            left_elo = ((left_elo * refs_left) + calculate_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))) / (refs_left + 1)
+
+                        refs_left += 1
+                    
+                    right_elo, left_elo = round(right_elo), round(left_elo)
+                except (ValueError):
+                    error="Invalid ELO data"
+
+        if calculation_ready and name and name not in armwrestler_names:
+            member_ready = True
+            
+        if 'add_member' in request.form and member_ready:
+            try:
+                db_execute("INSERT INTO armwrestlers (name, right_elo, left_elo) VALUES (?, ?, ?)", name, right_elo, left_elo)
+            except sqlite3.DatabaseError as error:
+                print(error) 
+            return redirect(url_for('ranking'))           
+        
+        return render_template('add_new_member_partial.html',
+                                arm=arm,
+                                armwrestlers=armwrestlers,
+                                selected_armwrestler_2=selected_armwrestler_2,
+                                name=name,
+                                armwrestler_1_score = armwrestler_1_score, armwrestler_2_score=armwrestler_2_score,
+                                calculation_ready=calculation_ready,
+                                right_elo = right_elo,
+                                left_elo = left_elo,
+                                refs_right=refs_right,
+                                refs_left=refs_left,
+                                elo_from_match = elo_from_match,
+                                member_ready = member_ready,
+                                error = error
+                                )
+       
+    return render_template('add_new_member.html',
+                           arm=arm,
+                           armwrestlers=armwrestlers,
+                           right_elo=right_elo,
+                           left_elo=left_elo,
+                           refs_right=refs_right,
+                           refs_left=refs_left
+                           )
+
+@app.route("/update_name", methods=["POST"])
+def update_name():
+    name = request.form.get('name')
+    return render_template('add_new_member_name_display.html', name=name)
 
 @app.route("/remove_member", methods=["POST"])
 def remove_member():
@@ -113,7 +213,6 @@ def remove_member():
     except sqlite3.DatabaseError as error:
         print(error)
     return redirect(url_for('ranking'))
-
 
 @app.route("/history")
 def history():
@@ -131,6 +230,21 @@ def history():
 
     return render_template('history.html', history=history, colors=colors)
 
+@app.route("/undo_last_match", methods=["POST"])
+def undo_last_match():
+    if not session.get('username'):
+        return redirect(url_for('login'))
+
+    try:
+        armwrestler1_name, armwrestler2_name, arm, armwrestler1_elo, armwrestler2_elo = db_execute('SELECT armwrestler1_name, armwrestler2_name, arm, armwrestler1_elo, armwrestler2_elo FROM history ORDER BY id DESC LIMIT 1')[0]
+        dbarm = 'right_elo' if arm == 'right' else 'left_elo'
+        print(armwrestler1_name, armwrestler2_name, arm, armwrestler1_elo, armwrestler2_elo)
+        db_execute(f"UPDATE armwrestlers SET {dbarm} = ? WHERE name = ?", armwrestler1_elo, armwrestler1_name)
+        db_execute(f"UPDATE armwrestlers SET {dbarm} = ? WHERE name = ?", armwrestler2_elo, armwrestler2_name)
+        db_execute('DELETE FROM history WHERE id = (SELECT MAX(id) FROM history)')
+    except (sqlite3.DatabaseError, IndexError) as error:
+        print(error)
+    return redirect(url_for('history'))
 
 @app.route("/supermatch", methods=["GET", "POST"])
 def supermatch():
@@ -252,7 +366,50 @@ def prediction():
                            selected_armwrestler_1=selected_armwrestler_1
                            )
 
+@app.route("/elo_from_match", methods=["GET", "POST"])
+def elo_from_match():
 
+    arm = 'right'
+    selected_armwrestler_1 = 'none'
+    armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
+
+    if request.method == "POST":
+
+        arm = request.form.get('arm', arm)
+        selected_armwrestler_1 = request.form.get('armwrestler1', 'none')
+        armwrestler_names = [aw[0] for aw in armwrestlers]
+        armwrestler_1_score, armwrestler_2_score = 3, 2
+        elo_from_match = None
+        calculation_ready = False
+        if arm in ['left', 'right'] and \
+                selected_armwrestler_1 in armwrestler_names:
+                calculation_ready = True
+
+        if calculation_ready:
+            try:
+                armwrestler_1_score = int(request.form.get('score', 3))
+                if armwrestler_1_score < 0 or armwrestler_1_score > 5:
+                    raise ValueError
+            except (ValueError):
+                armwrestler_1_score = 3
+            
+            armwrestler_2_score = 5 - armwrestler_1_score
+            armwrestler_1_elo = get_current_elo(arm, [selected_armwrestler_1])[0]
+            elo_from_match = calculate_elo_from_score(armwrestler_1_elo, (armwrestler_1_score, armwrestler_2_score))       
+        
+        return render_template('elo_from_match_partial.html',
+                                arm=arm,
+                                armwrestlers=armwrestlers,
+                                selected_armwrestler_1 = selected_armwrestler_1,
+                                armwrestler_1_score = armwrestler_1_score, armwrestler_2_score=armwrestler_2_score,
+                                calculation_ready=calculation_ready,
+                                elo_from_match = elo_from_match,
+                                )
+       
+    return render_template('elo_from_match.html',
+                           arm=arm,
+                           armwrestlers=armwrestlers,
+                           )
 
 def get_current_elo(arm, armwrestlers):
     dbarm = 'right_elo' if arm == 'right' else 'left_elo'

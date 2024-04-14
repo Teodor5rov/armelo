@@ -1,12 +1,4 @@
-{% extends "layout.html" %}
-
-{% block title %}Add new member{% endblock %}
-
-{% block content %}
 <div class="mx-auto" style="max-width: 800px;">
-    <div class="mx-auto" style="max-width: 400px;">
-        <h2 class="mb-4">Add new member</h2>
-    </div>
     <form method="POST" action="{{ url_for('add_new_member') }}" hx-post="{{ url_for('add_new_member') }}" hx-trigger="change" hx-swap="outerHTML">
         <div class="mx-auto" style="max-width: 400px;">
             <div class="mb-2">
@@ -72,6 +64,57 @@
                 </select>
             </div>
         </div>
+        {% if calculation_ready %}
+        <label for="arm" class="form-label my-2">Enter score:</label>
+        <div class="row mb-3">
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-3">
+                    <span class="badge bg-dark">{{ armwrestler_1_score }}</span>
+                </div>
+            </div>
+            
+            <div class="col-1 text-center fs-2">:</div>
+
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-3">
+                    <span class="badge bg-dark">{{ armwrestler_2_score }}</span>
+                </div>
+            </div>
+        </div>
+        <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="5" value="{{ armwrestler_1_score }}">
+        <label for="arm" class="form-label my-2">
+            ELO from match: <strong class="fw-bold">{{ elo_from_match }}</strong>
+        </label>
+        {% endif %}
+        
+        <div class="additional-controls mt-2">
+            {% if calculation_ready %}
+                <div class="row mb-2">
+                    <div class="col">
+                        <label class="btn btn-primary">
+                            <input type="radio" name="add_to_avg" id="add_to_avg" value="true" autocomplete="off" class="visually-hidden">Add to average
+                        </label>
+                    </div>
+                    <div class="col text-end">
+                        <div class="mb-2">
+                            <label class="btn btn-danger">
+                                <input type="radio" name="reset" id="reset" value="true" autocomplete="off" class="visually-hidden">Reset
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if error %}
+                <div class="text-danger my-2">
+                    {{ error }}
+                </div>
+            {% endif %}
+
+            {% if member_ready %}
+                <button type="submit" name="add_member" class="btn btn-primary mt-3 bg-success">Add member</button>
+            {% endif %}
+        </div>
+
     </form>
 </div>
-{% endblock %}

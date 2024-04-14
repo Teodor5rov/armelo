@@ -2,7 +2,6 @@ import math
 
 CONTRAST = 500
 
-
 def expected_score(armwrestler_a_elo, armwrestler_b_elo):
     expected_a_elo = 1 / (1 + pow(10, ((armwrestler_b_elo - armwrestler_a_elo) / CONTRAST)))
     expected_b_elo = 1 - expected_a_elo

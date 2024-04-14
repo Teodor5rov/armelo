@@ -3,6 +3,11 @@
 {% block title %}History{% endblock %}
 
 {% block content %}
+{% if username %}
+<form action="{{ url_for('undo_last_match') }}" method="POST">
+    <button type="submit" class="btn btn-danger mb-2">Undo last match</button>
+</form>
+{% endif %}
 <div class="table-responsive rounded">
     <table class="table">
         <thead class="table-dark">
