@@ -1,5 +1,12 @@
 /.idea
 /.venv
 /configs
-/random_queries.sql
 /__pycache__
+/pass_hasher.py
+
+/init_matches/query.sql
+/init_matches/prov_names.sql
+/init_matches/Mitgliederverwaltung Armwrestling Zurich.xlsx
+/init_matches/names.csv
+/init_matches/input_matches_main.csv
+/init_matches/input_matches_main.xlsx
