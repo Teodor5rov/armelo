@@ -14,4 +14,4 @@ with open('output.csv', 'w', newline='', encoding='utf-8') as csvfile:
     for pair in pairs:
         writer.writerow([pair[0], pair[1], '', ''])
 
-print(f'Output CSV with {len(pairs)} matches has been created.')
+print(f'Output CSV with {len(pairs)} matches has been created kurva.')
