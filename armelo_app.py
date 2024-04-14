@@ -45,7 +45,7 @@ def serve_robots_txt():
 @app.route("/<arm>")
 def ranking(arm='right'):
     order_by = 'right_elo' if arm == 'right' else 'left_elo'
-    armwrestlers = db_execute(f'SELECT RANK() OVER (ORDER BY {order_by} DESC) AS rank, name, {order_by} FROM armwrestlers')
+    armwrestlers = db_execute(f'SELECT DENSE_RANK() OVER (ORDER BY {order_by} DESC) AS rank, name, {order_by} FROM armwrestlers')
     username = session.get('username')
     return render_template('ranking.html', armwrestlers=armwrestlers, username=username, arm=arm)
 
@@ -101,7 +101,7 @@ def add_new_member():
         
         calculation_ready = False
         member_ready = False
-        armwrestler_1_score, armwrestler_2_score = 3, 2
+        armwrestler_1_score, armwrestler_2_score = 5, 5
         elo_from_match = None
         if arm in ['left', 'right'] and \
                 name != selected_armwrestler_2 and \
@@ -110,14 +110,14 @@ def add_new_member():
 
         if calculation_ready:
             try:
-                armwrestler_1_score = int(request.form.get('score', 3))
-                if armwrestler_1_score < 0 or armwrestler_1_score > 5:
+                armwrestler_1_score = int(request.form.get('score', 5))
+                if armwrestler_1_score < 0 or armwrestler_1_score > 10:
                     raise ValueError
             except (ValueError):
                 error="Invalid score data"
-                armwrestler_1_score = 3
+                armwrestler_1_score = 5
             
-            armwrestler_2_score = 5 - armwrestler_1_score
+            armwrestler_2_score = 10 - armwrestler_1_score
             armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_2])[0]
             elo_from_match = calculate_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
 
@@ -132,6 +132,7 @@ def add_new_member():
                                         left_elo = 0,
                                         refs_right=0,
                                         refs_left=0,
+                                        member_ready = True,
                                         error = error
                                         )
 
@@ -162,7 +163,7 @@ def add_new_member():
                 except (ValueError):
                     error="Invalid ELO data"
 
-        if calculation_ready and name and name not in armwrestler_names:
+        if name and name not in armwrestler_names:
             member_ready = True
             
         if 'add_member' in request.form and member_ready:

@@ -81,9 +81,9 @@
                 </div>
             </div>
         </div>
-        <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="5" value="{{ armwrestler_1_score }}">
+        <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="10" value="{{ armwrestler_1_score }}">
         <label for="arm" class="form-label my-2">
-            ELO from match: <strong class="fw-bold">{{ elo_from_match }}</strong>
+            ELO from match: <strong>{{ elo_from_match }}</strong>
         </label>
         {% endif %}
         
@@ -112,7 +112,7 @@
             {% endif %}
 
             {% if member_ready %}
-                <button type="submit" name="add_member" class="btn btn-primary mt-3 bg-success">Add member</button>
+                <button type="submit" name="add_member" class="btn btn-success mt-3">Add member</button>
             {% endif %}
         </div>
 

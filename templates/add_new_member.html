@@ -72,6 +72,11 @@
                 </select>
             </div>
         </div>
+        <div class="additional-controls mt-2">
+            {% if member_ready %}
+                <button type="submit" name="add_member" class="btn btn-success mt-3">Add member</button>
+            {% endif %}
+        </div>
     </form>
 </div>
 {% endblock %}

@@ -23,9 +23,13 @@
         <tbody>
             {% for record in history %}
             <tr>
-                <td style="width: 20%;">#{{ record[4] }} {{ record[1] }}({{ record[6] }})</td>
+                <td style="width: 20%;">
+                    <strong>#{{ record[4] }}</strong> {{ record[1] }}(<strong>{{ record[6] }}</strong>)
+                </td>
                 <td style="width: 2%;"> vs </td>
-                <td style="width: 20%;">#{{ record[5] }} {{ record[2] }}({{ record[7] }})</td>
+                <td style="width: 20%;">
+                    <strong>#{{ record[5] }}</strong> {{ record[2] }}(<strong>{{ record[7] }}</strong>)
+                </td>
                 <td class='text-center' style="width: 10%;">{{ record[3] }}</td>
                 <td class='text-nowrap text-center' style="width: 10%;">
                     <span class="fs-6 badge {{ colors[loop.index - 1][0] }}">{{ record[8] }}</span> : 
