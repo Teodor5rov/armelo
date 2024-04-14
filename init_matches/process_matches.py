@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
         k = 64
         for i in range(256):
-            print(k)
+            print('Current K: ', k)
             if (i + 1) % 4 == 0:
                 k -= 1
             random.shuffle(processed_matches)

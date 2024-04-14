@@ -239,7 +239,6 @@ def undo_last_match():
     try:
         armwrestler1_name, armwrestler2_name, arm, armwrestler1_elo, armwrestler2_elo = db_execute('SELECT armwrestler1_name, armwrestler2_name, arm, armwrestler1_elo, armwrestler2_elo FROM history ORDER BY id DESC LIMIT 1')[0]
         dbarm = 'right_elo' if arm == 'right' else 'left_elo'
-        print(armwrestler1_name, armwrestler2_name, arm, armwrestler1_elo, armwrestler2_elo)
         db_execute(f"UPDATE armwrestlers SET {dbarm} = ? WHERE name = ?", armwrestler1_elo, armwrestler1_name)
         db_execute(f"UPDATE armwrestlers SET {dbarm} = ? WHERE name = ?", armwrestler2_elo, armwrestler2_name)
         db_execute('DELETE FROM history WHERE id = (SELECT MAX(id) FROM history)')

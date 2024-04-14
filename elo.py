@@ -64,6 +64,3 @@ def prediction_in_percent(armwrestler_a_elo, armwrestler_b_elo):
     predicted_b = round(predicted_b * 100, 1)
 
     return predicted_a, predicted_b
-
-
-print(calculate_elo_from_score(2000, (10, 0)))
