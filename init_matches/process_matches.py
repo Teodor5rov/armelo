@@ -11,13 +11,15 @@ sys.path.append(os.path.dirname(parent_dir))
 from elo import calculate_elo
 
 DATABASE = '../database.db'
-db_connection = None  
+db_connection = None
+
 
 def get_db():
     global db_connection
     if db_connection is None:
         db_connection = sqlite3.connect(DATABASE)
     return db_connection
+
 
 def db_execute(query, *args, commit=False):
     db = get_db()
@@ -32,15 +34,17 @@ def db_execute(query, *args, commit=False):
             db.commit()
         cur.close()
 
+
 def read_csv(file_path):
     """Read matches from the CSV file."""
     matches = []
     with open(file_path, mode='r', encoding='utf-8') as file:
         csv_reader = csv.reader(file)
-        next(csv_reader) 
+        next(csv_reader)
         for row in csv_reader:
             matches.append(row)
     return matches
+
 
 def process_matches(matches):
 
@@ -52,7 +56,7 @@ def process_matches(matches):
 
     processed_matches = []
     for key, records in match_dict.items():
-        
+
         if all(record[2].isdigit() and record[3].isdigit() for record in records):
             total_score1, total_score2 = 0, 0
             for record in records:
@@ -80,6 +84,7 @@ def process_matches(matches):
 
     return processed_matches
 
+
 def write_csv(file_path, matches):
     """Write processed matches to a new CSV file."""
     with open(file_path, mode='w', encoding='utf-8', newline='') as file:
@@ -87,12 +92,13 @@ def write_csv(file_path, matches):
         csv_writer.writerow(["Armwrestler1", "Armwrestler2", "Score1", "Score2"])
         csv_writer.writerows(matches)
 
+
 def supermatch(armwrestler_1, armwrestler_2, armwrestler_1_score, armwrestler_2_score, k, arm='right'):
 
     dbarm = 'right_elo' if arm == 'right' else 'left_elo'
     try:
         db_execute("BEGIN;")
-        
+
         armwrestler_1_elo = db_execute(f'SELECT {dbarm} FROM armwrestlers WHERE name = ?', armwrestler_1)[0][0]
         armwrestler_2_elo = db_execute(f'SELECT {dbarm} FROM armwrestlers WHERE name = ?', armwrestler_2)[0][0]
 
@@ -104,13 +110,15 @@ def supermatch(armwrestler_1, armwrestler_2, armwrestler_1_score, armwrestler_2_
         db_execute("COMMIT;", commit=True)
     except sqlite3.DatabaseError as error:
         print(error)
-        db_execute("ROLLBACK;", commit=True) 
+        db_execute("ROLLBACK;", commit=True)
+
 
 def close_db():
     global db_connection
     if db_connection is not None:
         db_connection.close()
         db_connection = None
+
 
 if __name__ == '__main__':
     try:
@@ -128,4 +136,4 @@ if __name__ == '__main__':
             for match in processed_matches:
                 supermatch(match[0], match[1], match[2], match[3], k)
     finally:
-        close_db() 
+        close_db()

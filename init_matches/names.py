@@ -3,8 +3,8 @@ from itertools import permutations
 
 with open('names.csv', 'r', newline='', encoding='utf-8') as csvfile:
     reader = csv.reader(csvfile)
-    next(reader) 
-    names = [' '.join(row) for row in reader]  
+    next(reader)
+    names = [' '.join(row) for row in reader]
 
 pairs = list(permutations(names, 2))
 
