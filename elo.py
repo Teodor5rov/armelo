@@ -4,8 +4,8 @@ CONTRAST = 500
 K = 200
 
 
-def expected_score(armwrestler_a_elo, armwrestler_b_elo):
-    expected_a_elo = 1 / (1 + pow(10, ((armwrestler_b_elo - armwrestler_a_elo) / CONTRAST)))
+def expected_score(armwrestler_a_elo, armwrestler_b_elo, c=CONTRAST):
+    expected_a_elo = 1 / (1 + pow(10, ((armwrestler_b_elo - armwrestler_a_elo) / c)))
     expected_b_elo = 1 - expected_a_elo
 
     return expected_a_elo, expected_b_elo
