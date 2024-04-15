@@ -1,6 +1,7 @@
 import math
 
 CONTRAST = 500
+K = 200
 
 
 def expected_score(armwrestler_a_elo, armwrestler_b_elo):
@@ -10,7 +11,7 @@ def expected_score(armwrestler_a_elo, armwrestler_b_elo):
     return expected_a_elo, expected_b_elo
 
 
-def calculate_elo(armwrestler_a_elo, armwrestler_b_elo, actual_score, k=100):
+def calculate_elo(armwrestler_a_elo, armwrestler_b_elo, actual_score, k=K):
     total_rounds = sum(actual_score)
     actual_a_elo = actual_score[0] / total_rounds
     actual_b_elo = actual_score[1] / total_rounds
