@@ -282,9 +282,8 @@ def supermatch():
         except (ValueError, TypeError):
             armwrestler_1_score = 3
 
-
         armwrestler_2_score = 5 - armwrestler_1_score
-
+        armwrestler_1_elo, armwrestler_2_elo = None, None
         # Checks if all conditions are met for supermatch ready
         armwrestler_names = [aw[0] for aw in armwrestlers]
         if arm in ['left', 'right'] and \
