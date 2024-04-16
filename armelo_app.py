@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, g
 from werkzeug.security import check_password_hash
 import sqlite3
 
-from elo import diff_supermatch, calculate_elo_with_bonus, prediction_in_percent, calculate_elo_from_score
+from elo import diff_supermatch, calculate_elo_with_bonus, prediction_in_percent, expected_elo_from_score
 
 DATABASE = 'database.db'
 
@@ -116,7 +116,7 @@ def add_new_member():
 
             armwrestler_2_score = 10 - armwrestler_1_score
             armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_2])[0]
-            elo_from_match = calculate_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
+            elo_from_match = expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
 
             reset_pressed = request.form.get('reset', False)
             if reset_pressed:
@@ -141,15 +141,15 @@ def add_new_member():
 
                     if arm == 'right' and elo_from_match:
                         if refs_right == 0:
-                            right_elo += calculate_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
+                            right_elo += expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
                         else:
-                            right_elo = ((right_elo * refs_right) + calculate_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))) / (refs_right + 1)
+                            right_elo = ((right_elo * refs_right) + expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))) / (refs_right + 1)
                         refs_right += 1
                     elif arm == 'left' and elo_from_match:
                         if refs_left == 0:
-                            left_elo += calculate_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
+                            left_elo += expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
                         else:
-                            left_elo = ((left_elo * refs_left) + calculate_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))) / (refs_left + 1)
+                            left_elo = ((left_elo * refs_left) + expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))) / (refs_left + 1)
                         refs_left += 1
 
                     right_elo, left_elo = round(right_elo), round(left_elo)
@@ -394,7 +394,7 @@ def elo_from_match():
 
             armwrestler_2_score = 5 - armwrestler_1_score
             armwrestler_1_elo = get_current_elo(arm, [selected_armwrestler_1])[0]
-            elo_from_match = calculate_elo_from_score(armwrestler_1_elo, (armwrestler_1_score, armwrestler_2_score))
+            elo_from_match = expected_elo_from_score(armwrestler_1_elo, (armwrestler_1_score, armwrestler_2_score))
 
         return render_template('elo_from_match_partial.html',
                                arm=arm,

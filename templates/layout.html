@@ -13,7 +13,7 @@
         <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     </head>
     <body class="bg-light">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <nav class="navbar navbar-expand-xl navbar-dark bg-dark">
             <div class="container-md">
                 <a class="navbar-brand fs-6" href="{{ url_for('ranking') }}">Armwrestling Zurich Ranking</a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
@@ -22,19 +22,19 @@
                 <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
                     <div class="navbar-nav">
                         {% if username %}
-                            <a class="nav-link" href="{{ url_for('add_new_member') }}">Add new member</a>
-                            <a class="nav-link" href="{{ url_for('supermatch') }}">Supermatch</a>
+                            <a class="nav-link text-nowrap" href="{{ url_for('add_new_member') }}">Add new member</a>
+                            <a class="nav-link text-nowrap" href="{{ url_for('supermatch') }}">Supermatch</a>
                         {% endif %}
-                            <a class="nav-link" href="{{ url_for('history') }}">History</a>
-                            <a class="nav-link" href="{{ url_for('prediction') }}">Prediction</a>
-                            <a class="nav-link" href="{{ url_for('elo_from_match') }}">ELO from match</a>
+                            <a class="nav-link text-nowrap" href="{{ url_for('history') }}">History</a>
+                            <a class="nav-link text-nowrap" href="{{ url_for('prediction') }}">Prediction</a>
+                            <a class="nav-link text-nowrap" href="{{ url_for('elo_from_match') }}">ELO from match</a>
                     </div>
                     <div class="navbar-nav ms-auto">
                         {% if username %}
-                            <a class="nav-link disabled">{{ username }}</a>
-                            <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                            <a class="nav-link disabled text-nowrap">{{ username }}</a>
+                            <a class="nav-link text-nowrap" href="{{ url_for('logout') }}">Logout</a>
                         {% else %}
-                            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                            <a class="nav-link text-nowrap" href="{{ url_for('login') }}">Login</a>
                         {% endif %}
                     </div>
                 </div>
