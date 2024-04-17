@@ -5,6 +5,9 @@
 {% block content %}
 <div class="mx-auto" style="max-width: 800px;">
     <h2 class="mb-4">Estimate ELO from match</h2>
+    <div class="alert alert-secondary" role="alert">
+        For example: if an [Unranked person] beats a [Ranked person] in a match, they would receive an estimated ELO rating based on the score of that specific single match.
+    </div>
     <form method="POST" action="{{ url_for('elo_from_match') }}" hx-post="{{ url_for('elo_from_match') }}" hx-trigger="change" hx-swap="outerHTML">
         <!-- Arm selection buttons -->
         <label for="arm" class="form-label">Chose arm for the match:</label>
