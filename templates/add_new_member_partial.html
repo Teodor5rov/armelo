@@ -67,19 +67,21 @@
         {% if calculation_ready %}
         <label for="arm" class="form-label my-2">Enter score:</label>
         <div class="row mb-3">
+            <div class="col d-flex justify-content-center align-items-center"></div>
             <div class="col d-flex justify-content-center align-items-center">
                 <div class="text-center fs-3">
                     <span class="badge bg-dark">{{ armwrestler_1_score }}</span>
                 </div>
             </div>
             
-            <div class="col-1 text-center fs-2">:</div>
+            <div class="col-1 d-flex justify-content-center align-items-center text-center fs-2">:</div>
 
             <div class="col d-flex justify-content-center align-items-center">
                 <div class="text-center fs-3">
                     <span class="badge bg-dark">{{ armwrestler_2_score }}</span>
                 </div>
             </div>
+            <div class="col d-flex justify-content-center align-items-center"></div>
         </div>
         <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="10" value="{{ armwrestler_1_score }}">
         <label for="arm" class="form-label my-2">
