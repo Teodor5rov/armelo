@@ -264,6 +264,7 @@ def supermatch():
         armwrestler_2_diff = None
         armwrestler_1_color = None
         armwrestler_2_color = None
+        custom_score = False
 
         # Get the values from the form
         arm = request.form.get('arm', arm)
@@ -273,22 +274,34 @@ def supermatch():
             selected_armwrestler_2 = 'none'
         armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1] if selected_armwrestler_1 != 'none' else None
 
-        try:
-            armwrestler_1_score = int(request.form.get('score', 3))
-            if armwrestler_1_score < 0 or armwrestler_1_score > 5:
-                raise ValueError
-        except (ValueError, TypeError):
-            armwrestler_1_score = 3
+        custom_score = request.form.get('custom_score', False)
+        if custom_score:
+            armwrestler_1_score = request.form.get('custom_score_1', 3)
+            armwrestler_2_score = request.form.get('custom_score_1', 2)
+            try:
+                armwrestler_1_score = int(request.form.get('custom_score_1', 3))
+                armwrestler_2_score = int(request.form.get('custom_score_2', 2))
+                if not (0 <= armwrestler_1_score <= 10 and 0 <= armwrestler_2_score <= 10 and (0 < (armwrestler_1_score + armwrestler_2_score) <= 10)):
+                    raise ValueError
+            except (ValueError, TypeError):
+                armwrestler_1_score = 3
+                armwrestler_2_score = 2
+        else:
+            try:
+                armwrestler_1_score = int(request.form.get('score', 3))
+                if not (0 <= armwrestler_1_score <= 5):
+                    raise ValueError
+            except (ValueError, TypeError):
+                armwrestler_1_score = 3
+            armwrestler_2_score = 5 - armwrestler_1_score
 
-        armwrestler_2_score = 5 - armwrestler_1_score
         armwrestler_1_elo, armwrestler_2_elo = None, None
         # Checks if all conditions are met for supermatch ready
         armwrestler_names = [aw[0] for aw in armwrestlers]
         if arm in ['left', 'right'] and \
                 selected_armwrestler_1 != selected_armwrestler_2 and \
                 selected_armwrestler_1 in armwrestler_names and \
-                selected_armwrestler_2 in armwrestler_names and \
-                armwrestler_1_score + armwrestler_2_score == 5:
+                selected_armwrestler_2 in armwrestler_names:
             armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
             armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
             armwrestler_1_diff, armwrestler_1_color = (f"+{armwrestler_1_diff}", "text-success") if armwrestler_1_diff > 0 else ((str(armwrestler_1_diff),
@@ -310,7 +323,9 @@ def supermatch():
                                armwrestler_1_score=armwrestler_1_score, armwrestler_2_score=armwrestler_2_score,
                                armwrestler_1_diff=armwrestler_1_diff, armwrestler_2_diff=armwrestler_2_diff,
                                armwrestler_1_color=armwrestler_1_color,
-                               armwrestler_2_color=armwrestler_2_color
+                               armwrestler_2_color=armwrestler_2_color,
+                               custom_score=custom_score,
+                               custom_score_1=armwrestler_1_score, custom_score_2=armwrestler_2_score
                                )
 
     return render_template('supermatch.html',
@@ -385,14 +400,27 @@ def elo_from_match():
             calculation_ready = True
 
         if calculation_ready:
-            try:
-                armwrestler_1_score = int(request.form.get('score', 3))
-                if armwrestler_1_score < 0 or armwrestler_1_score > 5:
-                    raise ValueError
-            except (ValueError):
-                armwrestler_1_score = 3
+            custom_score = request.form.get('custom_score', False)
+            if custom_score:
+                armwrestler_1_score = request.form.get('custom_score_1', 3)
+                armwrestler_2_score = request.form.get('custom_score_1', 2)
+                try:
+                    armwrestler_1_score = int(request.form.get('custom_score_1', 3))
+                    armwrestler_2_score = int(request.form.get('custom_score_2', 2))
+                    if not (0 <= armwrestler_1_score <= 10 and 0 <= armwrestler_2_score <= 10 and (0 < (armwrestler_1_score + armwrestler_2_score) <= 10)):
+                        raise ValueError
+                except (ValueError, TypeError):
+                    armwrestler_1_score = 3
+                    armwrestler_2_score = 2
+            else:
+                try:
+                    armwrestler_1_score = int(request.form.get('score', 3))
+                    if not (0 <= armwrestler_1_score <= 5):
+                        raise ValueError
+                except (ValueError, TypeError):
+                    armwrestler_1_score = 3
+                armwrestler_2_score = 5 - armwrestler_1_score
 
-            armwrestler_2_score = 5 - armwrestler_1_score
             armwrestler_1_elo = get_current_elo(arm, [selected_armwrestler_1])[0]
             elo_from_match = expected_elo_from_score(armwrestler_1_elo, (armwrestler_1_score, armwrestler_2_score))
 
@@ -403,6 +431,8 @@ def elo_from_match():
                                armwrestler_1_score=armwrestler_1_score, armwrestler_2_score=armwrestler_2_score,
                                calculation_ready=calculation_ready,
                                elo_from_match=elo_from_match,
+                               custom_score=custom_score,
+                               custom_score_1=armwrestler_1_score, custom_score_2=armwrestler_2_score
                                )
 
     return render_template('elo_from_match.html',

@@ -5,7 +5,7 @@ K = 200
 
 
 def expected_score(armwrestler_a_elo, armwrestler_b_elo, c=CONTRAST):
-    expected_a_elo = 1 / (1 + pow(10, ((armwrestler_b_elo - armwrestler_a_elo) / c)))
+    expected_a_elo = 1 / (1 + math.pow(10, ((armwrestler_b_elo - armwrestler_a_elo) / c)))
     expected_b_elo = 1 - expected_a_elo
 
     return expected_a_elo, expected_b_elo
@@ -43,8 +43,8 @@ def add_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score):
     actual_a_elo = actual_score[0] / total_rounds
     actual_b_elo = actual_score[1] / total_rounds
 
-    armwrestler_a_score *= math.sqrt(math.exp(actual_a_elo / expected_a_elo) / math.e) if actual_a_elo > expected_a_elo else 1
-    armwrestler_b_score *= math.sqrt(math.exp(actual_b_elo / expected_b_elo) / math.e) if actual_b_elo > expected_b_elo else 1
+    armwrestler_a_score *= math.sqrt(math.exp(actual_a_elo / expected_a_elo - 1)) if actual_a_elo > expected_a_elo else 1
+    armwrestler_b_score *= math.sqrt(math.exp(actual_b_elo / expected_b_elo - 1)) if actual_b_elo > expected_b_elo else 1
 
     with_bonus_score = (armwrestler_a_score, armwrestler_b_score)
 
@@ -69,20 +69,8 @@ def calculate_elo_with_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score)
 
 
 def prediction_in_percent(armwrestler_a_elo, armwrestler_b_elo):
-    predicted_a, predicted_b = expected_score(armwrestler_a_elo, armwrestler_b_elo, 400)
+    predicted_a, predicted_b = expected_score(armwrestler_a_elo, armwrestler_b_elo)
     predicted_a = round(predicted_a * 100, 1)
     predicted_b = round(predicted_b * 100, 1)
 
     return predicted_a, predicted_b
-
-
-# def add_bonus_old(actual_score):
-#     total_rounds = sum(actual_score)
-#     armwrestler_a_score, armwrestler_b_score = actual_score[0], actual_score[1]
-#     armwrestler_a_score += math.exp((actual_a_elo - expected_a_elo) * 10) * total_rounds / 10 if actual_a_elo > expected_a_elo else 0
-#     armwrestler_b_score += math.exp((actual_b_elo - expected_b_elo) * 10) * total_rounds / 10 if actual_b_elo > expected_b_elo else 0
-#     armwrestler_a_score += (total_rounds / 5) if armwrestler_a_score > armwrestler_b_score else 0
-#     armwrestler_b_score += (total_rounds / 5) if armwrestler_b_score > armwrestler_a_score else 0
-#     with_bonus_score = (armwrestler_a_score, armwrestler_b_score)
-
-#     return with_bonus_score

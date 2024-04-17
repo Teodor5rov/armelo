@@ -32,8 +32,8 @@
         <!-- Submit Match button, shown only if all selections are made and none of them is 'none' -->
         {% if calculation_ready %}
         <label for="arm" class="form-label my-2">Enter score:</label>
-        <div class="row mb-3">
-            <div class="col d-flex justify-content-center align-items-center">
+        <div class="row mb-3 justify-content-center align-items-center">
+            <div class="col-3 d-flex justify-content-center align-items-center">
                 <div class="text-center fs-3">
                     <span class="badge bg-dark">{{ armwrestler_1_score }}</span>
                 </div>
@@ -41,15 +41,36 @@
             
             <div class="col-1 text-center fs-2">:</div>
 
-            <div class="col d-flex justify-content-center align-items-center">
+            <div class="col-3 d-flex justify-content-center align-items-center">
                 <div class="text-center fs-3">
                     <span class="badge bg-dark">{{ armwrestler_2_score }}</span>
                 </div>
             </div>
         </div>
+        {% if custom_score %}
+        <div class="row justify-content-center align-items-center">
+            <div class="col-3">
+                <input type="number" class="form-control" id="custom_score_1" name="custom_score_1" value="{{ custom_score_1 }}">
+            </div>
+            <div class="col-1 text-center fs-2"></div>
+            <div class="col-3">
+                <input type="number" class="form-control" id="custom_score_2" name="custom_score_2" value="{{ custom_score_2 }}">
+            </div>
+        </div>
+        {% else %}
         <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="5" value="{{ armwrestler_1_score }}">
+        {% endif %}
+        <div class="row mb-2">
+            <div class="col text-end">
+                <div class="mt-2">
+                    <label class="btn btn-primary {{ 'active' if custom_score == 'true' else '' }}">
+                        <input type="checkbox" name="custom_score" id="custom_score" value="true" autocomplete="off" {{ 'checked' if custom_score == 'true' else '' }} class="visually-hidden">Custom score
+                    </label>
+                </div>
+            </div>
+        </div>
         <label for="arm" class="form-label my-2">Estimated ELO:</label>
-        <div class="text-center fs-4">
+        <div class="text-center fs-2">
             <span class="text-success">{{ elo_from_match }}</span>
         </div>
         {% endif %}
