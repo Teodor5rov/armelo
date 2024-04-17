@@ -7,7 +7,7 @@
     <h2 class="mb-4">Supermatch</h2>
     <form method="POST" action="{{ url_for('supermatch') }}" hx-post="{{ url_for('supermatch') }}" hx-trigger="change" hx-swap="outerHTML">
         <!-- Arm selection buttons -->
-        <label for="arm" class="form-label">Chose arm for the supermatch:</label>
+        <label for="arm" class="form-label">Choose arm for the supermatch:</label>
         <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
             <label class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}">
                 <input type="radio" name="arm" id="armRight" value="right" autocomplete="off" {{ 'checked' if arm == 'right' else '' }} class="visually-hidden">Right arm

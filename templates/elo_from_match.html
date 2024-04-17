@@ -4,13 +4,13 @@
 
 {% block content %}
 <div class="mx-auto" style="max-width: 800px;">
-    <h2 class="mb-4">Estimate ELO from match</h2>
+    <h2 class="mb-4">ELO from match</h2>
     <div class="alert alert-secondary" role="alert">
         <strong>Ranked example:</strong> If there was a supermatch between two [Ranked] armwrestlers, the ELO points gained or lost are determined by the outcome of this match.<br>                           
         <strong>Unranked example:</strong> If an [Unranked person] beats a [Ranked person] in a match, they would receive an estimated ELO rating based on the score of that specific single match.
     </div>    
     <form method="POST" action="{{ url_for('elo_from_match') }}" hx-post="{{ url_for('elo_from_match') }}" hx-trigger="change" hx-swap="outerHTML">
-        <label for="ranked" class="form-label">Chose ranked or unranked:</label>
+        <label for="ranked" class="form-label">Choose ranked or unranked:</label>
         <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
             <label class="btn btn-primary w-50 {{ 'active' if ranked == 'ranked' else '' }}">
                 <input type="radio" name="ranked" id="ranked" value="ranked" autocomplete="off" {{ 'checked' if ranked == 'ranked' else '' }} class="visually-hidden">Ranked
@@ -20,7 +20,7 @@
             </label>
         </div>
         <!-- Arm selection buttons -->
-        <label for="arm" class="form-label">Chose arm for the match:</label>
+        <label for="arm" class="form-label">Choose arm for the match:</label>
         <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
             <label class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}">
                 <input type="radio" name="arm" id="armRight" value="right" autocomplete="off" {{ 'checked' if arm == 'right' else '' }} class="visually-hidden">Right arm

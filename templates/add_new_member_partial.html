@@ -1,122 +1,119 @@
-<div class="mx-auto" style="max-width: 800px;">
-    <form method="POST" action="{{ url_for('add_new_member') }}" hx-post="{{ url_for('add_new_member') }}" hx-trigger="change" hx-swap="outerHTML">
-        <div class="mx-auto" style="max-width: 400px;">
-            <div class="mb-2">
-                <label for="name" class="form-label">Name</label>
-                <input type="text" class="form-control" id="name" name="name" value="{{ name }}" hx-post="{{ url_for('update_name') }}" hx-trigger="keyup changed delay:100ms" hx-target="#new_member" hx-swap="outerHTML">
+<form method="POST" action="{{ url_for('add_new_member') }}" hx-post="{{ url_for('add_new_member') }}" hx-trigger="change" hx-swap="outerHTML">
+    <div class="mx-auto" style="max-width: 400px;">
+        <div class="mb-2">
+            <label for="name" class="form-label">Name</label>
+            <input type="text" class="form-control" id="name" name="name" value="{{ name }}" hx-post="{{ url_for('update_name') }}" hx-trigger="keyup changed delay:100ms" hx-target="#new_member" hx-swap="outerHTML">
+        </div>
+        <!-- Right ELO Section -->
+        <div class="row align-items-center">
+            <div class="col-md-5">
+                <label for="right_elo" class="form-label text-nowrap">Right ELO:</label>
             </div>
-            <!-- Right ELO Section -->
-            <div class="row align-items-center">
-                <div class="col-md-5">
-                    <label for="right_elo" class="form-label text-nowrap">Right ELO:</label>
-                </div>
-                <div class="col-md-7 d-flex justify-content-end">
-                    <input type="number" class="form-control" id="right_elo" name="right_elo" value="{{ right_elo }}">
-                    <span class="fs-7 badge bg-secondary ms-2 align-self-center">{{ refs_right }} ref.</span>
-                    <input type="hidden" class="form-control" id="refs_right" name="refs_right" value="{{ refs_right }}">
-                </div>
-            </div>
-        
-            <!-- Left ELO Section -->
-            <div class="row align-items-center mt-2">
-                <div class="col-md-5">
-                    <label for="left_elo" class="form-label text-nowrap">Left ELO:</label>
-                </div>
-                <div class="col-md-7 d-flex justify-content-end">
-                    <input type="number" class="form-control" id="left_elo" name="left_elo" value="{{ left_elo }}">
-                    <span class="fs-7 badge bg-secondary ms-2 align-self-center">{{ refs_left }} ref.</span>
-                    <input type="hidden" class="form-control" id="refs_left" name="refs_left" value="{{ refs_left }}">
-                </div>
+            <div class="col-md-7 d-flex justify-content-end">
+                <input type="number" class="form-control" id="right_elo" name="right_elo" value="{{ right_elo }}">
+                <span class="fs-7 badge bg-secondary ms-2 align-self-center">{{ refs_right }} ref.</span>
+                <input type="hidden" class="form-control" id="refs_right" name="refs_right" value="{{ refs_right }}">
             </div>
         </div>
-
-        <!-- Arm selection buttons -->
-        <label for="arm" class="form-label mt-4">Chose arm for the calculation:</label>
-        <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
-            <label class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}">
-                <input type="radio" name="arm" id="armRight" value="right" autocomplete="off" {{ 'checked' if arm == 'right' else '' }} class="visually-hidden">Right arm
-            </label>
-            <label class="btn btn-primary w-50 {{ 'active' if arm == 'left' else '' }}">
-                <input type="radio" name="arm" id="armLeft" value="left" autocomplete="off" {{ 'checked' if arm == 'left' else '' }} class="visually-hidden">Left arm
-            </label>
-        </div>
-
-        <!-- Armwrestler selection dropdowns -->
-        <div class="row flex-nowrap">
-            <div class="col" style="width: 30%;">
-                <label for="new_member" class="form-label">New member:</label>
-                <div class="form-control text-secondary text-nowrap overflow-hidden" id="new_member" name="new_member" disabled aria-disabled="true">{{ name or 'Enter a name...' }}</div>
+    
+        <!-- Left ELO Section -->
+        <div class="row align-items-center mt-2">
+            <div class="col-md-5">
+                <label for="left_elo" class="form-label text-nowrap">Left ELO:</label>
             </div>
-
-            <div class="col-1 d-flex justify-content-center align-items-center pt-4">
-                <div class="text-center fs-5">
-                    <span class="badge bg-dark">VS</span>
-                </div>
-            </div>
-
-            <div class="col" style="width: 30%;">
-                <label for="armwrestler2" class="form-label text-nowrap">Ranked member:</label>
-                <select class="form-select" id="armwrestler2" name="armwrestler2" required>
-                    <option value="none">Choose...</option>
-                    {% for armwrestler in armwrestlers %}
-                        <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_2 == armwrestler[0] %}selected{% endif %}>{{ armwrestler[0] }}</option>
-                    {% endfor %}
-                </select>
+            <div class="col-md-7 d-flex justify-content-end">
+                <input type="number" class="form-control" id="left_elo" name="left_elo" value="{{ left_elo }}">
+                <span class="fs-7 badge bg-secondary ms-2 align-self-center">{{ refs_left }} ref.</span>
+                <input type="hidden" class="form-control" id="refs_left" name="refs_left" value="{{ refs_left }}">
             </div>
         </div>
-        {% if calculation_ready %}
-        <label for="arm" class="form-label my-2">Enter score:</label>
-        <div class="row mb-3">
-            <div class="col d-flex justify-content-center align-items-center"></div>
-            <div class="col d-flex justify-content-center align-items-center">
-                <div class="text-center fs-3">
-                    <span class="badge bg-dark">{{ armwrestler_1_score }}</span>
-                </div>
-            </div>
-            
-            <div class="col-1 d-flex justify-content-center align-items-center text-center fs-2">:</div>
+    </div>
 
-            <div class="col d-flex justify-content-center align-items-center">
-                <div class="text-center fs-3">
-                    <span class="badge bg-dark">{{ armwrestler_2_score }}</span>
-                </div>
-            </div>
-            <div class="col d-flex justify-content-center align-items-center"></div>
-        </div>
-        <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="10" value="{{ armwrestler_1_score }}">
-        <label for="arm" class="form-label my-2">
-            ELO from match: <strong>{{ elo_from_match }}</strong>
+    <!-- Arm selection buttons -->
+    <label for="arm" class="form-label mt-4">Choose arm for the calculation:</label>
+    <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
+        <label class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}">
+            <input type="radio" name="arm" id="armRight" value="right" autocomplete="off" {{ 'checked' if arm == 'right' else '' }} class="visually-hidden">Right arm
         </label>
-        {% endif %}
+        <label class="btn btn-primary w-50 {{ 'active' if arm == 'left' else '' }}">
+            <input type="radio" name="arm" id="armLeft" value="left" autocomplete="off" {{ 'checked' if arm == 'left' else '' }} class="visually-hidden">Left arm
+        </label>
+    </div>
+
+    <!-- Armwrestler selection dropdowns -->
+    <div class="row flex-nowrap">
+        <div class="col" style="width: 30%;">
+            <label for="new_member" class="form-label">New member:</label>
+            <div class="form-control text-secondary text-nowrap overflow-hidden" id="new_member" name="new_member" disabled aria-disabled="true">{{ name or 'Enter a name...' }}</div>
+        </div>
+
+        <div class="col-1 d-flex justify-content-center align-items-center pt-4">
+            <div class="text-center fs-5">
+                <span class="badge bg-dark">VS</span>
+            </div>
+        </div>
+
+        <div class="col" style="width: 30%;">
+            <label for="armwrestler2" class="form-label text-nowrap">Ranked member:</label>
+            <select class="form-select" id="armwrestler2" name="armwrestler2" required>
+                <option value="none">Choose...</option>
+                {% for armwrestler in armwrestlers %}
+                    <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_2 == armwrestler[0] %}selected{% endif %}>{{ armwrestler[0] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    {% if calculation_ready %}
+    <label for="arm" class="form-label my-2">Enter score:</label>
+    <div class="row mb-3">
+        <div class="col d-flex justify-content-center align-items-center"></div>
+        <div class="col d-flex justify-content-center align-items-center">
+            <div class="text-center fs-3">
+                <span class="badge bg-dark">{{ armwrestler_1_score }}</span>
+            </div>
+        </div>
         
-        <div class="additional-controls mt-2">
-            {% if calculation_ready %}
-                <div class="row mb-2">
-                    <div class="col">
-                        <label class="btn btn-primary">
-                            <input type="radio" name="add_to_avg" id="add_to_avg" value="true" autocomplete="off" class="visually-hidden">Add to average
+        <div class="col-1 d-flex justify-content-center align-items-center text-center fs-2">:</div>
+
+        <div class="col d-flex justify-content-center align-items-center">
+            <div class="text-center fs-3">
+                <span class="badge bg-dark">{{ armwrestler_2_score }}</span>
+            </div>
+        </div>
+        <div class="col d-flex justify-content-center align-items-center"></div>
+    </div>
+    <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="10" value="{{ armwrestler_1_score }}">
+    <label for="arm" class="form-label my-2">
+        ELO from match: <strong>{{ elo_from_match }}</strong>
+    </label>
+    {% endif %}
+    
+    <div class="additional-controls mt-2">
+        {% if calculation_ready %}
+            <div class="row mb-2">
+                <div class="col">
+                    <label class="btn btn-primary">
+                        <input type="radio" name="add_to_avg" id="add_to_avg" value="true" autocomplete="off" class="visually-hidden">Add to average
+                    </label>
+                </div>
+                <div class="col text-end">
+                    <div class="mb-2">
+                        <label class="btn btn-danger">
+                            <input type="radio" name="reset" id="reset" value="true" autocomplete="off" class="visually-hidden">Reset
                         </label>
                     </div>
-                    <div class="col text-end">
-                        <div class="mb-2">
-                            <label class="btn btn-danger">
-                                <input type="radio" name="reset" id="reset" value="true" autocomplete="off" class="visually-hidden">Reset
-                            </label>
-                        </div>
-                    </div>
                 </div>
-            {% endif %}
+            </div>
+        {% endif %}
 
-            {% if error %}
-                <div class="text-danger my-2">
-                    {{ error }}
-                </div>
-            {% endif %}
+        {% if error %}
+            <div class="text-danger my-2">
+                {{ error }}
+            </div>
+        {% endif %}
 
-            {% if member_ready %}
-                <button type="submit" name="add_member" class="btn btn-success mt-3">Add member</button>
-            {% endif %}
-        </div>
-
-    </form>
-</div>
+        {% if member_ready %}
+            <button type="submit" name="add_member" class="btn btn-success mt-3">Add member</button>
+        {% endif %}
+    </div>
+</form>
