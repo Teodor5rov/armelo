@@ -6,9 +6,19 @@
 <div class="mx-auto" style="max-width: 800px;">
     <h2 class="mb-4">Estimate ELO from match</h2>
     <div class="alert alert-secondary" role="alert">
-        For example: if an [Unranked person] beats a [Ranked person] in a match, they would receive an estimated ELO rating based on the score of that specific single match.
-    </div>
+        <strong>Ranked example:</strong> If there was a supermatch between two [Ranked] armwrestlers, the ELO points gained or lost are determined by the outcome of this match.<br>                           
+        <strong>Unranked example:</strong> If an [Unranked person] beats a [Ranked person] in a match, they would receive an estimated ELO rating based on the score of that specific single match.
+    </div>    
     <form method="POST" action="{{ url_for('elo_from_match') }}" hx-post="{{ url_for('elo_from_match') }}" hx-trigger="change" hx-swap="outerHTML">
+        <label for="ranked" class="form-label">Chose ranked or unranked:</label>
+        <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
+            <label class="btn btn-primary w-50 {{ 'active' if ranked == 'ranked' else '' }}">
+                <input type="radio" name="ranked" id="ranked" value="ranked" autocomplete="off" {{ 'checked' if ranked == 'ranked' else '' }} class="visually-hidden">Ranked
+            </label>
+            <label class="btn btn-primary w-50 {{ 'active' if ranked == 'unranked' else '' }}">
+                <input type="radio" name="ranked" id="unranked" value="unranked" autocomplete="off" {{ 'checked' if ranked == 'unranked' else '' }} class="visually-hidden">Unranked
+            </label>
+        </div>
         <!-- Arm selection buttons -->
         <label for="arm" class="form-label">Chose arm for the match:</label>
         <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
@@ -19,7 +29,42 @@
                 <input type="radio" name="arm" id="armLeft" value="left" autocomplete="off" {{ 'checked' if arm == 'left' else '' }} class="visually-hidden">Left arm
             </label>
         </div>
+        {% if ranked == 'ranked' %}
+        <div class="row">
+            <div class="col">
+                <label for="armwrestler1" class="form-label">Armwrestler 1:</label>
+                <select class="form-select" id="armwrestler1" name="armwrestler1" required>
+                    <option value="none">Choose...</option>
+                    {% for armwrestler in armwrestlers %}
+                        <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_1 == armwrestler[0] %}selected{% endif %}>{{ armwrestler[0] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
+            <div class="col-1 d-flex justify-content-center align-items-center pt-4">
+                <div class="text-center fs-5">
+                    <span class="badge bg-dark">VS</span>
+                </div>
+            </div>
+
+            <div class="col">
+                <label for="armwrestler2" class="form-label">Armwrestler 2:</label>
+                {% if selected_armwrestler_1 != 'none' %}
+                    <select class="form-select" id="armwrestler2" name="armwrestler2" required>
+                        <option value="none">Choose...</option>
+                        {% for armwrestler in armwrestlers_2 %}
+                            <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_2 == armwrestler[0] %}selected{% endif %}>{{ armwrestler[0] }}</option>
+                        {% endfor %}
+                    </select>
+                {% else %}
+                    <select class="form-select" id="armwrestler2" name="armwrestler2" required disabled>
+                        <option value="none">Choose Armwrestler 1...</option>
+                    </select>
+                {% endif %}
+            </div>
+        </div>
+
+        {% else %}
         <!-- Armwrestler selection dropdowns -->
         <div class="row">
             <label for="armwrestler1" class="form-label">Select ranked armwrestler:</label>
@@ -37,6 +82,7 @@
                 </select>
             </div>
         </div>
+        {% endif %}
     </form>
 </div>
 {% endblock %}

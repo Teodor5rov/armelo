@@ -322,8 +322,8 @@ def supermatch():
                                supermatch_ready=supermatch_ready,
                                armwrestler_1_score=armwrestler_1_score, armwrestler_2_score=armwrestler_2_score,
                                armwrestler_1_diff=armwrestler_1_diff, armwrestler_2_diff=armwrestler_2_diff,
-                               armwrestler_1_color=armwrestler_1_color,
-                               armwrestler_2_color=armwrestler_2_color,
+                               armwrestler_1_color=armwrestler_1_color, armwrestler_2_color=armwrestler_2_color,
+                               armwrestler_1_elo=armwrestler_1_elo, armwrestler_2_elo=armwrestler_2_elo,
                                custom_score=custom_score,
                                custom_score_1=armwrestler_1_score, custom_score_2=armwrestler_2_score
                                )
@@ -383,19 +383,46 @@ def prediction():
 @app.route("/elo_from_match", methods=["GET", "POST"])
 def elo_from_match():
 
+    ranked = 'ranked'
     arm = 'right'
     selected_armwrestler_1 = 'none'
     armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
 
     if request.method == "POST":
 
+        # Initialize default values
+        elo_from_match = None
+        armwrestlers_2 = None
+        selected_armwrestler_2 = 'none'
+        armwrestler_1_diff = None
+        armwrestler_2_diff = None
+        armwrestler_1_color = None
+        armwrestler_2_color = None
+        armwrestler_1_elo = None
+        armwrestler_2_elo = None
+        calculation_ready = False
+        custom_score = False
+
+        ranked = request.form.get('ranked', ranked)
         arm = request.form.get('arm', arm)
         selected_armwrestler_1 = request.form.get('armwrestler1', 'none')
+        if ranked == 'ranked':
+            selected_armwrestler_2 = request.form.get('armwrestler2', 'none')
+            if selected_armwrestler_1 == selected_armwrestler_2:
+                selected_armwrestler_2 = 'none'
+            armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1] if selected_armwrestler_1 != 'none' else None
         armwrestler_names = [aw[0] for aw in armwrestlers]
         armwrestler_1_score, armwrestler_2_score = 3, 2
-        elo_from_match = None
-        calculation_ready = False
+
         if arm in ['left', 'right'] and \
+                ranked == 'ranked' and \
+                selected_armwrestler_1 != selected_armwrestler_2 and \
+                selected_armwrestler_1 in armwrestler_names and \
+                selected_armwrestler_2 in armwrestler_names:
+            calculation_ready = True
+
+        elif arm in ['left', 'right'] and \
+                ranked == 'unranked' and \
                 selected_armwrestler_1 in armwrestler_names:
             calculation_ready = True
 
@@ -421,14 +448,27 @@ def elo_from_match():
                     armwrestler_1_score = 3
                 armwrestler_2_score = 5 - armwrestler_1_score
 
-            armwrestler_1_elo = get_current_elo(arm, [selected_armwrestler_1])[0]
-            elo_from_match = expected_elo_from_score(armwrestler_1_elo, (armwrestler_1_score, armwrestler_2_score))
+            if ranked == 'ranked':
+                armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
+                armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
+                armwrestler_1_diff, armwrestler_1_color = (f"+{armwrestler_1_diff}", "text-success") if armwrestler_1_diff > 0 else ((str(armwrestler_1_diff),
+                                                                                                                                      "text-danger") if armwrestler_1_diff < 0 else ("0", "text-secondary"))
+                armwrestler_2_diff, armwrestler_2_color = (f"+{armwrestler_2_diff}", "text-success") if armwrestler_2_diff > 0 else ((str(armwrestler_2_diff),
+                                                                                                                                      "text-danger") if armwrestler_2_diff < 0 else ("0", "text-secondary"))
+
+            elif ranked == 'unranked':
+                armwrestler_1_elo = get_current_elo(arm, [selected_armwrestler_1])[0]
+                elo_from_match = expected_elo_from_score(armwrestler_1_elo, (armwrestler_1_score, armwrestler_2_score))
 
         return render_template('elo_from_match_partial.html',
+                               ranked=ranked,
                                arm=arm,
-                               armwrestlers=armwrestlers,
-                               selected_armwrestler_1=selected_armwrestler_1,
+                               armwrestlers=armwrestlers, armwrestlers_2=armwrestlers_2,
+                               selected_armwrestler_1=selected_armwrestler_1, selected_armwrestler_2=selected_armwrestler_2,
                                armwrestler_1_score=armwrestler_1_score, armwrestler_2_score=armwrestler_2_score,
+                               armwrestler_1_diff=armwrestler_1_diff, armwrestler_2_diff=armwrestler_2_diff,
+                               armwrestler_1_color=armwrestler_1_color, armwrestler_2_color=armwrestler_2_color,
+                               armwrestler_1_elo=armwrestler_1_elo, armwrestler_2_elo=armwrestler_2_elo,
                                calculation_ready=calculation_ready,
                                elo_from_match=elo_from_match,
                                custom_score=custom_score,
@@ -436,8 +476,10 @@ def elo_from_match():
                                )
 
     return render_template('elo_from_match.html',
+                           ranked=ranked,
                            arm=arm,
                            armwrestlers=armwrestlers,
+                           selected_armwrestler_1=selected_armwrestler_1
                            )
 
 
