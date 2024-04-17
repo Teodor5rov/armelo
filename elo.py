@@ -69,7 +69,7 @@ def calculate_elo_with_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score)
 
 
 def prediction_in_percent(armwrestler_a_elo, armwrestler_b_elo):
-    predicted_a, predicted_b = expected_score(armwrestler_a_elo, armwrestler_b_elo)
+    predicted_a, predicted_b = expected_score(armwrestler_a_elo, armwrestler_b_elo, 400)
     predicted_a = round(predicted_a * 100, 1)
     predicted_b = round(predicted_b * 100, 1)
 
