@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, g, send_from_directory
+from flask_talisman import Talisman
 from werkzeug.security import check_password_hash
 import sqlite3
 
@@ -8,6 +9,37 @@ DATABASE = 'database.db'
 
 app = Flask(__name__)
 app.secret_key = '%%8hF$7ALEy8Msw2'
+
+csp = {
+    'default-src': [
+        '\'self\'',
+        'https://cdn.jsdelivr.net',
+        'https://fonts.googleapis.com',
+        'https://unpkg.com'
+    ],
+    'img-src': [
+        '\'self\'',
+        'data:'
+    ],
+    'script-src': [
+        '\'self\'',
+        'https://cdn.jsdelivr.net',
+        'https://unpkg.com'
+    ],
+    'style-src': [
+        '\'self\'',
+        'https://cdn.jsdelivr.net',
+        'https://fonts.googleapis.com',
+        '\'unsafe-inline\''
+    ],
+    'font-src': [
+        '\'self\'',
+        'https://fonts.gstatic.com',
+        'https://cdn.jsdelivr.net'
+    ]
+}
+
+Talisman(app, content_security_policy=csp)
 
 
 def get_db():
