@@ -1,5 +1,5 @@
 <form method="POST" action="{{ url_for('add_new_member') }}" hx-post="{{ url_for('add_new_member') }}" hx-trigger="change" hx-swap="outerHTML">
-    <div class="mx-auto" style="max-width: 400px;">
+    <div class="mx-auto col-sm-6">
         <div class="mb-2">
             <label for="name" class="form-label">Name</label>
             <input type="text" class="form-control" id="name" name="name" value="{{ name }}" hx-post="{{ url_for('update_name') }}" hx-trigger="keyup changed delay:100ms" hx-target="#new_member" hx-swap="outerHTML">
@@ -40,7 +40,6 @@
         </label>
     </div>
 
-    <!-- Armwrestler selection dropdowns -->
     <div class="row flex-nowrap">
         <div class="col" style="width: 30%;">
             <label for="new_member" class="form-label">New member:</label>
@@ -55,8 +54,8 @@
 
         <div class="col" style="width: 30%;">
             <label for="armwrestler2" class="form-label text-nowrap">Ranked member:</label>
-            <select class="form-select" id="armwrestler2" name="armwrestler2" required>
-                <option value="none">Choose...</option>
+            <select class="form-select text-truncate" id="armwrestler2" name="armwrestler2" required>
+                <option value="none">Choose</option>
                 {% for armwrestler in armwrestlers %}
                     <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_2 == armwrestler[0] %}selected{% endif %}>{{ armwrestler[0] }}</option>
                 {% endfor %}
