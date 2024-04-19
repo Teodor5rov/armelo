@@ -16,11 +16,3 @@ body {
 html::-webkit-scrollbar, body::-webkit-scrollbar {
     display: none;
 }
-
-.max-width-800 {
-    max-width: 800px;
-}
-
-.max-width-400 {
-    max-width: 400px;
-}

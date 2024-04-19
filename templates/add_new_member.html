@@ -3,10 +3,10 @@
 {% block title %}Add new member{% endblock %}
 
 {% block content %}
-<div class="mx-auto max-width-800">
+<div class="mx-auto" style="max-width: 800px;">
     <h2 class="mb-4">Add new member</h2>
     <form method="POST" action="{{ url_for('add_new_member') }}" hx-post="{{ url_for('add_new_member') }}" hx-trigger="change" hx-swap="outerHTML">
-        <div class="mx-auto max-width-400">
+        <div class="mx-auto" style="max-width: 400px;">
             <div class="mb-2">
                 <label for="name" class="form-label">Name</label>
                 <input type="text" class="form-control" id="name" name="name" value="{{ name }}" hx-post="{{ url_for('update_name') }}" hx-trigger="keyup changed delay:100ms" hx-target="#new_member" hx-swap="outerHTML">
