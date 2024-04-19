@@ -2,13 +2,14 @@ from flask import Flask, render_template, request, redirect, url_for, session, g
 from flask_talisman import Talisman
 from werkzeug.security import check_password_hash
 import sqlite3
+import os
 
 from elo import diff_supermatch, calculate_elo_with_bonus, prediction_in_percent, expected_elo_from_score
 
 DATABASE = 'database.db'
 
 app = Flask(__name__)
-app.secret_key = '%%8hF$7ALEy8Msw2'
+app.secret_key = os.environ.get('SECRET_KEY', '%%8hF$7ALEy8Msw2')
 
 csp = {
     'default-src': [
@@ -77,7 +78,7 @@ def serve_robots_txt():
 @app.route("/<arm>")
 def ranking(arm='right'):
     order_by = 'right_elo' if arm == 'right' else 'left_elo'
-    armwrestlers = db_execute(f'SELECT DENSE_RANK() OVER (ORDER BY {order_by} DESC) AS rank, name, {order_by} FROM armwrestlers')
+    armwrestlers = db_execute('SELECT DENSE_RANK() OVER (ORDER BY {} DESC) AS rank, name, {} FROM armwrestlers'.format(order_by, order_by))
     username = session.get('username')
     return render_template('ranking.html', armwrestlers=armwrestlers, username=username, arm=arm)
 
@@ -268,8 +269,8 @@ def undo_last_match():
         armwrestler1_name, armwrestler2_name, arm, armwrestler1_elo, armwrestler2_elo = db_execute(
             'SELECT armwrestler1_name, armwrestler2_name, arm, armwrestler1_elo, armwrestler2_elo FROM history ORDER BY id DESC LIMIT 1')[0]
         dbarm = 'right_elo' if arm == 'right' else 'left_elo'
-        db_execute(f"UPDATE armwrestlers SET {dbarm} = ? WHERE name = ?", armwrestler1_elo, armwrestler1_name)
-        db_execute(f"UPDATE armwrestlers SET {dbarm} = ? WHERE name = ?", armwrestler2_elo, armwrestler2_name)
+        db_execute("UPDATE armwrestlers SET {} = ? WHERE name = ?".format(dbarm), armwrestler1_elo, armwrestler1_name)
+        db_execute("UPDATE armwrestlers SET {} = ? WHERE name = ?".format(dbarm), armwrestler2_elo, armwrestler2_name)
         db_execute('DELETE FROM history WHERE id = (SELECT MAX(id) FROM history)')
     except (sqlite3.DatabaseError, IndexError) as error:
         print(error)
@@ -520,7 +521,7 @@ def get_current_elo(arm, armwrestlers):
     elos = []
 
     for armwrestler in armwrestlers:
-        result = db_execute(f'SELECT {dbarm} FROM armwrestlers WHERE name = ?', armwrestler)
+        result = db_execute('SELECT {} FROM armwrestlers WHERE name = ?'.format(dbarm), armwrestler)
         elo = result[0][0]
         elos.append(elo)
 
@@ -532,8 +533,9 @@ def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, ar
     dbarm = 'right_elo' if arm == 'right' else 'left_elo'
     updated_1, updated_2 = calculate_elo_with_bonus(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
 
-    armwrestler_1_rank = db_execute(f'SELECT rank FROM ( SELECT RANK() OVER (ORDER BY {dbarm} DESC) AS rank, name FROM armwrestlers ) AS RankedArmwrestlers WHERE name = ?', armwrestler_1)[0][0]
-    armwrestler_2_rank = db_execute(f'SELECT rank FROM ( SELECT RANK() OVER (ORDER BY {dbarm} DESC) AS rank, name FROM armwrestlers ) AS RankedArmwrestlers WHERE name = ?', armwrestler_2)[0][0]
+    armwrestler_1_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, name FROM armwrestlers) AS RankedArmwrestlers WHERE name = ?'.format(dbarm), armwrestler_1)[0][0]
+    armwrestler_2_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, name FROM armwrestlers) AS RankedArmwrestlers WHERE name = ?'.format(dbarm), armwrestler_2)[0][0]
+
     armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
 
     try:
@@ -553,8 +555,9 @@ def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, ar
                    armwrestler_1_score, armwrestler_2_score,
                    armwrestler_1_diff, armwrestler_2_diff)
 
-        db_execute(f"UPDATE armwrestlers SET {dbarm} = ? WHERE name = ?", updated_1, armwrestler_1)
-        db_execute(f"UPDATE armwrestlers SET {dbarm} = ? WHERE name = ?", updated_2, armwrestler_2)
+        db_execute("UPDATE armwrestlers SET {} = ? WHERE name = ?".format(dbarm), updated_1, armwrestler_1)
+        db_execute("UPDATE armwrestlers SET {} = ? WHERE name = ?".format(dbarm), updated_2, armwrestler_2)
+
     except sqlite3.DatabaseError as error:
         print(error)
 
