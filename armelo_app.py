@@ -75,7 +75,7 @@ def serve_robots_txt():
 
 
 @app.route("/")
-@app.route("/<arm>")
+@app.route("/<any(right, left):arm>")
 def ranking(arm='right'):
     order_by = 'right_elo' if arm == 'right' else 'left_elo'
     armwrestlers = db_execute('SELECT DENSE_RANK() OVER (ORDER BY {} DESC) AS rank, name, {} FROM armwrestlers'.format(order_by, order_by))
@@ -561,6 +561,13 @@ def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, ar
     except sqlite3.DatabaseError as error:
         print(error)
 
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def page_not_found(e):
+    return render_template('500.html'), 500
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
