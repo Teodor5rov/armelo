@@ -43,7 +43,7 @@
     <div class="row flex-nowrap">
         <div class="col" style="width: 30%;">
             <label for="new_member" class="form-label">New member:</label>
-            <div class="form-control text-secondary text-nowrap overflow-hidden" id="new_member" name="new_member" disabled aria-disabled="true">{{ name or 'Enter a name...' }}</div>
+            <div class="form-control text-secondary text-nowrap overflow-hidden" id="new_member" name="new_member" disabled aria-disabled="true">{{ name or 'Enter a name' }}</div>
         </div>
 
         <div class="col-1 d-flex justify-content-center align-items-center pt-4">
@@ -81,7 +81,19 @@
         </div>
         <div class="col d-flex justify-content-center align-items-center"></div>
     </div>
+    {% if custom_score %}
+    <div class="row justify-content-center align-items-center mb-2">
+        <div class="col-3">
+            <input type="number" class="form-control" id="custom_score_1" name="custom_score_1" value="{{ custom_score_1 }}">
+        </div>
+        <div class="col-1 text-center fs-2"></div>
+        <div class="col-3">
+            <input type="number" class="form-control" id="custom_score_2" name="custom_score_2" value="{{ custom_score_2 }}">
+        </div>
+    </div>
+    {% else %}
     <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="10" value="{{ armwrestler_1_score }}">
+    {% endif %}
     <label for="arm" class="form-label my-2">
         ELO from match: <strong>{{ elo_from_match }}</strong>
     </label>
@@ -89,20 +101,33 @@
     
     <div class="additional-controls mt-2">
         {% if calculation_ready %}
-            <div class="row mb-2">
-                <div class="col">
-                    <label class="btn btn-primary">
-                        <input type="radio" name="add_to_avg" id="add_to_avg" value="true" autocomplete="off" class="visually-hidden">Add to average
-                    </label>
-                </div>
-                <div class="col text-end">
-                    <div class="mb-2">
-                        <label class="btn btn-danger">
-                            <input type="radio" name="reset" id="reset" value="true" autocomplete="off" class="visually-hidden">Reset
-                        </label>
+        <div class="row">
+            <div class="col">
+                <div class="row justify-content-start">
+                    <div class="col-auto">
+                        <div class="mb-2">
+                            <label class="btn btn-primary text-nowrap">
+                                <input type="radio" name="add_to_avg" id="add_to_avg" value="true" autocomplete="off" class="visually-hidden">Add to average
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <div>
+                            <label class="btn btn-primary text-nowrap {{ 'active' if custom_score == 'true' else '' }}">
+                                <input type="checkbox" name="custom_score" id="custom_score" value="true" autocomplete="off" {{ 'checked' if custom_score == 'true' else '' }} class="visually-hidden">Custom score
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
+            <div class="col text-end">
+                <div>
+                    <label class="btn btn-danger">
+                        <input type="radio" name="reset" id="reset" value="true" autocomplete="off" class="visually-hidden">Reset
+                    </label>
+                </div>
+            </div>
+        </div>
         {% endif %}
 
         {% if error %}

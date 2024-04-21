@@ -122,6 +122,7 @@ def add_new_member():
         left_elo = request.form.get('left_elo')
         refs_right = request.form.get('refs_right')
         refs_left = request.form.get('refs_left')
+        custom_score = False
 
         if not name:
             error = "No name entered"
@@ -139,15 +140,28 @@ def add_new_member():
             calculation_ready = True
 
         if calculation_ready:
-            try:
-                armwrestler_1_score = int(request.form.get('score', 5))
-                if armwrestler_1_score < 0 or armwrestler_1_score > 10:
-                    raise ValueError
-            except (ValueError):
-                error = "Invalid score data"
-                armwrestler_1_score = 5
-
-            armwrestler_2_score = 10 - armwrestler_1_score
+            custom_score = request.form.get('custom_score', False)
+            if custom_score:
+                armwrestler_1_score = request.form.get('custom_score_1', 3)
+                armwrestler_2_score = request.form.get('custom_score_1', 2)
+                try:
+                    armwrestler_1_score = int(request.form.get('custom_score_1', 3))
+                    armwrestler_2_score = int(request.form.get('custom_score_2', 2))
+                    if not (0 <= armwrestler_1_score <= 10 and 0 <= armwrestler_2_score <= 10 and (0 < (armwrestler_1_score + armwrestler_2_score) <= 10)):
+                        raise ValueError
+                except (ValueError, TypeError):
+                    armwrestler_1_score = 3
+                    armwrestler_2_score = 2
+            else:
+                try:
+                    armwrestler_1_score = int(request.form.get('score', 5))
+                    if armwrestler_1_score < 0 or armwrestler_1_score > 10:
+                        raise ValueError
+                except (ValueError):
+                    error = "Invalid score data"
+                    armwrestler_1_score = 5
+                armwrestler_2_score = 10 - armwrestler_1_score
+            
             armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_2])[0]
             elo_from_match = expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
 
@@ -160,7 +174,6 @@ def add_new_member():
                                        name=name,
                                        right_elo=0, left_elo=0,
                                        refs_right=0, refs_left=0,
-                                       member_ready=True,
                                        error=error
                                        )
 
@@ -210,6 +223,8 @@ def add_new_member():
                                refs_right=refs_right, refs_left=refs_left,
                                elo_from_match=elo_from_match,
                                member_ready=member_ready,
+                               custom_score=custom_score,
+                               custom_score_1=armwrestler_1_score, custom_score_2=armwrestler_2_score,
                                error=error
                                )
 

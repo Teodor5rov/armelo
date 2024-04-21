@@ -23,7 +23,7 @@
                 <th style="width: 30%;">Name</th>
                 <th class="text-end text-nowrap">{{ "Right ELO" if arm == 'right' else "Left ELO" }}</th>
                 {% if username %}
-                <th style="width: 15%;">Action</th>
+                <th class="text-center" style="width: 15%;">Action</th>
                 {% endif %}
             </tr>
         </thead>
@@ -35,9 +35,9 @@
                 <td class="text-end"><strong>{{ armwrestler[2] }}</strong></td>
                 {% if username %}
                 <td>
-                    <form action="{{ url_for('remove_member') }}" method="POST" style="display: inline;">
+                    <form class="text-center" action="{{ url_for('remove_member') }}" method="POST">
                         <input type="hidden" name="name" value="{{ armwrestler[1] }}">
-                        <button type="submit" class="btn btn-danger btn-sm remove-btn ms-1">Remove</button>
+                        <button type="submit" class="btn btn-danger btn-sm">Remove</button>
                     </form>
                 </td>
                 {% endif %}
