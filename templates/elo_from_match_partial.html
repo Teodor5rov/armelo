@@ -1,4 +1,4 @@
-<form method="POST" action="{{ url_for('elo_from_match') }}" hx-post="{{ url_for('elo_from_match') }}" hx-trigger="change" hx-swap="outerHTML">
+<form class="mb-4" method="POST" action="{{ url_for('elo_from_match') }}" hx-post="{{ url_for('elo_from_match') }}" hx-trigger="change" hx-swap="outerHTML">
     <label for="ranked" class="form-label">Choose ranked or unranked:</label>
     <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
         <label class="btn btn-primary w-50 {{ 'active' if ranked == 'ranked' else '' }}">

@@ -401,7 +401,8 @@ def prediction():
         armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1] if selected_armwrestler_1 != 'none' else None
         armwrestler_names = [aw[0] for aw in armwrestlers]
         prediction_ready = False
-        predicted_1, predicted_2 = 0, 0
+        armwrestler_1_elo, armwrestler_2_elo = None, None
+        predicted_1, predicted_2 = None, None
         armwrestler_color = None
         if arm in ['left', 'right'] and \
                 selected_armwrestler_1 != selected_armwrestler_2 and \
@@ -409,7 +410,7 @@ def prediction():
                 selected_armwrestler_2 in armwrestler_names:
             armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
             predicted_1, predicted_2 = prediction_in_percent(armwrestler_1_elo, armwrestler_2_elo)
-            armwrestler_color = (f"bg-success", "bg-danger") if predicted_1 > predicted_2 else ((f"bg-danger", "bg-success") if predicted_1 < predicted_2 else ("bg-secondary", "bg-secondary"))
+            armwrestler_color = (f"success", "danger") if predicted_1 > predicted_2 else ((f"danger", "success") if predicted_1 < predicted_2 else ("secondary", "secondary"))
             prediction_ready = True
 
         return render_template('prediction_partial.html',
@@ -417,6 +418,7 @@ def prediction():
                                armwrestlers=armwrestlers, armwrestlers_2=armwrestlers_2,
                                selected_armwrestler_1=selected_armwrestler_1, selected_armwrestler_2=selected_armwrestler_2,
                                prediction_ready=prediction_ready,
+                               armwrestler_1_elo=armwrestler_1_elo, armwrestler_2_elo=armwrestler_2_elo,
                                predicted_1=predicted_1, predicted_2=predicted_2,
                                armwrestler_color=armwrestler_color
                                )

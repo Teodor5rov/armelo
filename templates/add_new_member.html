@@ -5,7 +5,7 @@
 {% block content %}
 <div class="mx-auto" style="max-width: 800px;">
     <h2 class="mb-4">Add new member</h2>
-    <form method="POST" action="{{ url_for('add_new_member') }}" hx-post="{{ url_for('add_new_member') }}" hx-trigger="change" hx-swap="outerHTML">
+    <form class="mb-4" method="POST" action="{{ url_for('add_new_member') }}" hx-post="{{ url_for('add_new_member') }}" hx-trigger="change" hx-swap="outerHTML">
         <div class="mx-auto" style="max-width: 400px;">
             <div class="mb-2">
                 <label for="name" class="form-label">Name</label>
