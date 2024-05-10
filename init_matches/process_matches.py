@@ -62,10 +62,14 @@ def process_matches(matches):
             for record in records:
                 armwrestler1, armwrestler2, score1, score2 = record
                 if armwrestler1 == key[0]:
+                    if float(score1) + float(score2) != 10:
+                        print("Wrong data: ", record)
                     total_score1 += float(score1)
                     total_score2 += float(score2)
                     check_consensus1 = float(score1)
                 else:
+                    if float(score1) + float(score2) != 10:
+                        print("Wrong data: ", record)
                     total_score1 += float(score2)
                     total_score2 += float(score1)
                     check_consensus2 = float(score2)
@@ -122,7 +126,7 @@ def close_db():
 
 if __name__ == '__main__':
     try:
-        input_file_path = 'input_matches_main.csv'
+        input_file_path = 'input_matches_main_left.csv'
         matches = read_csv(input_file_path)
         processed_matches = process_matches(matches)
         write_csv('output_matches_main.csv', processed_matches)
@@ -134,6 +138,6 @@ if __name__ == '__main__':
                 k -= 1
             random.shuffle(processed_matches)
             for match in processed_matches:
-                supermatch(match[0], match[1], match[2], match[3], k)
+                supermatch(match[0], match[1], match[2], match[3], k, 'left')
     finally:
         close_db()

@@ -3,6 +3,11 @@
 {% block title %}History{% endblock %}
 
 {% block content %}
+
+<h2 class="mb-4">History</h2>
+
+<p>The history of matches between ranked armwrestlers from the <strong>Armwrestling Zurich</strong> club.</p>
+
 {% if username %}
 <form action="{{ url_for('undo_last_match') }}" method="POST">
     <button type="submit" class="btn btn-danger mb-2">Undo last match</button>

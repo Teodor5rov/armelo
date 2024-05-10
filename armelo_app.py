@@ -54,7 +54,7 @@ def db_execute(query, *args):
     db = get_db()
     cur = db.cursor()
     cur.execute(query, args)
-    if query.strip().upper().startswith("SELECT"):
+    if query.strip().upper().startswith(("SELECT", "WITH")):
         rv = cur.fetchall()
         cur.close()
         return rv
@@ -78,10 +78,46 @@ def serve_robots_txt():
 @app.route("/<any(right, left):arm>")
 def ranking(arm='right'):
     order_by = 'right_elo' if arm == 'right' else 'left_elo'
-    armwrestlers = db_execute('SELECT DENSE_RANK() OVER (ORDER BY {} DESC) AS rank, name, {} FROM armwrestlers'.format(order_by, order_by))
+    armwrestlers = db_execute('SELECT DENSE_RANK() OVER (ORDER BY {0} DESC) AS rank, name, {0} FROM armwrestlers'.format(order_by))
     username = session.get('username')
     return render_template('ranking.html', armwrestlers=armwrestlers, username=username, arm=arm)
 
+@app.route("/closest")
+def closest_matches():
+    arm = request.args.get('arm', 'right') 
+    order_by = 'right_elo' if arm == 'right' else 'left_elo'
+    
+    query = """
+    WITH rankedarmwrestlers AS (
+        SELECT DENSE_RANK() OVER (ORDER BY {0} DESC) AS rank, 
+               name, 
+               {0} AS elo
+        FROM armwrestlers
+    )
+    SELECT 
+        a.rank AS rank1, 
+        a.name AS armwrestler1, 
+        a.elo AS elo1, 
+        b.rank AS rank2, 
+        b.name AS armwrestler2, 
+        b.elo AS elo2, 
+        ABS(a.elo - b.elo) AS elo_difference
+    FROM rankedarmwrestlers a, rankedarmwrestlers b
+    WHERE a.name < b.name
+    ORDER BY elo_difference ASC
+    LIMIT 10;
+    """.format(order_by)
+
+    closest_matches = db_execute(query)
+    closest_matches_with_predictions = []
+    for match in closest_matches:
+        predicted_1, predicted_2 = prediction_in_percent(match[2], match[5])
+        color_1, color_2 = (f"success", "danger") if predicted_1 > predicted_2 else ((f"danger", "success") if predicted_1 < predicted_2 else ("secondary", "secondary"))
+        match_with_prediction = match + (predicted_1, predicted_2, color_1, color_2)
+        closest_matches_with_predictions.append(match_with_prediction)
+
+    username = session.get('username')
+    return render_template('closest_matches.html', closest_matches_with_predictions=closest_matches_with_predictions, username=username, arm=arm)
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
