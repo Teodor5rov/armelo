@@ -1,7 +1,7 @@
 import math
 
 CONTRAST = 500
-K = 200
+K = 100
 
 
 def expected_score(armwrestler_a_elo, armwrestler_b_elo, c=CONTRAST):
@@ -43,8 +43,8 @@ def add_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score):
     actual_a_elo = actual_score[0] / total_rounds
     actual_b_elo = actual_score[1] / total_rounds
 
-    armwrestler_a_score *= math.exp((actual_a_elo / expected_a_elo - 1) / 3) if actual_a_elo > expected_a_elo else 1
-    armwrestler_b_score *= math.exp((actual_b_elo / expected_b_elo - 1) / 3) if actual_b_elo > expected_b_elo else 1
+    armwrestler_a_score *= math.exp((actual_a_elo / expected_a_elo - 1) / 2) if actual_a_elo > expected_a_elo else 1
+    armwrestler_b_score *= math.exp((actual_b_elo / expected_b_elo - 1) / 2) if actual_b_elo > expected_b_elo else 1
 
     with_bonus_score = (armwrestler_a_score, armwrestler_b_score)
 

@@ -105,7 +105,7 @@ def closest_matches():
     FROM rankedarmwrestlers a, rankedarmwrestlers b
     WHERE a.name < b.name
     ORDER BY elo_difference ASC
-    LIMIT 10;
+    LIMIT 15;
     """.format(order_by)
 
     closest_matches = db_execute(query)
