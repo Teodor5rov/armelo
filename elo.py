@@ -1,6 +1,7 @@
 import math
+from scipy.stats import beta
 
-CONTRAST = 500
+CONTRAST = 400
 K = 100
 
 
@@ -68,8 +69,30 @@ def calculate_elo_with_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score)
     return updated_a_elo, updated_b_elo
 
 
-def prediction_in_percent(armwrestler_a_elo, armwrestler_b_elo):
-    predicted_a, predicted_b = expected_score(armwrestler_a_elo, armwrestler_b_elo, 400)
+def expected_score_hundered(armwrestler_a_elo, armwrestler_b_elo):
+    expected_a, expected_b = expected_score(armwrestler_a_elo, armwrestler_b_elo, CONTRAST)
+    expected_a = round(expected_a * 100, 1)
+    expected_b = round(expected_b * 100, 1)
+
+    return expected_a, expected_b
+
+
+def expected_score_five(armwrestler_a_elo, armwrestler_b_elo):
+    expected_a, expected_b = expected_score(armwrestler_a_elo, armwrestler_b_elo, CONTRAST)
+    expected_five_a = round(expected_a * 5) if expected_a != 0.5 else 3
+    expected_five_b = round(expected_b * 5) if expected_b != 0.5 else 3
+
+    return expected_five_a, expected_five_b
+
+
+def beta_prediction(armwrestler_a_elo, armwrestler_b_elo, confidence=5):
+    expected_a, expected_b = expected_score(armwrestler_a_elo, armwrestler_b_elo, CONTRAST)
+    alpha1 = confidence * expected_a
+    beta1 = confidence - alpha1
+
+    predicted_b = beta.cdf(0.5, alpha1, beta1)
+    predicted_a = 1 - predicted_b
+
     predicted_a = round(predicted_a * 100, 1)
     predicted_b = round(predicted_b * 100, 1)
 

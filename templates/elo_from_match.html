@@ -6,8 +6,8 @@
 <div class="mx-auto" style="max-width: 800px;">
     <h2 class="mb-4">ELO from match</h2>
     <div class="alert alert-secondary" role="alert">
-        <strong>Ranked example:</strong> If there was a supermatch between two [Ranked] armwrestlers, the ELO points gained or lost are determined by the outcome of this match.<br>                           
-        <strong>Unranked example:</strong> If an [Unranked person] beats a [Ranked person] in a match, they would receive an estimated ELO rating based on the score of that specific single match.
+        <strong>Ranked example: </strong>If there was a supermatch between two [Ranked] armwrestlers, the ELO points gained or lost are determined by the outcome of this match.<br>                           
+        <strong>Unranked example: </strong>If an [Unranked person] beats a [Ranked person] in a match, they would receive an estimated ELO rating based on the score of that specific single match.
     </div>    
     <form class="mb-4" method="POST" action="{{ url_for('elo_from_match') }}" hx-post="{{ url_for('elo_from_match') }}" hx-trigger="change" hx-swap="outerHTML">
         <label for="ranked" class="form-label">Choose ranked or unranked:</label>

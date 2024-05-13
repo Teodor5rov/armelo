@@ -22,8 +22,8 @@
                 <th style="width: 40%;">Armwrestlers</th>
                 <th style="width: 2%;"></th>
                 <th style="width: 40%;"></th>
-                <th class='text-center' style="width: 10%;">Prediction</th>
-                <th class='text-center text-nowrap' style="width: 8%;">ELO diff</th>
+                <th class='text-center' style="width: 10%;">Win chance</th>
+                <th class='text-center text-nowrap' style="width: 8%;">ΔELO</th>
             </tr>
         </thead>
         <tbody>
@@ -37,7 +37,7 @@
                     <strong>#{{ match[3] }}</strong> {{ match[4] }}<strong>({{ match[5] }})</strong>
                 </td>
                 <td class="text-nowrap text-center align-middle" style="width: 10%;">
-                    <span class="fs-6 badge text-{{ match[9] }}">{{ match[7] }}</span>:<span class="fs-6 badge text-{{ match[10] }}">{{ match[8] }}</span>
+                    <span class="fs-6 badge text-{{ match[9] }}">{{ match[7] }}%</span>:<span class="fs-6 badge text-{{ match[10] }}">{{ match[8] }}%</span>
                 </td>
                 <td class="text-nowrap text-center align-middle" style="width: 8%;">
                     <strong>{{ match[6] }}</strong>

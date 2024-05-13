@@ -4,7 +4,7 @@ from werkzeug.security import check_password_hash
 import sqlite3
 import os
 
-from elo import diff_supermatch, calculate_elo_with_bonus, prediction_in_percent, expected_elo_from_score
+from elo import diff_supermatch, calculate_elo_with_bonus, expected_elo_from_score, expected_score_hundered, expected_score_five, beta_prediction
 
 DATABASE = 'database.db'
 
@@ -82,11 +82,12 @@ def ranking(arm='right'):
     username = session.get('username')
     return render_template('ranking.html', armwrestlers=armwrestlers, username=username, arm=arm)
 
+
 @app.route("/closest")
 def closest_matches():
-    arm = request.args.get('arm', 'right') 
+    arm = request.args.get('arm', 'right')
     order_by = 'right_elo' if arm == 'right' else 'left_elo'
-    
+
     query = """
     WITH rankedarmwrestlers AS (
         SELECT DENSE_RANK() OVER (ORDER BY {0} DESC) AS rank, 
@@ -111,13 +112,14 @@ def closest_matches():
     closest_matches = db_execute(query)
     closest_matches_with_predictions = []
     for match in closest_matches:
-        predicted_1, predicted_2 = prediction_in_percent(match[2], match[5])
-        color_1, color_2 = (f"success", "danger") if predicted_1 > predicted_2 else ((f"danger", "success") if predicted_1 < predicted_2 else ("secondary", "secondary"))
-        match_with_prediction = match + (predicted_1, predicted_2, color_1, color_2)
+        expected_1, expected_2 = expected_score_hundered(match[2], match[5])
+        color_1, color_2 = (f"success", "danger") if expected_1 > expected_2 else ((f"danger", "success") if expected_1 < expected_2 else ("secondary", "secondary"))
+        match_with_prediction = match + (expected_1, expected_2, color_1, color_2)
         closest_matches_with_predictions.append(match_with_prediction)
 
     username = session.get('username')
     return render_template('closest_matches.html', closest_matches_with_predictions=closest_matches_with_predictions, username=username, arm=arm)
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -197,7 +199,7 @@ def add_new_member():
                     error = "Invalid score data"
                     armwrestler_1_score = 5
                 armwrestler_2_score = 10 - armwrestler_1_score
-            
+
             armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_2])[0]
             elo_from_match = expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
 
@@ -438,15 +440,19 @@ def prediction():
         armwrestler_names = [aw[0] for aw in armwrestlers]
         prediction_ready = False
         armwrestler_1_elo, armwrestler_2_elo = None, None
-        predicted_1, predicted_2 = None, None
+        expected_1, expected_2 = None, None
+        expected_five_score1, expected_five_score2 = None, None
+        beta_predicted_1, beta_predicted_2 = None, None
         armwrestler_color = None
         if arm in ['left', 'right'] and \
                 selected_armwrestler_1 != selected_armwrestler_2 and \
                 selected_armwrestler_1 in armwrestler_names and \
                 selected_armwrestler_2 in armwrestler_names:
             armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
-            predicted_1, predicted_2 = prediction_in_percent(armwrestler_1_elo, armwrestler_2_elo)
-            armwrestler_color = (f"success", "danger") if predicted_1 > predicted_2 else ((f"danger", "success") if predicted_1 < predicted_2 else ("secondary", "secondary"))
+            expected_1, expected_2 = expected_score_hundered(armwrestler_1_elo, armwrestler_2_elo)
+            expected_five_score1, expected_five_score2 = expected_score_five(armwrestler_1_elo, armwrestler_2_elo)
+            beta_predicted_1, beta_predicted_2 = beta_prediction(armwrestler_1_elo, armwrestler_2_elo)
+            armwrestler_color = (f"success", "danger") if expected_1 > expected_2 else ((f"danger", "success") if expected_1 < expected_2 else ("secondary", "secondary"))
             prediction_ready = True
 
         return render_template('prediction_partial.html',
@@ -455,7 +461,9 @@ def prediction():
                                selected_armwrestler_1=selected_armwrestler_1, selected_armwrestler_2=selected_armwrestler_2,
                                prediction_ready=prediction_ready,
                                armwrestler_1_elo=armwrestler_1_elo, armwrestler_2_elo=armwrestler_2_elo,
-                               predicted_1=predicted_1, predicted_2=predicted_2,
+                               expected_1=expected_1, expected_2=expected_2,
+                               expected_five_score1=expected_five_score1, expected_five_score2=expected_five_score2,
+                               beta_predicted_1=beta_predicted_1, beta_predicted_2=beta_predicted_2,
                                armwrestler_color=armwrestler_color
                                )
 
@@ -614,13 +622,16 @@ def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, ar
     except sqlite3.DatabaseError as error:
         print(error)
 
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
 
+
 @app.errorhandler(500)
 def page_not_found(e):
     return render_template('500.html'), 500
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
