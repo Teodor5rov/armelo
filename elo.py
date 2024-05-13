@@ -71,8 +71,8 @@ def calculate_elo_with_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score)
 
 def expected_score_hundered(armwrestler_a_elo, armwrestler_b_elo):
     expected_a, expected_b = expected_score(armwrestler_a_elo, armwrestler_b_elo, CONTRAST)
-    expected_a = round(expected_a * 100, 1)
-    expected_b = round(expected_b * 100, 1)
+    expected_a = round(expected_a * 100)
+    expected_b = round(expected_b * 100)
 
     return expected_a, expected_b
 

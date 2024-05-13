@@ -112,7 +112,7 @@ def closest_matches():
     closest_matches = db_execute(query)
     closest_matches_with_predictions = []
     for match in closest_matches:
-        expected_1, expected_2 = expected_score_hundered(match[2], match[5])
+        expected_1, expected_2 = beta_prediction(match[2], match[5])
         color_1, color_2 = (f"success", "danger") if expected_1 > expected_2 else ((f"danger", "success") if expected_1 < expected_2 else ("secondary", "secondary"))
         match_with_prediction = match + (expected_1, expected_2, color_1, color_2)
         closest_matches_with_predictions.append(match_with_prediction)
