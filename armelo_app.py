@@ -453,6 +453,8 @@ def prediction():
             expected_five_score1, expected_five_score2 = expected_score_five(armwrestler_1_elo, armwrestler_2_elo)
             beta_predicted_1, beta_predicted_2 = beta_prediction(armwrestler_1_elo, armwrestler_2_elo)
             armwrestler_color = (f"success", "danger") if expected_1 > expected_2 else ((f"danger", "success") if expected_1 < expected_2 else ("secondary", "secondary"))
+            expected_1 = round(expected_1)
+            expected_2 = round(expected_2)
             prediction_ready = True
 
         return render_template('prediction_partial.html',
