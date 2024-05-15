@@ -69,13 +69,13 @@
 
         <div class="col"></div>
     </div>
-    <label for="exprected_score" class="form-label mb-2">Expected score:</label>
+    <label for="exprected_score" class="form-label mb-2">Approximate expected score:</label>
     <div class="row mb-4">
         <div class="col d-flex justify-content-center align-items-center"></div>
 
         <div class="col d-flex justify-content-center align-items-center">
             <div class="text-center fs-3">
-                <span class="badge bg-{{ armwrestler_color[0] }}">{{ expected_five_score1 }}</span>
+                <span class="badge bg-{{ armwrestler_color[0] }}">{{ expected_1 }}</span>
             </div>
         </div>
         
@@ -83,32 +83,24 @@
 
         <div class="col d-flex justify-content-center align-items-center">
             <div class="text-center fs-3">
-                <span class="badge bg-{{ armwrestler_color[1] }}">{{ expected_five_score2 }}</span>
+                <span class="badge bg-{{ armwrestler_color[1] }}">{{ expected_2 }}</span>
             </div>
         </div>
 
         <div class="col d-flex justify-content-center align-items-center"></div>
     </div> 
-    <div class="row mb-4">
-        <div class="col">
-            <div class="progress" style="height: 2.5rem;" >
-                <div class="progress-bar bg-{{ armwrestler_color[0] }}" role="progressbar" style="width: {{ expected_1 }}%" aria-valuenow="{{ expected_1 }}" aria-valuemin="0" aria-valuemax="100">{{ expected_1 }}</div>
-                <div class="progress-bar bg-{{ armwrestler_color[1] }}" role="progressbar" style="width: {{ expected_2 }}%" aria-valuenow="{{ expected_2 }}" aria-valuemin="0" aria-valuemax="100">{{ expected_2 }}</div>
-            </div>
-        </div>
-    </div>
 
-    <label for="win_chance" class="form-label mb-2">Win chance (confidence - 5):</label>
+    <label for="win_chance" class="form-label mb-2">Win chance (5 round match):</label>
     <div class="row mb-4">
         <div class="col">
             <div class="progress" style="height: 2.5rem;" >
-                <div class="progress-bar bg-{{ armwrestler_color[0] }}" role="progressbar" style="width: {{ beta_predicted_1 }}%" aria-valuenow="{{ beta_predicted_1 }}" aria-valuemin="0" aria-valuemax="100">{{ beta_predicted_1 }}%</div>
-                <div class="progress-bar bg-{{ armwrestler_color[1] }}" role="progressbar" style="width: {{ beta_predicted_2 }}%" aria-valuenow="{{ beta_predicted_2 }}" aria-valuemin="0" aria-valuemax="100">{{ beta_predicted_2 }}%</div>
+                <div class="progress-bar bg-{{ armwrestler_color[0] }}" role="progressbar" style="width: {{ binom_predicted_1 }}%" aria-valuenow="{{ binom_predicted_1 }}" aria-valuemin="0" aria-valuemax="100">{{ binom_predicted_1 }}%</div>
+                <div class="progress-bar bg-{{ armwrestler_color[1] }}" role="progressbar" style="width: {{ binom_predicted_2 }}%" aria-valuenow="{{ binom_predicted_2 }}" aria-valuemin="0" aria-valuemax="100">{{ binom_predicted_2 }}%</div>
             </div>
         </div>
     </div>
     <div class="alert alert-secondary mb-2" role="alert">
-        The win chance uses the beta distribution to determine the likelihood of an armwrestler winning/losing the match in percent. The parameters of the distribution are set such that the expected score is the mean, and the expected score confidence is the value to control the distribution's spread. The probability of an armwrestler winning is then the integral of the part of the distribution where the armwrestler wins.
+        The win chance takes into account the number of rounds and uses the binomial distribution to determine the likelihood of an armwrestler winning/losing the match in percent.
     </div>
     {% endif %}
 </form>

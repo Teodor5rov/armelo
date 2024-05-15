@@ -4,7 +4,7 @@ from werkzeug.security import check_password_hash
 import sqlite3
 import os
 
-from elo import diff_supermatch, calculate_elo_with_bonus, expected_elo_from_score, expected_score_hundered, expected_score_five, beta_prediction
+from elo import diff_supermatch, calculate_elo_with_bonus, expected_elo_from_score, expected_score_rounds, binom_prediction
 
 DATABASE = 'database.db'
 
@@ -112,7 +112,7 @@ def closest_matches():
     closest_matches = db_execute(query)
     closest_matches_with_predictions = []
     for match in closest_matches:
-        expected_1, expected_2 = beta_prediction(match[2], match[5])
+        expected_1, expected_2 = binom_prediction(match[2], match[5])
         color_1, color_2 = (f"success", "danger") if expected_1 > expected_2 else ((f"danger", "success") if expected_1 < expected_2 else ("secondary", "secondary"))
         match_with_prediction = match + (expected_1, expected_2, color_1, color_2)
         closest_matches_with_predictions.append(match_with_prediction)
@@ -441,17 +441,15 @@ def prediction():
         prediction_ready = False
         armwrestler_1_elo, armwrestler_2_elo = None, None
         expected_1, expected_2 = None, None
-        expected_five_score1, expected_five_score2 = None, None
-        beta_predicted_1, beta_predicted_2 = None, None
+        binom_predicted_1, binom_predicted_2 = None, None
         armwrestler_color = None
         if arm in ['left', 'right'] and \
                 selected_armwrestler_1 != selected_armwrestler_2 and \
                 selected_armwrestler_1 in armwrestler_names and \
                 selected_armwrestler_2 in armwrestler_names:
             armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
-            expected_1, expected_2 = expected_score_hundered(armwrestler_1_elo, armwrestler_2_elo)
-            expected_five_score1, expected_five_score2 = expected_score_five(armwrestler_1_elo, armwrestler_2_elo)
-            beta_predicted_1, beta_predicted_2 = beta_prediction(armwrestler_1_elo, armwrestler_2_elo)
+            expected_1, expected_2 = expected_score_rounds(armwrestler_1_elo, armwrestler_2_elo, 5)
+            binom_predicted_1, binom_predicted_2 = binom_prediction(armwrestler_1_elo, armwrestler_2_elo)
             armwrestler_color = (f"success", "danger") if expected_1 > expected_2 else ((f"danger", "success") if expected_1 < expected_2 else ("secondary", "secondary"))
             expected_1 = round(expected_1)
             expected_2 = round(expected_2)
@@ -464,8 +462,7 @@ def prediction():
                                prediction_ready=prediction_ready,
                                armwrestler_1_elo=armwrestler_1_elo, armwrestler_2_elo=armwrestler_2_elo,
                                expected_1=expected_1, expected_2=expected_2,
-                               expected_five_score1=expected_five_score1, expected_five_score2=expected_five_score2,
-                               beta_predicted_1=beta_predicted_1, beta_predicted_2=beta_predicted_2,
+                               binom_predicted_1=binom_predicted_1, binom_predicted_2=binom_predicted_2,
                                armwrestler_color=armwrestler_color
                                )
 
