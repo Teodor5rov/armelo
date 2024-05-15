@@ -9,9 +9,7 @@
 <p>The history of matches between ranked armwrestlers from the <strong>Armwrestling Zurich</strong> club.</p>
 
 {% if username %}
-<form action="{{ url_for('undo_last_match') }}" method="POST">
-    <button type="submit" class="btn btn-danger mb-2">Undo last match</button>
-</form>
+<button type="button" class="btn btn-danger mb-2" data-bs-toggle="modal" data-bs-target="#undoModal">Undo last match</button>
 {% endif %}
 <div class="table-responsive rounded">
     <table class="table">
@@ -47,6 +45,26 @@
             {% endfor %}
         </tbody>
     </table>
+</div>
+
+<div class="modal fade" id="undoModal" tabindex="-1" aria-labelledby="undoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="undoModalLabel">Undo last match</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            Are you sure you want to undo the last match?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+          <form action="{{ url_for('undo_last_match') }}" method="POST">
+            <button type="submit" class="btn btn-danger">Undo match</button>
+          </form>
+        </div>
+      </div>
+    </div>
 </div>
 
 {% endblock %}

@@ -293,6 +293,15 @@ def remove_member():
     return redirect(url_for('ranking'))
 
 
+@app.route("/confirm_remove", methods=["POST"])
+def confirm_remove():
+    if not session.get('username'):
+        return redirect(url_for('login'))
+    
+    name = request.args.get('name')
+    return render_template('confirm_remove.html', name=name)
+
+
 @app.route("/history")
 def history():
     history = db_execute('SELECT * FROM history ORDER BY id DESC LIMIT 20')
