@@ -9,43 +9,47 @@
 <p>The history of matches between ranked armwrestlers from the <strong>Armwrestling Zurich</strong> club.</p>
 
 {% if username %}
-<button type="button" class="btn btn-danger mb-2" data-bs-toggle="modal" data-bs-target="#undoModal">Undo last match</button>
+<button type="button" class="btn btn-danger mb-4" data-bs-toggle="modal" data-bs-target="#undoModal">Undo last match</button>
 {% endif %}
-<div class="table-responsive rounded">
-    <table class="table">
-        <thead class="table-dark">
-            <tr>
-                <th style="width: 35%;">Armwrestlers</th>
-                <th style="width: 2%;"></th>
-                <th style="width: 35%;"></th>
-                <th class='text-center' style="width: 8%;">Arm</th>
-                <th class='text-center' style="width: 10%;">Score</th>
-                <th class='text-center' style="width: 10%;">ELO</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for record in history %}
-            <tr>
-                <td class="align-middle" style="width: 35%;">
-                    <strong>#{{ record[4] }}</strong> {{ record[1] }}<strong>({{ record[6] }})</strong>
-                </td>
-                <td class="align-middle" style="width: 2%;">vs</td>
-                <td class="align-middle" style="width: 35%;">
-                    <strong>#{{ record[5] }}</strong> {{ record[2] }}<strong>({{ record[7] }})</strong>
-                </td>
-                <td class="text-center align-middle" style="width: 8%;"><strong>{{ record[3] }}</strong></td>
-                <td class="text-nowrap text-center align-middle" style="width: 10%;">
-                    <span class="fs-6 badge {{ colors[loop.index - 1][0] }}">{{ record[8] }}</span> : 
-                    <span class="fs-6 badge {{ colors[loop.index - 1][1] }}">{{ record[9] }}</span>
-                </td>
-                <td class="text-nowrap text-center align-middle" style="width: 10%;">
-                    <span class="fs-6 badge {{ colors[loop.index - 1][2] }}">{{ colors[loop.index - 1][4] }}</span>|<span class="fs-6 badge {{ colors[loop.index - 1][3] }}">{{ colors[loop.index - 1][5] }}</span>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+
+{% for record in history %}
+<div class="col-12 mb-3">
+    <div class="card">
+        <div class="card-header bg-transparent">
+            <div class="row mt-2">
+                <div class="col-12 col-lg-auto text-center mb-2">
+                    <div class="text-nowrap">
+                        <strong>#{{ record[4] }}</strong> {{ record[1] }}<strong>({{ record[6] }})</strong>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-auto text-center mb-2">
+                    <span class="badge bg-dark">VS</span>
+                </div>
+                <div class="col-12 col-lg-auto text-center mb-2">
+                    <div class="text-nowrap">
+                        <strong>#{{ record[5] }}</strong> {{ record[2] }}<strong>({{ record[7] }})</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="card-text">
+                <div class="row justify-content-start">
+                    <div class="col-12 col-lg-auto mb-2 mb-lg-0">
+                        Arm:<span class="fs-6 badge text-dark"><strong>{{ record[3] }}</strong></span>
+                    </div>
+                    <div class="col-12 col-lg-auto mb-2 mb-lg-0">
+                        Result:<span class="fs-6 ms-3 badge {{ colors[loop.index - 1][0] }}">{{ record[8] }}</span> : <span class="fs-6 me-2 badge {{ colors[loop.index - 1][1] }}">{{ record[9] }}</span>
+                    </div>
+                    <div class="col-12 col-lg-auto mb-2 mb-lg-0">
+                        Elo changes:<span class="fs-6 badge {{ colors[loop.index - 1][2] }}">{{ colors[loop.index - 1][4] }}</span>|<span class="fs-6 badge {{ colors[loop.index - 1][3] }}">{{ colors[loop.index - 1][5] }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+{% endfor %}
 
 <div class="modal fade" id="undoModal" tabindex="-1" aria-labelledby="undoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">

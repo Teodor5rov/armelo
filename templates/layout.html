@@ -22,7 +22,7 @@
         {% else %}
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         {% endif %}
-            <div class="container-md">
+            <div class="container">
                 <a class="navbar-brand fs-6" href="{{ url_for('ranking') }}">Armwrestling Zurich Ranking</a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -49,15 +49,15 @@
                 </div>
             </div>
         </nav>
-        <div class="container-sm"> 
-            <div class="row justify-content-center my-4"> 
-                <div class="col-sm-10"> 
+        <div class="container my-4 col-lg-8"> 
+            <div class="row justify-content-center"> 
+                <div style="max-width: 1200px;"> 
                     {% block content %}{% endblock %}
                 </div>
             </div>
         </div>
         <footer class="footer mt-auto py-3 bg-dark">
-            <div class="container-md text-light">
+            <div class="container text-light">
                 <div class="d-flex flex-column flex-md-row justify-content-between">
                     <div class="mb-2 mb-md-0">Armwrestling Zurich "Let's go again"</div>
                     <a href="https://www.instagram.com/armwrestlingzurich" target="_blank" class="mb-1 mb-md-0 text-decoration-none text-light">
