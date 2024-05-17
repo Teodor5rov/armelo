@@ -2,3 +2,5 @@ User-agent: *
 Disallow: /admin/
 Disallow: /login/
 Disallow: /logout/
+Disallow: /add_new_member/
+Disallow: /supermatch/

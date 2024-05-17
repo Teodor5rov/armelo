@@ -2,7 +2,7 @@ import math
 from scipy.stats import binom
 
 CONTRAST = 400
-K = 100
+K = 128
 
 
 def expected_score(armwrestler_a_elo, armwrestler_b_elo, c=CONTRAST):

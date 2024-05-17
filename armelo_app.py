@@ -40,7 +40,12 @@ csp = {
     ]
 }
 
-# Talisman(app, content_security_policy=csp)
+#Talisman(app, content_security_policy=csp)
+
+
+@app.route('/robots.txt')
+def serve_robots_txt():
+    return send_from_directory(app.static_folder, 'robots.txt')
 
 
 def get_db():
@@ -69,9 +74,24 @@ def inject_user():
     return dict(username=username)
 
 
-@app.route('/robots.txt')
-def serve_robots_txt():
-    return send_from_directory(app.static_folder, 'robots.txt')
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = db_execute("SELECT * FROM users WHERE username = ?", username)
+        if user and check_password_hash(user[0][1], password):
+            session['username'] = username
+            return redirect(url_for('ranking'))
+        else:
+            return render_template('login.html', error="Invalid credentials")
+    return render_template('login.html')
+
+
+@app.route("/logout")
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('ranking'))
 
 
 @app.route("/")
@@ -81,6 +101,28 @@ def ranking(arm='right'):
     armwrestlers = db_execute('SELECT DENSE_RANK() OVER (ORDER BY {0} DESC) AS rank, name, {0} FROM armwrestlers'.format(order_by))
     username = session.get('username')
     return render_template('ranking.html', armwrestlers=armwrestlers, username=username, arm=arm)
+
+
+@app.route("/remove_member", methods=["POST"])
+def remove_member():
+    if not session.get('username'):
+        return redirect(url_for('login'))
+
+    name = request.form.get('name')
+    try:
+        db_execute("DELETE FROM armwrestlers WHERE name = ?", name)
+    except sqlite3.DatabaseError as error:
+        print(error)
+    return redirect(url_for('ranking'))
+
+
+@app.route("/confirm_remove", methods=["POST"])
+def confirm_remove():
+    if not session.get('username'):
+        return redirect(url_for('login'))
+
+    name = request.args.get('name')
+    return render_template('confirm_remove.html', name=name)
 
 
 @app.route("/closest")
@@ -119,26 +161,6 @@ def closest_matches():
 
     username = session.get('username')
     return render_template('closest_matches.html', closest_matches_with_predictions=closest_matches_with_predictions, username=username, arm=arm)
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = db_execute("SELECT * FROM users WHERE username = ?", username)
-        if user and check_password_hash(user[0][1], password):
-            session['username'] = username
-            return redirect(url_for('ranking'))
-        else:
-            return render_template('login.html', error="Invalid credentials")
-    return render_template('login.html')
-
-
-@app.route("/logout")
-def logout():
-    session.pop('username', None)
-    return redirect(url_for('ranking'))
 
 
 @app.route("/add_new_member", methods=["GET", "POST"])
@@ -280,28 +302,6 @@ def update_name():
     return render_template('add_new_member_name_display.html', name=name)
 
 
-@app.route("/remove_member", methods=["POST"])
-def remove_member():
-    if not session.get('username'):
-        return redirect(url_for('login'))
-
-    name = request.form.get('name')
-    try:
-        db_execute("DELETE FROM armwrestlers WHERE name = ?", name)
-    except sqlite3.DatabaseError as error:
-        print(error)
-    return redirect(url_for('ranking'))
-
-
-@app.route("/confirm_remove", methods=["POST"])
-def confirm_remove():
-    if not session.get('username'):
-        return redirect(url_for('login'))
-    
-    name = request.args.get('name')
-    return render_template('confirm_remove.html', name=name)
-
-
 @app.route("/history")
 def history():
     history = db_execute('SELECT * FROM history ORDER BY id DESC LIMIT 20')
@@ -428,6 +428,40 @@ def supermatch():
                            armwrestlers=armwrestlers,
                            selected_armwrestler_1=selected_armwrestler_1
                            )
+
+
+def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo):
+
+    dbarm = 'right_elo' if arm == 'right' else 'left_elo'
+    updated_1, updated_2 = calculate_elo_with_bonus(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
+
+    armwrestler_1_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, name FROM armwrestlers) AS RankedArmwrestlers WHERE name = ?'.format(dbarm), armwrestler_1)[0][0]
+    armwrestler_2_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, name FROM armwrestlers) AS RankedArmwrestlers WHERE name = ?'.format(dbarm), armwrestler_2)[0][0]
+
+    armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
+
+    try:
+        query = '''
+        INSERT INTO history ( 
+        armwrestler1_name, armwrestler2_name, 
+        arm, 
+        armwrestler1_rank, armwrestler2_rank, 
+        armwrestler1_elo, armwrestler2_elo, 
+        armwrestler1_score, armwrestler2_score, 
+        armwrestler1_elo_diff, armwrestler2_elo_diff ) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        '''
+        db_execute(query, armwrestler_1, armwrestler_2, arm,
+                   armwrestler_1_rank, armwrestler_2_rank,
+                   armwrestler_1_elo, armwrestler_2_elo,
+                   armwrestler_1_score, armwrestler_2_score,
+                   armwrestler_1_diff, armwrestler_2_diff)
+
+        db_execute("UPDATE armwrestlers SET {} = ? WHERE name = ?".format(dbarm), updated_1, armwrestler_1)
+        db_execute("UPDATE armwrestlers SET {} = ? WHERE name = ?".format(dbarm), updated_2, armwrestler_2)
+
+    except sqlite3.DatabaseError as error:
+        print(error)
 
 
 @app.route("/prediction", methods=["GET", "POST"])
@@ -595,40 +629,6 @@ def get_current_elo(arm, armwrestlers):
         elos.append(elo)
 
     return elos
-
-
-def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo):
-
-    dbarm = 'right_elo' if arm == 'right' else 'left_elo'
-    updated_1, updated_2 = calculate_elo_with_bonus(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
-
-    armwrestler_1_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, name FROM armwrestlers) AS RankedArmwrestlers WHERE name = ?'.format(dbarm), armwrestler_1)[0][0]
-    armwrestler_2_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, name FROM armwrestlers) AS RankedArmwrestlers WHERE name = ?'.format(dbarm), armwrestler_2)[0][0]
-
-    armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
-
-    try:
-        query = '''
-        INSERT INTO history ( 
-        armwrestler1_name, armwrestler2_name, 
-        arm, 
-        armwrestler1_rank, armwrestler2_rank, 
-        armwrestler1_elo, armwrestler2_elo, 
-        armwrestler1_score, armwrestler2_score, 
-        armwrestler1_elo_diff, armwrestler2_elo_diff ) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        '''
-        db_execute(query, armwrestler_1, armwrestler_2, arm,
-                   armwrestler_1_rank, armwrestler_2_rank,
-                   armwrestler_1_elo, armwrestler_2_elo,
-                   armwrestler_1_score, armwrestler_2_score,
-                   armwrestler_1_diff, armwrestler_2_diff)
-
-        db_execute("UPDATE armwrestlers SET {} = ? WHERE name = ?".format(dbarm), updated_1, armwrestler_1)
-        db_execute("UPDATE armwrestlers SET {} = ? WHERE name = ?".format(dbarm), updated_2, armwrestler_2)
-
-    except sqlite3.DatabaseError as error:
-        print(error)
 
 
 @app.errorhandler(404)

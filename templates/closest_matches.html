@@ -8,7 +8,7 @@
 
 <p>The top 15 closest matches between ranked armwrestlers based on the ELO scores.</p>
 
-<div class="btn-group btn-group-toggle mb-4 w-100" data-toggle="buttons">
+<div class="btn-group btn-group-toggle mb-3 w-100" data-toggle="buttons">
     <a href="{{ url_for('closest_matches', arm='right') }}" 
        class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}" role="button" aria-pressed="{{ 'true' if arm == 'right' else 'false' }}">Right arm</a>
     <a href="{{ url_for('closest_matches', arm='left') }}"
@@ -22,7 +22,7 @@
             <div class="row mt-2">
                 <div class="col-12 col-lg-auto text-center mb-2">
                     <div class="text-nowrap">
-                        <strong>#{{ match[0] }}</strong> {{ match[1] }} <strong>({{ match[2] }})</strong>
+                        <strong>#{{ match[0] }}</strong> {{ match[1] }}<strong>({{ match[2] }})</strong>
                     </div>
                 </div>
                 <div class="col-12 col-lg-auto text-center mb-2">
@@ -30,7 +30,7 @@
                 </div>
                 <div class="col-12 col-lg-auto text-center mb-2">
                     <div class="text-nowrap">
-                        <strong>#{{ match[3] }}</strong> {{ match[4] }} <strong>({{ match[5] }})</strong>
+                        <strong>#{{ match[3] }}</strong> {{ match[4] }}<strong>({{ match[5] }})</strong>
                     </div>
                 </div>
             </div>
