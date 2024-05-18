@@ -125,7 +125,7 @@ def confirm_remove():
     return render_template('confirm_remove.html', name=name)
 
 
-@app.route("/closest")
+@app.route("/closest_matches")
 def closest_matches():
     arm = request.args.get('arm', 'right')
     order_by = 'right_elo' if arm == 'right' else 'left_elo'

@@ -1,4 +1,4 @@
-<form class="mb-4" method="POST" action="{{ url_for('supermatch') }}" hx-post="{{ url_for('supermatch') }}" hx-trigger="change" hx-swap="outerHTML">
+<form class="mb-4" hx-post="{{ url_for('supermatch') }}" hx-trigger="change" hx-swap="outerHTML">
     <!-- Arm selection buttons -->
     <label for="arm" class="form-label">Choose arm for the supermatch:</label>
     <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">

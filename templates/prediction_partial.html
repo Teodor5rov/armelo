@@ -1,4 +1,4 @@
-<form class="mb-4" method="POST" action="{{ url_for('prediction') }}" hx-post="{{ url_for('prediction') }}" hx-trigger="change" hx-swap="outerHTML">
+<form class="mb-4" hx-post="{{ url_for('prediction') }}" hx-trigger="change" hx-swap="outerHTML">
     <!-- Arm selection buttons -->
     <label for="arm" class="form-label">Choose arm for the prediction:</label>
     <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">

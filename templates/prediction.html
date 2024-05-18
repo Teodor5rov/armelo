@@ -9,7 +9,7 @@
         <strong>Approximate expected score: </strong>This gives the (rounded) expected results from the system.<br>
         <strong>Win chance: </strong>This gives the overall chance of winning a 5 round match for each armwrestler in percentage, no matter the score.
     </div>
-    <form class="mb-4" method="POST" action="{{ url_for('prediction') }}" hx-post="{{ url_for('prediction') }}" hx-trigger="change" hx-swap="outerHTML">
+    <form class="mb-4" hx-post="{{ url_for('prediction') }}" hx-trigger="change" hx-swap="outerHTML">
         <!-- Arm selection buttons -->
         <label for="arm" class="form-label">Choose arm for the prediction:</label>
         <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
