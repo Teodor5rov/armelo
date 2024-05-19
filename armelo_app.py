@@ -25,7 +25,8 @@ csp = {
     'script-src': [
         '\'self\'',
         'https://cdn.jsdelivr.net',
-        'https://unpkg.com'
+        'https://unpkg.com',
+        '\'nonce-{nonce}\''
     ],
     'style-src': [
         '\'self\'',
@@ -40,7 +41,7 @@ csp = {
     ]
 }
 
-#Talisman(app, content_security_policy=csp)
+#Talisman(app, content_security_policy=csp, content_security_policy_nonce_in=['script-src'])
 
 
 @app.route('/robots.txt')

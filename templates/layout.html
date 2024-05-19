@@ -15,6 +15,15 @@
         <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
         <script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+        <script type="speculationrules" nonce="{{ request.csp_nonce }}">
+            {
+              "prerender": [
+                {
+                  "urls": ["{{ url_for('ranking') }}", "{{ url_for('prediction') }}", "{{ url_for('elo_from_match') }}", "{{ url_for('closest_matches') }}", "{{ url_for('history') }}"]
+                }
+              ]
+            }
+        </script>
     </head>
     <body class="bg-light">
         {% if username %}
