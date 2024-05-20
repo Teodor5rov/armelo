@@ -16,7 +16,7 @@
                 <input type="radio" name="arm" id="armLeft" value="left" autocomplete="off" {{ 'checked' if arm == 'left' else '' }} class="visually-hidden">Left arm
             </label>
         </div>
-
+    
         <!-- Armwrestler selection dropdowns -->
         <div class="row">
             <div class="col">
@@ -28,20 +28,84 @@
                     {% endfor %}
                 </select>
             </div>
-
+    
             <div class="col-1 d-flex justify-content-center align-items-center pt-4">
                 <div class="text-center fs-5">
                     <span class="badge bg-dark">VS</span>
                 </div>
             </div>
-
+    
             <div class="col">
                 <label for="armwrestler2" class="form-label">Armwrestler 2:</label>
-                <select class="form-select text-truncate" id="armwrestler2" name="armwrestler2" required disabled>
-                    <option value="none">Choose Armwrestler 1</option>
-                </select>
+                {% if selected_armwrestler_1 != 'none' %}
+                    <select class="form-select text-truncate" id="armwrestler2" name="armwrestler2" required>
+                        <option value="none">Choose</option>
+                        {% for armwrestler in armwrestlers_2 %}
+                            <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_2 == armwrestler[0] %}selected{% endif %}>{{ armwrestler[0] }}</option>
+                        {% endfor %}
+                    </select>
+                {% else %}
+                    <select class="form-select text-truncate" id="armwrestler2" name="armwrestler2" required disabled>
+                        <option value="none">Choose Armwrestler 1</option>
+                    </select>
+                {% endif %}
             </div>
         </div>
-    </form>
+    
+        <!-- Submit Match button, shown only if all selections are made and none of them is 'none' -->
+        {% if supermatch_ready %}
+        <label for="arm" class="form-label my-2">Supermatch result:</label>
+        <div class="row mb-2">
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-5">
+                    <span class="{{ armwrestler_1_color }}">{{armwrestler_1_elo}} {{ armwrestler_1_diff }}</span>
+                </div>
+            </div>
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-3">
+                    <span class="badge bg-dark">{{ armwrestler_1_score }}</span>
+                </div>
+            </div>
+            
+            <div class="col-1 d-flex justify-content-center align-items-center text-center fs-2">:</div>
+    
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-3">
+                    <span class="badge bg-dark">{{ armwrestler_2_score }}</span>
+                </div>
+            </div>
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-5">
+                    <span class="{{ armwrestler_2_color }}">{{armwrestler_2_elo}} {{ armwrestler_2_diff }}</span>
+                </div>
+            </div>
+        </div> 
+        {% if custom_score %}
+        <div class="row justify-content-center align-items-center mb-2">
+            <div class="col-3">
+                <input type="number" class="form-control" id="custom_score_1" name="custom_score_1" value="{{ custom_score_1 }}">
+            </div>
+            <div class="col-1 text-center fs-2"></div>
+            <div class="col-3">
+                <input type="number" class="form-control" id="custom_score_2" name="custom_score_2" value="{{ custom_score_2 }}">
+            </div>
+        </div>
+        {% else %}
+        <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="5" value="{{ armwrestler_1_score }}">
+        {% endif %}
+        <div class="row mb-2">
+            <div class="col">
+                <button type="submit" name="submit_match" class="btn btn-primary mt-2">Submit match</button>
+            </div>
+            <div class="col text-end">
+                <div class="mt-2">
+                    <label class="btn btn-primary {{ 'active' if custom_score == 'true' else '' }}">
+                        <input type="checkbox" name="custom_score" id="custom_score" value="true" autocomplete="off" {{ 'checked' if custom_score == 'true' else '' }} class="visually-hidden">Custom score
+                    </label>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </form>    
 </div>
 {% endblock %}

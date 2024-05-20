@@ -130,6 +130,10 @@ def confirm_remove():
 def closest_matches():
     arm = request.args.get('arm', 'right')
     order_by = 'right_elo' if arm == 'right' else 'left_elo'
+    supermatch_add = False
+
+    if session.get('username'):
+        supermatch_add = True
 
     query = """
     WITH rankedarmwrestlers AS (
@@ -160,8 +164,7 @@ def closest_matches():
         match_with_prediction = match + (expected_1, expected_2, color_1, color_2)
         closest_matches_with_predictions.append(match_with_prediction)
 
-    username = session.get('username')
-    return render_template('closest_matches.html', closest_matches_with_predictions=closest_matches_with_predictions, username=username, arm=arm)
+    return render_template('closest_matches.html', closest_matches_with_predictions=closest_matches_with_predictions, arm=arm, supermatch_add=supermatch_add)
 
 
 @app.route("/add_new_member", methods=["GET", "POST"])
@@ -203,8 +206,6 @@ def add_new_member():
         if calculation_ready:
             custom_score = request.form.get('custom_score', False)
             if custom_score:
-                armwrestler_1_score = request.form.get('custom_score_1', 3)
-                armwrestler_2_score = request.form.get('custom_score_1', 2)
                 try:
                     armwrestler_1_score = int(request.form.get('custom_score_1', 3))
                     armwrestler_2_score = int(request.form.get('custom_score_2', 2))
@@ -346,89 +347,73 @@ def supermatch():
         return redirect(url_for('login'))
 
     # Initialize default values
-    arm = 'right'
-    selected_armwrestler_1 = 'none'
-
-    # Fetch all armwrestlers from the database
+    arm = request.form.get('arm', 'right')
+    selected_armwrestler_1 = request.form.get('armwrestler1', 'none')
+    selected_armwrestler_2 = request.form.get('armwrestler2', 'none')
+    supermatch_ready = False
+    armwrestler_1_diff, armwrestler_2_diff = None, None
+    armwrestler_1_color, armwrestler_2_color = None, None
+    custom_score = request.form.get('custom_score', False)
+    armwrestler_1_elo, armwrestler_2_elo = None, None
     armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
 
-    if request.method == "POST":
+    if selected_armwrestler_1 == selected_armwrestler_2:
+        selected_armwrestler_2 = 'none'
+    armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1] if selected_armwrestler_1 != 'none' else None
 
-        # Initialize default values
-        supermatch_ready = False
-        armwrestler_1_diff = None
-        armwrestler_2_diff = None
-        armwrestler_1_color = None
-        armwrestler_2_color = None
-        custom_score = False
+    if custom_score:
+        try:
+            armwrestler_1_score = int(request.form.get('custom_score_1', 3))
+            armwrestler_2_score = int(request.form.get('custom_score_2', 2))
+            if not (0 <= armwrestler_1_score <= 10 and 0 <= armwrestler_2_score <= 10 and (0 < (armwrestler_1_score + armwrestler_2_score) <= 10)):
+                raise ValueError
+        except (ValueError, TypeError):
+            armwrestler_1_score = 3
+            armwrestler_2_score = 2
+    else:
+        try:
+            armwrestler_1_score = int(request.form.get('score', 3))
+            if not (0 <= armwrestler_1_score <= 5):
+                raise ValueError
+        except (ValueError, TypeError):
+            armwrestler_1_score = 3
+        armwrestler_2_score = 5 - armwrestler_1_score
 
-        # Get the values from the form
-        arm = request.form.get('arm', arm)
-        selected_armwrestler_1 = request.form.get('armwrestler1', 'none')
-        selected_armwrestler_2 = request.form.get('armwrestler2', 'none')
-        if selected_armwrestler_1 == selected_armwrestler_2:
-            selected_armwrestler_2 = 'none'
-        armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1] if selected_armwrestler_1 != 'none' else None
+    # Checks if all conditions are met for supermatch ready
+    armwrestler_names = [aw[0] for aw in armwrestlers]
+    if arm in ['left', 'right'] and \
+            selected_armwrestler_1 != selected_armwrestler_2 and \
+            selected_armwrestler_1 in armwrestler_names and \
+            selected_armwrestler_2 in armwrestler_names:
+        armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
+        armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
+        armwrestler_1_diff, armwrestler_1_color = (f"+{armwrestler_1_diff}", "text-success") if armwrestler_1_diff > 0 else ((str(armwrestler_1_diff),
+                                                                                                                                "text-danger") if armwrestler_1_diff < 0 else ("0", "text-secondary"))
+        armwrestler_2_diff, armwrestler_2_color = (f"+{armwrestler_2_diff}", "text-success") if armwrestler_2_diff > 0 else ((str(armwrestler_2_diff),
+                                                                                                                                "text-danger") if armwrestler_2_diff < 0 else ("0", "text-secondary"))
+        supermatch_ready = True
 
-        custom_score = request.form.get('custom_score', False)
-        if custom_score:
-            armwrestler_1_score = request.form.get('custom_score_1', 3)
-            armwrestler_2_score = request.form.get('custom_score_1', 2)
-            try:
-                armwrestler_1_score = int(request.form.get('custom_score_1', 3))
-                armwrestler_2_score = int(request.form.get('custom_score_2', 2))
-                if not (0 <= armwrestler_1_score <= 10 and 0 <= armwrestler_2_score <= 10 and (0 < (armwrestler_1_score + armwrestler_2_score) <= 10)):
-                    raise ValueError
-            except (ValueError, TypeError):
-                armwrestler_1_score = 3
-                armwrestler_2_score = 2
-        else:
-            try:
-                armwrestler_1_score = int(request.form.get('score', 3))
-                if not (0 <= armwrestler_1_score <= 5):
-                    raise ValueError
-            except (ValueError, TypeError):
-                armwrestler_1_score = 3
-            armwrestler_2_score = 5 - armwrestler_1_score
+    submit_pressed = 'submit_match' in request.form
+    if submit_pressed and supermatch_ready:
+        submit_supermatch(arm, selected_armwrestler_1, selected_armwrestler_2, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo)
+        return redirect(url_for('ranking'))
 
-        armwrestler_1_elo, armwrestler_2_elo = None, None
-        # Checks if all conditions are met for supermatch ready
-        armwrestler_names = [aw[0] for aw in armwrestlers]
-        if arm in ['left', 'right'] and \
-                selected_armwrestler_1 != selected_armwrestler_2 and \
-                selected_armwrestler_1 in armwrestler_names and \
-                selected_armwrestler_2 in armwrestler_names:
-            armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
-            armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
-            armwrestler_1_diff, armwrestler_1_color = (f"+{armwrestler_1_diff}", "text-success") if armwrestler_1_diff > 0 else ((str(armwrestler_1_diff),
-                                                                                                                                  "text-danger") if armwrestler_1_diff < 0 else ("0", "text-secondary"))
-            armwrestler_2_diff, armwrestler_2_color = (f"+{armwrestler_2_diff}", "text-success") if armwrestler_2_diff > 0 else ((str(armwrestler_2_diff),
-                                                                                                                                  "text-danger") if armwrestler_2_diff < 0 else ("0", "text-secondary"))
-            supermatch_ready = True
+    template_data = {
+        'arm': arm,
+        'armwrestlers': armwrestlers, 'armwrestlers_2': armwrestlers_2,
+        'selected_armwrestler_1': selected_armwrestler_1, 'selected_armwrestler_2': selected_armwrestler_2,
+        'supermatch_ready': supermatch_ready,
+        'armwrestler_1_score': armwrestler_1_score, 'armwrestler_2_score': armwrestler_2_score,
+        'armwrestler_1_diff': armwrestler_1_diff, 'armwrestler_2_diff': armwrestler_2_diff,
+        'armwrestler_1_color': armwrestler_1_color, 'armwrestler_2_color': armwrestler_2_color,
+        'armwrestler_1_elo': armwrestler_1_elo, 'armwrestler_2_elo': armwrestler_2_elo,
+        'custom_score': custom_score, 'custom_score_1': armwrestler_1_score, 'custom_score_2': armwrestler_2_score
+    }
 
-        submit_pressed = 'submit_match' in request.form
-        if submit_pressed and supermatch_ready:
-            submit_supermatch(arm, selected_armwrestler_1, selected_armwrestler_2, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo)
-            return redirect(url_for('ranking'))
-
-        return render_template('supermatch_partial.html',
-                               arm=arm,
-                               armwrestlers=armwrestlers, armwrestlers_2=armwrestlers_2,
-                               selected_armwrestler_1=selected_armwrestler_1, selected_armwrestler_2=selected_armwrestler_2,
-                               supermatch_ready=supermatch_ready,
-                               armwrestler_1_score=armwrestler_1_score, armwrestler_2_score=armwrestler_2_score,
-                               armwrestler_1_diff=armwrestler_1_diff, armwrestler_2_diff=armwrestler_2_diff,
-                               armwrestler_1_color=armwrestler_1_color, armwrestler_2_color=armwrestler_2_color,
-                               armwrestler_1_elo=armwrestler_1_elo, armwrestler_2_elo=armwrestler_2_elo,
-                               custom_score=custom_score,
-                               custom_score_1=armwrestler_1_score, custom_score_2=armwrestler_2_score
-                               )
-
-    return render_template('supermatch.html',
-                           arm=arm,
-                           armwrestlers=armwrestlers,
-                           selected_armwrestler_1=selected_armwrestler_1
-                           )
+    if request.headers.get('HX-Request'):
+        return render_template('supermatch_partial.html', **template_data)
+    else:
+        return render_template('supermatch.html', **template_data)
 
 
 def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo):
@@ -465,159 +450,139 @@ def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, ar
         print(error)
 
 
-@app.route("/prediction", methods=["GET", "POST"])
+@app.route("/prediction")
 def prediction():
 
-    arm = 'right'
-    selected_armwrestler_1 = 'none'
+    arm = request.args.get('arm', 'right')
+    selected_armwrestler_1 = request.args.get('armwrestler1', 'none')
+    selected_armwrestler_2 = request.args.get('armwrestler2', 'none')
     armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
+    prediction_ready = False
+    armwrestler_1_elo, armwrestler_2_elo = None, None
+    expected_1, expected_2 = None, None
+    binom_predicted_1, binom_predicted_2 = None, None
+    armwrestler_color = None
 
-    if request.method == "POST":
+    if selected_armwrestler_1 == selected_armwrestler_2:
+        selected_armwrestler_2 = 'none'
+    armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1] if selected_armwrestler_1 != 'none' else None
+    armwrestler_names = [aw[0] for aw in armwrestlers]
 
-        # Get the values from the form
-        arm = request.form.get('arm', arm)
-        selected_armwrestler_1 = request.form.get('armwrestler1', 'none')
-        selected_armwrestler_2 = request.form.get('armwrestler2', 'none')
+    if arm in ['left', 'right'] and \
+            selected_armwrestler_1 != selected_armwrestler_2 and \
+            selected_armwrestler_1 in armwrestler_names and \
+            selected_armwrestler_2 in armwrestler_names:
+        armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
+        expected_1, expected_2 = expected_score_rounds(armwrestler_1_elo, armwrestler_2_elo, 5)
+        binom_predicted_1, binom_predicted_2 = binom_prediction(armwrestler_1_elo, armwrestler_2_elo)
+        armwrestler_color = (f"success", "danger") if expected_1 > expected_2 else ((f"danger", "success") if expected_1 < expected_2 else ("secondary", "secondary"))
+        expected_1 = round(expected_1)
+        expected_2 = round(expected_2)
+        prediction_ready = True
+
+    template_data = {
+        'arm': arm, 'armwrestlers': armwrestlers, 'armwrestlers_2': armwrestlers_2,
+        'selected_armwrestler_1': selected_armwrestler_1, 'selected_armwrestler_2': selected_armwrestler_2,
+        'prediction_ready': prediction_ready, 'armwrestler_1_elo': armwrestler_1_elo,
+        'armwrestler_2_elo': armwrestler_2_elo, 'expected_1': expected_1, 'expected_2': expected_2,
+        'binom_predicted_1': binom_predicted_1, 'binom_predicted_2': binom_predicted_2,
+        'armwrestler_color': armwrestler_color
+    }
+    
+    if request.headers.get('HX-Request'):
+        return render_template('prediction_partial.html', **template_data)
+    else:
+        return render_template('prediction.html', **template_data)
+
+
+@app.route("/elo_from_match")
+def elo_from_match():
+
+    # Initialize default values
+    ranked = request.args.get('ranked', 'ranked')
+    arm = request.args.get('arm', 'right')
+    selected_armwrestler_1 = request.args.get('armwrestler1', 'none')
+    selected_armwrestler_2 = 'none'
+    armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
+    elo_from_match = None
+    armwrestlers_2 = None
+    armwrestler_1_diff = None
+    armwrestler_2_diff = None
+    armwrestler_1_color = None
+    armwrestler_2_color = None
+    armwrestler_1_elo = None
+    armwrestler_2_elo = None
+    calculation_ready = False
+    custom_score = False
+    
+    if ranked == 'ranked':
+        selected_armwrestler_2 = request.args.get('armwrestler2', 'none')
         if selected_armwrestler_1 == selected_armwrestler_2:
             selected_armwrestler_2 = 'none'
         armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1] if selected_armwrestler_1 != 'none' else None
-        armwrestler_names = [aw[0] for aw in armwrestlers]
-        prediction_ready = False
-        armwrestler_1_elo, armwrestler_2_elo = None, None
-        expected_1, expected_2 = None, None
-        binom_predicted_1, binom_predicted_2 = None, None
-        armwrestler_color = None
-        if arm in ['left', 'right'] and \
-                selected_armwrestler_1 != selected_armwrestler_2 and \
-                selected_armwrestler_1 in armwrestler_names and \
-                selected_armwrestler_2 in armwrestler_names:
-            armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
-            expected_1, expected_2 = expected_score_rounds(armwrestler_1_elo, armwrestler_2_elo, 5)
-            binom_predicted_1, binom_predicted_2 = binom_prediction(armwrestler_1_elo, armwrestler_2_elo)
-            armwrestler_color = (f"success", "danger") if expected_1 > expected_2 else ((f"danger", "success") if expected_1 < expected_2 else ("secondary", "secondary"))
-            expected_1 = round(expected_1)
-            expected_2 = round(expected_2)
-            prediction_ready = True
+    armwrestler_names = [aw[0] for aw in armwrestlers]
+    armwrestler_1_score, armwrestler_2_score = 3, 2
 
-        return render_template('prediction_partial.html',
-                               arm=arm,
-                               armwrestlers=armwrestlers, armwrestlers_2=armwrestlers_2,
-                               selected_armwrestler_1=selected_armwrestler_1, selected_armwrestler_2=selected_armwrestler_2,
-                               prediction_ready=prediction_ready,
-                               armwrestler_1_elo=armwrestler_1_elo, armwrestler_2_elo=armwrestler_2_elo,
-                               expected_1=expected_1, expected_2=expected_2,
-                               binom_predicted_1=binom_predicted_1, binom_predicted_2=binom_predicted_2,
-                               armwrestler_color=armwrestler_color
-                               )
+    if arm in ['left', 'right'] and \
+            ranked == 'ranked' and \
+            selected_armwrestler_1 != selected_armwrestler_2 and \
+            selected_armwrestler_1 in armwrestler_names and \
+            selected_armwrestler_2 in armwrestler_names:
+        calculation_ready = True
 
-    return render_template('prediction.html',
-                           arm=arm,
-                           armwrestlers=armwrestlers,
-                           selected_armwrestler_1=selected_armwrestler_1
-                           )
+    elif arm in ['left', 'right'] and \
+            ranked == 'unranked' and \
+            selected_armwrestler_1 in armwrestler_names:
+        calculation_ready = True
 
+    if calculation_ready:
+        custom_score = request.args.get('custom_score', False)
+        if custom_score:
+            try:
+                armwrestler_1_score = int(request.args.get('custom_score_1', 3))
+                armwrestler_2_score = int(request.args.get('custom_score_2', 2))
+                if not (0 <= armwrestler_1_score <= 10 and 0 <= armwrestler_2_score <= 10 and (0 < (armwrestler_1_score + armwrestler_2_score) <= 10)):
+                    raise ValueError
+            except (ValueError, TypeError):
+                armwrestler_1_score = 3
+                armwrestler_2_score = 2
+        else:
+            try:
+                armwrestler_1_score = int(request.args.get('score', 3))
+                if not (0 <= armwrestler_1_score <= 5):
+                    raise ValueError
+            except (ValueError, TypeError):
+                armwrestler_1_score = 3
+            armwrestler_2_score = 5 - armwrestler_1_score
 
-@app.route("/elo_from_match", methods=["GET", "POST"])
-def elo_from_match():
-
-    ranked = 'ranked'
-    arm = 'right'
-    selected_armwrestler_1 = 'none'
-    armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
-
-    if request.method == "POST":
-
-        # Initialize default values
-        elo_from_match = None
-        armwrestlers_2 = None
-        selected_armwrestler_2 = 'none'
-        armwrestler_1_diff = None
-        armwrestler_2_diff = None
-        armwrestler_1_color = None
-        armwrestler_2_color = None
-        armwrestler_1_elo = None
-        armwrestler_2_elo = None
-        calculation_ready = False
-        custom_score = False
-
-        ranked = request.form.get('ranked', ranked)
-        arm = request.form.get('arm', arm)
-        selected_armwrestler_1 = request.form.get('armwrestler1', 'none')
         if ranked == 'ranked':
-            selected_armwrestler_2 = request.form.get('armwrestler2', 'none')
-            if selected_armwrestler_1 == selected_armwrestler_2:
-                selected_armwrestler_2 = 'none'
-            armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1] if selected_armwrestler_1 != 'none' else None
-        armwrestler_names = [aw[0] for aw in armwrestlers]
-        armwrestler_1_score, armwrestler_2_score = 3, 2
+            armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
+            armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
+            armwrestler_1_diff, armwrestler_1_color = (f"+{armwrestler_1_diff}", "text-success") if armwrestler_1_diff > 0 else ((str(armwrestler_1_diff),
+                                                                                                                                    "text-danger") if armwrestler_1_diff < 0 else ("0", "text-secondary"))
+            armwrestler_2_diff, armwrestler_2_color = (f"+{armwrestler_2_diff}", "text-success") if armwrestler_2_diff > 0 else ((str(armwrestler_2_diff),
+                                                                                                                                    "text-danger") if armwrestler_2_diff < 0 else ("0", "text-secondary"))
 
-        if arm in ['left', 'right'] and \
-                ranked == 'ranked' and \
-                selected_armwrestler_1 != selected_armwrestler_2 and \
-                selected_armwrestler_1 in armwrestler_names and \
-                selected_armwrestler_2 in armwrestler_names:
-            calculation_ready = True
+        elif ranked == 'unranked':
+            armwrestler_1_elo = get_current_elo(arm, [selected_armwrestler_1])[0]
+            elo_from_match = expected_elo_from_score(armwrestler_1_elo, (armwrestler_1_score, armwrestler_2_score))
 
-        elif arm in ['left', 'right'] and \
-                ranked == 'unranked' and \
-                selected_armwrestler_1 in armwrestler_names:
-            calculation_ready = True
+    template_data = {
+        'ranked': ranked, 'arm': arm,
+        'armwrestlers': armwrestlers, 'armwrestlers_2': armwrestlers_2,
+        'selected_armwrestler_1': selected_armwrestler_1, 'selected_armwrestler_2': selected_armwrestler_2,
+        'armwrestler_1_score': armwrestler_1_score, 'armwrestler_2_score': armwrestler_2_score,
+        'armwrestler_1_diff': armwrestler_1_diff, 'armwrestler_2_diff': armwrestler_2_diff,
+        'armwrestler_1_color': armwrestler_1_color, 'armwrestler_2_color': armwrestler_2_color,
+        'armwrestler_1_elo': armwrestler_1_elo, 'armwrestler_2_elo': armwrestler_2_elo,
+        'calculation_ready': calculation_ready, 'elo_from_match': elo_from_match,
+        'custom_score': custom_score, 'custom_score_1': armwrestler_1_score, 'custom_score_2': armwrestler_2_score
+    }
 
-        if calculation_ready:
-            custom_score = request.form.get('custom_score', False)
-            if custom_score:
-                armwrestler_1_score = request.form.get('custom_score_1', 3)
-                armwrestler_2_score = request.form.get('custom_score_1', 2)
-                try:
-                    armwrestler_1_score = int(request.form.get('custom_score_1', 3))
-                    armwrestler_2_score = int(request.form.get('custom_score_2', 2))
-                    if not (0 <= armwrestler_1_score <= 10 and 0 <= armwrestler_2_score <= 10 and (0 < (armwrestler_1_score + armwrestler_2_score) <= 10)):
-                        raise ValueError
-                except (ValueError, TypeError):
-                    armwrestler_1_score = 3
-                    armwrestler_2_score = 2
-            else:
-                try:
-                    armwrestler_1_score = int(request.form.get('score', 3))
-                    if not (0 <= armwrestler_1_score <= 5):
-                        raise ValueError
-                except (ValueError, TypeError):
-                    armwrestler_1_score = 3
-                armwrestler_2_score = 5 - armwrestler_1_score
-
-            if ranked == 'ranked':
-                armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
-                armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
-                armwrestler_1_diff, armwrestler_1_color = (f"+{armwrestler_1_diff}", "text-success") if armwrestler_1_diff > 0 else ((str(armwrestler_1_diff),
-                                                                                                                                      "text-danger") if armwrestler_1_diff < 0 else ("0", "text-secondary"))
-                armwrestler_2_diff, armwrestler_2_color = (f"+{armwrestler_2_diff}", "text-success") if armwrestler_2_diff > 0 else ((str(armwrestler_2_diff),
-                                                                                                                                      "text-danger") if armwrestler_2_diff < 0 else ("0", "text-secondary"))
-
-            elif ranked == 'unranked':
-                armwrestler_1_elo = get_current_elo(arm, [selected_armwrestler_1])[0]
-                elo_from_match = expected_elo_from_score(armwrestler_1_elo, (armwrestler_1_score, armwrestler_2_score))
-
-        return render_template('elo_from_match_partial.html',
-                               ranked=ranked,
-                               arm=arm,
-                               armwrestlers=armwrestlers, armwrestlers_2=armwrestlers_2,
-                               selected_armwrestler_1=selected_armwrestler_1, selected_armwrestler_2=selected_armwrestler_2,
-                               armwrestler_1_score=armwrestler_1_score, armwrestler_2_score=armwrestler_2_score,
-                               armwrestler_1_diff=armwrestler_1_diff, armwrestler_2_diff=armwrestler_2_diff,
-                               armwrestler_1_color=armwrestler_1_color, armwrestler_2_color=armwrestler_2_color,
-                               armwrestler_1_elo=armwrestler_1_elo, armwrestler_2_elo=armwrestler_2_elo,
-                               calculation_ready=calculation_ready,
-                               elo_from_match=elo_from_match,
-                               custom_score=custom_score,
-                               custom_score_1=armwrestler_1_score, custom_score_2=armwrestler_2_score
-                               )
-
-    return render_template('elo_from_match.html',
-                           ranked=ranked,
-                           arm=arm,
-                           armwrestlers=armwrestlers,
-                           selected_armwrestler_1=selected_armwrestler_1
-                           )
+    if request.headers.get('HX-Request'):
+        return render_template('elo_from_match_partial.html', **template_data)
+    else:
+        return render_template('elo_from_match.html', **template_data)
 
 
 def get_current_elo(arm, armwrestlers):

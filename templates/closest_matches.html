@@ -16,40 +16,49 @@
 </div>
 
 {% for match in closest_matches_with_predictions %}
-<div class="col-12 mb-3">
-    <div class="card">
-        <div class="card-header bg-transparent">
-            <div class="row mt-2">
-                <div class="col-12 col-lg-auto text-center mb-2">
-                    <div class="text-nowrap">
-                        <strong>#{{ match[0] }}</strong> {{ match[1] }}<strong>({{ match[2] }})</strong>
+{% if supermatch_add %}
+<form action="{{ url_for('supermatch') }}" method="POST" class="col-12 mb-3">
+{% else %}
+<form action="{{ url_for('prediction') }}" method="GET" class="col-12 mb-3">
+{% endif %}
+    <input type="hidden" name="arm" value="{{ arm }}">
+    <input type="hidden" name="armwrestler1" value="{{ match[1] }}">
+    <input type="hidden" name="armwrestler2" value="{{ match[4] }}">
+    <button type="submit" class="btn btn-light p-0 w-100">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <div class="row mt-2">
+                    <div class="col-12 col-lg-auto text-center mb-2">
+                        <div class="text-nowrap">
+                            <strong>#{{ match[0] }}</strong> {{ match[1] }}<strong>({{ match[2] }})</strong>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-auto text-center mb-2">
+                        <span class="badge bg-dark">VS</span>
+                    </div>
+                    <div class="col-12 col-lg-auto text-center mb-2">
+                        <div class="text-nowrap">
+                            <strong>#{{ match[3] }}</strong> {{ match[4] }}<strong>({{ match[5] }})</strong>
+                        </div>
                     </div>
                 </div>
-                <div class="col-12 col-lg-auto text-center mb-2">
-                    <span class="badge bg-dark">VS</span>
-                </div>
-                <div class="col-12 col-lg-auto text-center mb-2">
-                    <div class="text-nowrap">
-                        <strong>#{{ match[3] }}</strong> {{ match[4] }}<strong>({{ match[5] }})</strong>
+            </div>
+            <div class="card-body">
+                <div class="card-text">
+                    <div class="row justify-content-start">
+                        <div class="col-12 col-lg-auto mb-2 mb-lg-0 align-items-center">
+                            Win chance:
+                            <span class="fs-6 badge text-{{ match[9] }}">{{ match[7] }}%</span>|<span class="fs-6 badge text-{{ match[10] }}">{{ match[8] }}%</span>
+                        </div>
+                        <div class="col-12 col-lg-auto mb-2 mb-lg-0 align-items-center">
+                            ELO difference: <strong>{{ match[6] }}</strong>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="card-body">
-            <div class="card-text">
-                <div class="row justify-content-start">
-                    <div class="col-12 col-lg-auto mb-2 mb-lg-0 align-items-center">
-                        Win chance:
-                        <span class="fs-6 badge text-{{ match[9] }}">{{ match[7] }}%</span>|<span class="fs-6 badge text-{{ match[10] }}">{{ match[8] }}%</span>
-                    </div>
-                    <div class="col-12 col-lg-auto mb-2 mb-lg-0 align-items-center">
-                        ELO difference: <strong>{{ match[6] }}</strong>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+    </button>
+</form>
 {% endfor %}
 
 

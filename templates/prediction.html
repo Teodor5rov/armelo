@@ -9,7 +9,7 @@
         <strong>Approximate expected score: </strong>This gives the (rounded) expected results from the system.<br>
         <strong>Win chance: </strong>This gives the overall chance of winning a 5 round match for each armwrestler in percentage, no matter the score.
     </div>
-    <form class="mb-4" hx-post="{{ url_for('prediction') }}" hx-trigger="change" hx-swap="outerHTML">
+    <form class="mb-4" hx-get="{{ url_for('prediction') }}" hx-trigger="change" hx-swap="outerHTML" hx-push-url="true">
         <!-- Arm selection buttons -->
         <label for="arm" class="form-label">Choose arm for the prediction:</label>
         <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
@@ -20,9 +20,9 @@
                 <input type="radio" name="arm" id="armLeft" value="left" autocomplete="off" {{ 'checked' if arm == 'left' else '' }} class="visually-hidden">Left arm
             </label>
         </div>
-
+    
         <!-- Armwrestler selection dropdowns -->
-        <div class="row">
+        <div class="row mb-2">
             <div class="col">
                 <label for="armwrestler1" class="form-label">Armwrestler 1:</label>
                 <select class="form-select text-truncate" id="armwrestler1" name="armwrestler1" required>
@@ -32,20 +32,87 @@
                     {% endfor %}
                 </select>
             </div>
-
+    
             <div class="col-1 d-flex justify-content-center align-items-center pt-4">
                 <div class="text-center fs-5">
                     <span class="badge bg-dark">VS</span>
                 </div>
             </div>
-
+    
             <div class="col">
+                
                 <label for="armwrestler2" class="form-label">Armwrestler 2:</label>
-                <select class="form-select text-truncate" id="armwrestler2" name="armwrestler2" required disabled>
-                    <option value="none">Choose Armwrestler 1</option>
-                </select>
+                {% if selected_armwrestler_1 != 'none' %}
+                    <select class="form-select text-truncate" id="armwrestler2" name="armwrestler2" required>
+                        <option value="none">Choose</option>
+                        {% for armwrestler in armwrestlers_2 %}
+                            <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_2 == armwrestler[0] %}selected{% endif %}>{{ armwrestler[0] }}</option>
+                        {% endfor %}
+                    </select>
+                {% else %}
+                    <select class="form-select text-truncate" id="armwrestler2" name="armwrestler2" required disabled>
+                        <option value="none">Choose Armwrestler 1</option>
+                    </select>
+                {% endif %}
+                 
             </div>
         </div>
-    </form>
+    
+        {% if prediction_ready %}
+        <label for="current_elo" class="form-label mb-2">Current ELO:</label>
+        <div class="row mb-2">
+            <div class="col"></div>
+    
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-5">
+                    <span class="text-{{ armwrestler_color[0] }}">{{armwrestler_1_elo}}</span>
+                </div>
+            </div>
+            
+            <div class="col-1 d-flex justify-content-center align-items-center text-center fs-2">:</div>
+    
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-5">
+                    <span class="text-{{ armwrestler_color[1] }}">{{armwrestler_2_elo}}</span>
+                </div>
+            </div>
+    
+            <div class="col"></div>
+        </div>
+        <label for="exprected_score" class="form-label mb-2">Approximate expected score:</label>
+        <div class="row mb-2">
+            <div class="col d-flex justify-content-center align-items-center"></div>
+    
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-3">
+                    <span class="badge bg-{{ armwrestler_color[0] }}">{{ expected_1 }}</span>
+                </div>
+            </div>
+            
+            <div class="col-1 d-flex justify-content-center align-items-center text-center fs-2">:</div>
+    
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-3">
+                    <span class="badge bg-{{ armwrestler_color[1] }}">{{ expected_2 }}</span>
+                </div>
+            </div>
+    
+            <div class="col d-flex justify-content-center align-items-center"></div>
+        </div> 
+    
+        <label for="win_chance" class="form-label mb-2">Win chance (5 round match):</label>
+        <div class="row mb-4">
+            <div class="col">
+                <div class="progress" style="height: 2.5rem;" >
+                    <div class="progress-bar bg-{{ armwrestler_color[0] }} fs-6" role="progressbar" style="width: {{ binom_predicted_1 }}%" aria-valuenow="{{ binom_predicted_1 }}" aria-valuemin="0" aria-valuemax="100"><strong>{{ binom_predicted_1 }}%</strong></div>
+                    <div class="progress-bar bg-{{ armwrestler_color[1] }} fs-6" role="progressbar" style="width: {{ binom_predicted_2 }}%" aria-valuenow="{{ binom_predicted_2 }}" aria-valuemin="0" aria-valuemax="100"><strong>{{ binom_predicted_2 }}%</strong></div>
+                </div>
+            </div>
+        </div>
+        <div class="alert alert-secondary mb-2" role="alert">
+            The win chance takes into account the number of rounds and uses the binomial distribution to determine the likelihood of an armwrestler winning/losing the match in percent.
+        </div>
+        {% endif %}
+    </form>    
 </div>
 {% endblock %}

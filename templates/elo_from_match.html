@@ -9,7 +9,7 @@
         <strong>Ranked example: </strong>If there was a match between two [Ranked] armwrestlers, the ELO points gained or lost are determined by the outcome of this match.<br>                           
         <strong>Unranked example: </strong>If an [Unranked person] beats a [Ranked person] in a match, they would receive an estimated ELO rating based on the score of that specific single match.
     </div>    
-    <form class="mb-4" hx-post="{{ url_for('elo_from_match') }}" hx-trigger="change" hx-swap="outerHTML">
+    <form class="mb-4" hx-get="{{ url_for('elo_from_match') }}" hx-trigger="change" hx-swap="outerHTML" hx-push-url="true">
         <label for="ranked" class="form-label">Choose ranked or unranked:</label>
         <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
             <label class="btn btn-primary w-50 {{ 'active' if ranked == 'ranked' else '' }}">
@@ -40,13 +40,13 @@
                     {% endfor %}
                 </select>
             </div>
-
+    
             <div class="col-1 d-flex justify-content-center align-items-center pt-4">
                 <div class="text-center fs-5">
                     <span class="badge bg-dark">VS</span>
                 </div>
             </div>
-
+    
             <div class="col">
                 <label for="armwrestler2" class="form-label">Armwrestler 2:</label>
                 {% if selected_armwrestler_1 != 'none' %}
@@ -63,7 +63,7 @@
                 {% endif %}
             </div>
         </div>
-
+    
         {% else %}
         <!-- Armwrestler selection dropdowns -->
         <div class="row">
@@ -83,6 +83,73 @@
             </div>
         </div>
         {% endif %}
-    </form>
+    
+        {% if calculation_ready %}
+        <label for="arm" class="form-label my-2">Enter score:</label>
+    
+        <div class="row mb-2">
+            {% if ranked == 'ranked' %}
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-5">
+                    <span class="{{ armwrestler_1_color }}">{{armwrestler_1_elo}} {{ armwrestler_1_diff }}</span>
+                </div>
+            </div>
+            {% else %}
+            <div class="col d-flex justify-content-center align-items-center"></div>
+            {% endif %}
+            
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-3">
+                    <span class="badge bg-dark">{{ armwrestler_1_score }}</span>
+                </div>
+            </div>
+            
+            <div class="col-1 d-flex justify-content-center align-items-center text-center fs-2">:</div>
+    
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-3">
+                    <span class="badge bg-dark">{{ armwrestler_2_score }}</span>
+                </div>
+            </div>
+            {% if ranked == 'ranked' %}
+            <div class="col d-flex justify-content-center align-items-center">
+                <div class="text-center fs-5">
+                    <span class="{{ armwrestler_2_color }}">{{armwrestler_2_elo}} {{ armwrestler_2_diff }}</span>
+                </div>
+            </div>
+            {% else %}
+            <div class="col d-flex justify-content-center align-items-center"></div>
+            {% endif %}
+        </div>
+        {% if custom_score %}
+        <div class="row justify-content-center align-items-center mb-2">
+            <div class="col-3">
+                <input type="number" class="form-control" id="custom_score_1" name="custom_score_1" value="{{ custom_score_1 }}">
+            </div>
+            <div class="col-1 text-center fs-2"></div>
+            <div class="col-3">
+                <input type="number" class="form-control" id="custom_score_2" name="custom_score_2" value="{{ custom_score_2 }}">
+            </div>
+        </div>
+        {% else %}
+        <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="5" value="{{ armwrestler_1_score }}">
+        {% endif %}
+        <div class="row mb-2">
+            <div class="col text-end">
+                <div class="mt-2">
+                    <label class="btn btn-primary {{ 'active' if custom_score == 'true' else '' }}">
+                        <input type="checkbox" name="custom_score" id="custom_score" value="true" autocomplete="off" {{ 'checked' if custom_score == 'true' else '' }} class="visually-hidden">Custom score
+                    </label>
+                </div>
+            </div>
+        </div>
+        {% if ranked == 'unranked' %}
+        <label for="arm" class="form-label my-2">Estimated ELO:</label>
+        <div class="text-center fs-2">
+            <span class="text-success">{{ elo_from_match }}</span>
+        </div>
+        {% endif %}
+        {% endif %}
+    </form>    
 </div>
 {% endblock %}
