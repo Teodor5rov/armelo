@@ -52,9 +52,9 @@ def add_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score):
     return with_bonus_score
 
 
-def diff_supermatch(armwrestler_a_elo, armwrestler_b_elo, actual_score):
+def diff_supermatch(armwrestler_a_elo, armwrestler_b_elo, actual_score, k=K):
     with_bonus_score = add_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score)
-    updated_a_elo, updated_b_elo = calculate_elo(armwrestler_a_elo, armwrestler_b_elo, with_bonus_score)
+    updated_a_elo, updated_b_elo = calculate_elo(armwrestler_a_elo, armwrestler_b_elo, with_bonus_score, k)
 
     diff_a_elo = updated_a_elo - armwrestler_a_elo
     diff_b_elo = updated_b_elo - armwrestler_b_elo
@@ -62,9 +62,9 @@ def diff_supermatch(armwrestler_a_elo, armwrestler_b_elo, actual_score):
     return diff_a_elo, diff_b_elo
 
 
-def calculate_elo_with_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score):
+def calculate_elo_with_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score, k=K):
     with_bonus_score = add_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score)
-    updated_a_elo, updated_b_elo = calculate_elo(armwrestler_a_elo, armwrestler_b_elo, with_bonus_score)
+    updated_a_elo, updated_b_elo = calculate_elo(armwrestler_a_elo, armwrestler_b_elo, with_bonus_score, k)
 
     return updated_a_elo, updated_b_elo
 
