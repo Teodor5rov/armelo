@@ -40,15 +40,16 @@ csp = {
     ]
 }
 
-#Talisman(app, content_security_policy=csp, content_security_policy_nonce_in=['script-src'])
+# Talisman(app, content_security_policy=csp, content_security_policy_nonce_in=['script-src'])
 
 
 SUPERMATCH_FORMATS = {
     "Single round": [1, 64, "Best of"],
     "Best of 3": [3, 96, "Best of"],
     "Best of 5": [5, 128, "Best of"],
-    "6 round Vendetta": [6, 128, "All rounds"],
-    "Best of 7": [7, 128, "Best of"],
+    "5 round match": [5, 144, "All rounds"],
+    "6 round Vendetta": [6 + 1, 144, "Vendetta"],
+    "Best of 7": [7, 144, "Best of"],
     "10 round Speculative": [10, 128, "All rounds"],
 }
 
@@ -185,7 +186,7 @@ def add_new_member():
     arm = request.form.get('arm', 'right')
     armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
     selected_armwrestler_2 = request.form.get('armwrestler2', 'none')
-    supermatch_formats = list(SUPERMATCH_FORMATS.keys()) 
+    supermatch_formats = list(SUPERMATCH_FORMATS.keys())
     value_for_score = None
     right_elo = request.form.get('right_elo', 0)
     left_elo = request.form.get('left_elo', 0)
@@ -282,8 +283,8 @@ def add_new_member():
         'arm': arm,
         'armwrestlers': armwrestlers,
         'selected_armwrestler_2': selected_armwrestler_2,
-        'supermatch_formats': supermatch_formats, 'selected_format': selected_format, 
-        'value_for_score' : value_for_score, 'max_rounds' : max_rounds,
+        'supermatch_formats': supermatch_formats, 'selected_format': selected_format,
+        'value_for_score': value_for_score, 'max_rounds': max_rounds,
         'name': name,
         'armwrestler_1_score': armwrestler_1_score, 'armwrestler_2_score': armwrestler_2_score,
         'calculation_ready': calculation_ready,
@@ -352,7 +353,7 @@ def supermatch():
     arm = request.form.get('arm', 'right')
     selected_armwrestler_1 = request.form.get('armwrestler1', 'none')
     selected_armwrestler_2 = request.form.get('armwrestler2', 'none')
-    supermatch_formats = list(SUPERMATCH_FORMATS.keys()) 
+    supermatch_formats = list(SUPERMATCH_FORMATS.keys())
     supermatch_ready = False
     value_for_score = None
     armwrestler_1_score, armwrestler_2_score = None, None
@@ -412,8 +413,8 @@ def supermatch():
         'arm': arm,
         'armwrestlers': armwrestlers, 'armwrestlers_2': armwrestlers_2,
         'selected_armwrestler_1': selected_armwrestler_1, 'selected_armwrestler_2': selected_armwrestler_2,
-        'supermatch_formats': supermatch_formats, 'selected_format': selected_format, 'supermatch_ready': supermatch_ready, 
-        'value_for_score' : value_for_score, 'max_rounds' : max_rounds,
+        'supermatch_formats': supermatch_formats, 'selected_format': selected_format, 'supermatch_ready': supermatch_ready,
+        'value_for_score': value_for_score, 'max_rounds': max_rounds,
         'armwrestler_1_score': armwrestler_1_score, 'armwrestler_2_score': armwrestler_2_score,
         'armwrestler_1_diff': armwrestler_1_diff, 'armwrestler_2_diff': armwrestler_2_diff,
         'armwrestler_1_color': armwrestler_1_color, 'armwrestler_2_color': armwrestler_2_color,
@@ -449,8 +450,8 @@ def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, ar
         armwrestler1_elo_diff, armwrestler2_elo_diff ) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         '''
-        db_execute(query, 
-                   armwrestler_1, armwrestler_2, 
+        db_execute(query,
+                   armwrestler_1, armwrestler_2,
                    arm,
                    selected_format,
                    armwrestler_1_rank, armwrestler_2_rank,
@@ -517,7 +518,7 @@ def elo_from_match():
     arm = request.args.get('arm', 'right')
     selected_armwrestler_1 = request.args.get('armwrestler1', 'none')
     selected_armwrestler_2 = request.args.get('armwrestler2', 'none')
-    supermatch_formats = list(SUPERMATCH_FORMATS.keys()) 
+    supermatch_formats = list(SUPERMATCH_FORMATS.keys())
     value_for_score = None
     armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
     armwrestlers_2 = None
@@ -576,20 +577,20 @@ def elo_from_match():
             armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
             armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
             armwrestler_1_diff, armwrestler_1_color = (f"+{armwrestler_1_diff}", "text-success") if armwrestler_1_diff > 0 else ((str(armwrestler_1_diff),
-                                                                                                                                "text-danger") if armwrestler_1_diff < 0 else ("0", "text-secondary"))
+                                                                                                                                  "text-danger") if armwrestler_1_diff < 0 else ("0", "text-secondary"))
             armwrestler_2_diff, armwrestler_2_color = (f"+{armwrestler_2_diff}", "text-success") if armwrestler_2_diff > 0 else ((str(armwrestler_2_diff),
-                                                                                                                                "text-danger") if armwrestler_2_diff < 0 else ("0", "text-secondary"))
-        
+                                                                                                                                  "text-danger") if armwrestler_2_diff < 0 else ("0", "text-secondary"))
+
         elif ranked == 'unranked':
             armwrestler_1_elo = get_current_elo(arm, [selected_armwrestler_1])[0]
             elo_from_match = expected_elo_from_score(armwrestler_1_elo, (armwrestler_1_score, armwrestler_2_score))
-            
+
     template_data = {
         'ranked': ranked, 'arm': arm,
         'selected_armwrestler_1': selected_armwrestler_1, 'selected_armwrestler_2': selected_armwrestler_2,
         'armwrestlers': armwrestlers, 'armwrestlers_2': armwrestlers_2,
-        'supermatch_formats': supermatch_formats, 'selected_format': selected_format, 
-        'value_for_score' : value_for_score, 'max_rounds' : max_rounds,
+        'supermatch_formats': supermatch_formats, 'selected_format': selected_format,
+        'value_for_score': value_for_score, 'max_rounds': max_rounds,
         'armwrestler_1_score': armwrestler_1_score, 'armwrestler_2_score': armwrestler_2_score,
         'armwrestler_1_diff': armwrestler_1_diff, 'armwrestler_2_diff': armwrestler_2_diff,
         'armwrestler_1_color': armwrestler_1_color, 'armwrestler_2_color': armwrestler_2_color,
@@ -617,21 +618,21 @@ def get_current_elo(arm, armwrestlers):
 
 
 def match_result(max_rounds, value, format_type):
-    if value < 0: 
+    if value < 0:
         value = 0
     elif value > max_rounds:
         value = max_rounds
 
     if format_type == "Best of":
         wins_required = (max_rounds // 2) + 1
-        
+
         if value < wins_required:
             armwrestler1_score = value
             armwrestler2_score = wins_required
         else:
             armwrestler1_score = wins_required
             armwrestler2_score = max_rounds - value
-        
+
         if max_rounds % 2 == 0 and value == max_rounds // 2:
             armwrestler1_score = value
             armwrestler2_score = value
@@ -639,6 +640,21 @@ def match_result(max_rounds, value, format_type):
     elif format_type == "All rounds":
         armwrestler1_score = value
         armwrestler2_score = max_rounds - value
+
+    elif format_type == "Vendetta":
+        wins_required = (max_rounds // 2) + 1
+
+        if value < wins_required:
+            armwrestler1_score = value
+            armwrestler2_score = (max_rounds - 1) - value
+            if value == (wins_required - 1):
+                armwrestler2_score = wins_required
+        else:
+            armwrestler1_score = value - 1
+            armwrestler2_score = (max_rounds - 1) - (value - 1)
+            if value == wins_required:
+                armwrestler1_score = wins_required
+                armwrestler2_score = (wins_required - 1)
 
     return armwrestler1_score, armwrestler2_score
 
