@@ -40,10 +40,10 @@
         </label>
     </div>
 
-    <div class="row flex-nowrap">
+    <div class="row mb-2 flex-nowrap">
         <div class="col" style="width: 30%;">
             <label for="new_member" class="form-label">New member:</label>
-            <div class="form-control text-secondary text-nowrap text-truncate" id="new_member" name="new_member" disabled aria-disabled="true">{{ name or 'Enter a name' }}</div>
+            <div class="form-control text-secondary text-nowrap text-truncate" id="new_member" name="new_member" disabled aria-disabled="true">{{ name or 'Enter a name...' }}</div>
         </div>
 
         <div class="col-1 d-flex justify-content-center align-items-center pt-4">
@@ -62,6 +62,18 @@
             </select>
         </div>
     </div>
+
+    <div class="row">
+        <div class="col">
+            <label for="supermatch_format" class="form-label">Choose supermatch format:</label>
+            <select class="form-select text-truncate" id="supermatch_format" name="supermatch_format" required>
+            {% for format in supermatch_formats %}
+                <option value="{{ format }}" {% if selected_format == format %}selected{% endif %}>{{ format }}</option>
+            {% endfor %}
+            </select>
+        </div>
+    </div>
+
     {% if calculation_ready %}
     <label for="arm" class="form-label my-2">Enter score:</label>
     <div class="row mb-3">
@@ -92,7 +104,7 @@
         </div>
     </div>
     {% else %}
-    <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="10" value="{{ armwrestler_1_score }}">
+    <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="{{ max_rounds }}" value="{{ value_for_score }}">
     {% endif %}
     <label for="arm" class="form-label my-2">
         ELO from match: <strong>{{ elo_from_match }}</strong>
@@ -140,4 +152,4 @@
             <button type="submit" name="add_member" class="btn btn-success mt-3">Add member</button>
         {% endif %}
     </div>
-</form>
+</form>    

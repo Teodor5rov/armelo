@@ -19,7 +19,7 @@
         </label>
     </div>
     {% if ranked == 'ranked' %}
-    <div class="row">
+    <div class="row mb-2">
         <div class="col">
             <label for="armwrestler1" class="form-label">Armwrestler 1:</label>
             <select class="form-select text-truncate" id="armwrestler1" name="armwrestler1" required>
@@ -55,7 +55,7 @@
 
     {% else %}
     <!-- Armwrestler selection dropdowns -->
-    <div class="row">
+    <div class="row mb-2">
         <label for="armwrestler1" class="form-label">Select ranked armwrestler:</label>
         <div class="col-2">
             <div class="text-center fs-5">
@@ -72,6 +72,17 @@
         </div>
     </div>
     {% endif %}
+
+    <div class="row">
+        <div class="col">
+            <label for="supermatch_format" class="form-label">Choose supermatch format:</label>
+            <select class="form-select text-truncate" id="supermatch_format" name="supermatch_format" required>
+            {% for format in supermatch_formats %}
+                <option value="{{ format }}" {% if selected_format == format %}selected{% endif %}>{{ format }}</option>
+            {% endfor %}
+            </select>
+        </div>
+    </div>
 
     {% if calculation_ready %}
     <label for="arm" class="form-label my-2">Enter score:</label>
@@ -121,7 +132,7 @@
         </div>
     </div>
     {% else %}
-    <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="5" value="{{ armwrestler_1_score }}">
+    <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="{{ max_rounds }}" value="{{ value_for_score }}">
     {% endif %}
     <div class="row mb-2">
         <div class="col text-end">
@@ -139,5 +150,4 @@
     </div>
     {% endif %}
     {% endif %}
-</form>
-
+</form>    

@@ -71,9 +71,24 @@ def calculate_elo_with_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score,
 
 def expected_score_rounds(armwrestler_a_elo, armwrestler_b_elo, rounds=5):
     expected_a, expected_b = expected_score(armwrestler_a_elo, armwrestler_b_elo, CONTRAST)
-    expected_a = round(expected_a * rounds) if expected_a != 0.5 else math.ceil(rounds / 2)
-    expected_b = round(expected_b * rounds) if expected_b != 0.5 else math.ceil(rounds / 2)
-
+    
+    wins_required = (rounds // 2) + 1
+    
+    if expected_a > expected_b:
+        factor = wins_required / expected_a
+        expected_a = wins_required
+        expected_b = round(expected_b * factor)
+        if expected_a == expected_b:
+            expected_b -= 1
+    elif expected_a < expected_b:
+        factor = wins_required / expected_b
+        expected_b = wins_required
+        expected_a = round(expected_a * factor)
+        if expected_a == expected_b:
+            expected_a -= 1
+    else: 
+        expected_a = expected_b = math.ceil(rounds / 2)
+    
     return expected_a, expected_b
 
 

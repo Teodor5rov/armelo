@@ -7,7 +7,7 @@
     <h2 class="mb-4">Prediction</h2>
     <div class="alert alert-secondary" role="alert">
         <strong>Approximate expected score: </strong>This gives the (rounded) expected results from the system.<br>
-        <strong>Win chance: </strong>This gives the overall chance of winning a 5 round match for each armwrestler in percentage, no matter the score.
+        <strong>Win chance: </strong>This gives the overall chance of winning a best of 5 match for each armwrestler in percentage, no matter the score.
     </div>
     <form class="mb-4" hx-get="{{ url_for('prediction') }}" hx-trigger="change" hx-swap="outerHTML" hx-push-url="true">
         <!-- Arm selection buttons -->
@@ -100,7 +100,7 @@
             <div class="col d-flex justify-content-center align-items-center"></div>
         </div> 
     
-        <label for="win_chance" class="form-label mb-2">Win chance (5 round match):</label>
+        <label for="win_chance" class="form-label mb-2">Win chance:</label>
         <div class="row mb-4">
             <div class="col">
                 <div class="progress" style="height: 2.5rem;" >
