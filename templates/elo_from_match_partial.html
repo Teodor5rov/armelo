@@ -9,7 +9,7 @@
         </label>
     </div>
     <!-- Arm selection buttons -->
-    <label for="arm" class="form-label">Choose arm for the match:</label>
+    <label class="form-label">Choose arm for the match:</label>
     <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
         <label class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}">
             <input type="radio" name="arm" id="armRight" value="right" autocomplete="off" {{ 'checked' if arm == 'right' else '' }} class="visually-hidden">Right arm
@@ -85,7 +85,7 @@
     </div>
 
     {% if calculation_ready %}
-    <label for="arm" class="form-label my-2">Enter score:</label>
+    <label class="form-label my-2">Enter score:</label>
 
     <div class="row mb-2">
         {% if ranked == 'ranked' %}
@@ -144,7 +144,7 @@
         </div>
     </div>
     {% if ranked == 'unranked' %}
-    <label for="arm" class="form-label my-2">Estimated ELO:</label>
+    <label class="form-label my-2">Estimated ELO:</label>
     <div class="text-center fs-2">
         <span class="text-success">{{ elo_from_match }}</span>
     </div>

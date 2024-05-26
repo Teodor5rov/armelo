@@ -69,39 +69,16 @@ def calculate_elo_with_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score,
     return updated_a_elo, updated_b_elo
 
 
-def expected_score_rounds(armwrestler_a_elo, armwrestler_b_elo, rounds=5):
-    expected_a, expected_b = expected_score(armwrestler_a_elo, armwrestler_b_elo, CONTRAST)
-    
-    wins_required = (rounds // 2) + 1
-    
-    if expected_a > expected_b:
-        factor = wins_required / expected_a
-        expected_a = wins_required
-        expected_b = round(expected_b * factor)
-        if expected_a == expected_b:
-            expected_b -= 1
-    elif expected_a < expected_b:
-        factor = wins_required / expected_b
-        expected_b = wins_required
-        expected_a = round(expected_a * factor)
-        if expected_a == expected_b:
-            expected_a -= 1
-    else: 
-        expected_a = expected_b = math.ceil(rounds / 2)
-    
-    return expected_a, expected_b
-
-
 def binom_prediction(armwrestler_a_elo, armwrestler_b_elo, rounds=5):
     expected_a, expected_b = expected_score(armwrestler_a_elo, armwrestler_b_elo, CONTRAST)
-    win_rounds_needed = rounds // 2 + 1
+    no_win_rounds = rounds // 2
 
-    cumulative_prob_not_winning = binom.cdf(win_rounds_needed - 1, rounds, expected_a)
-    
-    predicted_a = 1 - cumulative_prob_not_winning
-    predicted_b = 1 - predicted_a
-    
-    predicted_a = round(predicted_a * 100, 1)
-    predicted_b = round(predicted_b * 100, 1)
+    cumulative_prob_not_winning_a = binom.cdf(no_win_rounds, rounds, expected_a)
+    cumulative_prob_not_winning_b = binom.cdf(no_win_rounds, rounds, expected_b)
+    predicted_a = 1 - cumulative_prob_not_winning_a
+    predicted_b = 1 - cumulative_prob_not_winning_b
+
+    predicted_a = predicted_a * 100
+    predicted_b = predicted_b * 100
 
     return predicted_a, predicted_b

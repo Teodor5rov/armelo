@@ -4,7 +4,7 @@ from werkzeug.security import check_password_hash
 import sqlite3
 import os
 
-from elo import diff_supermatch, calculate_elo_with_bonus, expected_elo_from_score, expected_score_rounds, binom_prediction
+from elo import diff_supermatch, calculate_elo_with_bonus, expected_elo_from_score, expected_score, binom_prediction
 
 DATABASE = 'database.db'
 
@@ -169,9 +169,10 @@ def closest_matches():
     closest_matches = db_execute(query)
     closest_matches_with_predictions = []
     for match in closest_matches:
-        expected_1, expected_2 = binom_prediction(match[2], match[5])
-        color_1, color_2 = (f"success", "danger") if expected_1 > expected_2 else ((f"danger", "success") if expected_1 < expected_2 else ("secondary", "secondary"))
-        match_with_prediction = match + (expected_1, expected_2, color_1, color_2)
+        binom_predicted_1, binom_predicted_2 = binom_prediction(match[2], match[5])
+        binom_predicted_1, binom_predicted_2 = round(binom_predicted_1, 1), round(binom_predicted_2, 1)
+        color_1, color_2 = (f"success", "danger") if binom_predicted_1 > binom_predicted_2 else ((f"danger", "success") if binom_predicted_1 < binom_predicted_2 else ("secondary", "secondary"))
+        match_with_prediction = match + (binom_predicted_1, binom_predicted_2, color_1, color_2)
         closest_matches_with_predictions.append(match_with_prediction)
 
     return render_template('closest_matches.html', closest_matches_with_predictions=closest_matches_with_predictions, arm=arm, supermatch_add=supermatch_add)
@@ -472,37 +473,51 @@ def prediction():
     arm = request.args.get('arm', 'right')
     selected_armwrestler_1 = request.args.get('armwrestler1', 'none')
     selected_armwrestler_2 = request.args.get('armwrestler2', 'none')
+    supermatch_formats = list(SUPERMATCH_FORMATS.keys())
     armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
     prediction_ready = False
     armwrestler_1_elo, armwrestler_2_elo = None, None
     expected_1, expected_2 = None, None
-    binom_predicted_1, binom_predicted_2 = None, None
-    armwrestler_color = None
+    binom_predicted_1, binom_predicted_2, binom_draw = None, None, None
+    win_chance_color, score_color = None, None
 
     if selected_armwrestler_1 == selected_armwrestler_2:
         selected_armwrestler_2 = 'none'
     armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1] if selected_armwrestler_1 != 'none' else None
     armwrestler_names = [aw[0] for aw in armwrestlers]
 
+    selected_format = request.args.get('supermatch_format', 'none')
+    if selected_format not in supermatch_formats:
+        selected_format = 'Best of 5'
+
+    max_rounds = SUPERMATCH_FORMATS[selected_format][0]
+
     if arm in ['left', 'right'] and \
             selected_armwrestler_1 != selected_armwrestler_2 and \
             selected_armwrestler_1 in armwrestler_names and \
-            selected_armwrestler_2 in armwrestler_names:
+            selected_armwrestler_2 in armwrestler_names and \
+            selected_format in supermatch_formats:
         armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
-        expected_1, expected_2 = expected_score_rounds(armwrestler_1_elo, armwrestler_2_elo, 5)
-        binom_predicted_1, binom_predicted_2 = binom_prediction(armwrestler_1_elo, armwrestler_2_elo)
-        armwrestler_color = (f"success", "danger") if expected_1 > expected_2 else ((f"danger", "success") if expected_1 < expected_2 else ("secondary", "secondary"))
+        expected_1, expected_2 = expected_score_rounds(armwrestler_1_elo, armwrestler_2_elo, SUPERMATCH_FORMATS[selected_format][2], max_rounds)
+        binom_predicted_1, binom_predicted_2 = binom_prediction(armwrestler_1_elo, armwrestler_2_elo, max_rounds)
+        binom_draw = 100 - (binom_predicted_1 + binom_predicted_2)
+        binom_predicted_1, binom_predicted_2, binom_draw = round(binom_predicted_1, 1), round(binom_predicted_2, 1), round(binom_draw, 1)
+        win_chance_color = (f"success", "danger") if binom_predicted_1 > binom_predicted_2 else ((f"danger", "success") if binom_predicted_1 < binom_predicted_2 else ("secondary", "secondary"))
+        score_color = win_chance_color
+        if expected_1 == expected_2:
+            score_color = (f"secondary", "secondary")
         prediction_ready = True
 
     template_data = {
         'arm': arm,
         'selected_armwrestler_1': selected_armwrestler_1, 'selected_armwrestler_2': selected_armwrestler_2,
         'armwrestlers': armwrestlers, 'armwrestlers_2': armwrestlers_2,
+        'supermatch_formats': supermatch_formats, 'selected_format': selected_format,
         'prediction_ready': prediction_ready,
         'armwrestler_1_elo': armwrestler_1_elo, 'armwrestler_2_elo': armwrestler_2_elo,
         'expected_1': expected_1, 'expected_2': expected_2,
-        'binom_predicted_1': binom_predicted_1, 'binom_predicted_2': binom_predicted_2,
-        'armwrestler_color': armwrestler_color
+        'binom_predicted_1': binom_predicted_1, 'binom_predicted_2': binom_predicted_2, 'binom_draw': binom_draw,
+        'win_chance_color': win_chance_color, 'score_color': score_color
     }
 
     if request.headers.get('HX-Request'):
@@ -655,6 +670,50 @@ def match_result(max_rounds, value, format_type):
             if value == wins_required:
                 armwrestler1_score = wins_required
                 armwrestler2_score = (wins_required - 1)
+
+    return armwrestler1_score, armwrestler2_score
+
+
+def expected_score_rounds(armwrestler_a_elo, armwrestler_b_elo, format_type, max_rounds=5):
+    armwrestler1_score, armwrestler2_score = expected_score(armwrestler_a_elo, armwrestler_b_elo)
+
+    if format_type == "All rounds":
+        if armwrestler1_score != armwrestler2_score:
+            armwrestler1_score = round(armwrestler1_score * max_rounds)
+            armwrestler2_score = round(armwrestler2_score * max_rounds)
+        else:
+            armwrestler1_score = armwrestler2_score = "Equal"
+
+    elif format_type == "Best of":
+        wins_required = (max_rounds // 2) + 1
+        if armwrestler1_score > armwrestler2_score:
+            factor = wins_required / armwrestler1_score
+            armwrestler1_score = wins_required
+            armwrestler2_score = round(armwrestler2_score * factor)
+            if armwrestler1_score == armwrestler2_score:
+                armwrestler2_score -= 1
+        elif armwrestler1_score < armwrestler2_score:
+            factor = wins_required / armwrestler2_score
+            armwrestler2_score = wins_required
+            armwrestler1_score = round(armwrestler1_score * factor)
+            if armwrestler1_score == armwrestler2_score:
+                armwrestler1_score -= 1
+        else:
+            armwrestler1_score = armwrestler2_score = "Equal"
+
+    elif format_type == "Vendetta":
+        max_rounds = max_rounds - 1
+        if armwrestler1_score != armwrestler2_score:
+            prov1_score = round(armwrestler1_score * max_rounds)
+            prov2_score = round(armwrestler2_score * max_rounds)
+            if prov1_score != prov2_score:
+                armwrestler1_score, armwrestler2_score = prov1_score, prov2_score
+            elif armwrestler1_score > armwrestler2_score:
+                armwrestler1_score, armwrestler2_score = prov1_score + 1, prov2_score
+            else:
+                armwrestler1_score, armwrestler2_score = prov1_score, prov2_score + 1
+        else:
+            armwrestler1_score = armwrestler2_score = "Equal"
 
     return armwrestler1_score, armwrestler2_score
 
