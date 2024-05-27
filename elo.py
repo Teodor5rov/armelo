@@ -78,7 +78,4 @@ def binom_prediction(armwrestler_a_elo, armwrestler_b_elo, rounds=5):
     predicted_a = 1 - cumulative_prob_not_winning_a
     predicted_b = 1 - cumulative_prob_not_winning_b
 
-    predicted_a = predicted_a * 100
-    predicted_b = predicted_b * 100
-
     return predicted_a, predicted_b

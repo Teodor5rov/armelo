@@ -170,7 +170,7 @@ def closest_matches():
     closest_matches_with_predictions = []
     for match in closest_matches:
         binom_predicted_1, binom_predicted_2 = binom_prediction(match[2], match[5])
-        binom_predicted_1, binom_predicted_2 = round(binom_predicted_1, 1), round(binom_predicted_2, 1)
+        binom_predicted_1, binom_predicted_2 = round(binom_predicted_1 * 100, 1), round(binom_predicted_2 * 100, 1)
         color_1, color_2 = (f"success", "danger") if binom_predicted_1 > binom_predicted_2 else ((f"danger", "success") if binom_predicted_1 < binom_predicted_2 else ("secondary", "secondary"))
         match_with_prediction = match + (binom_predicted_1, binom_predicted_2, color_1, color_2)
         closest_matches_with_predictions.append(match_with_prediction)
@@ -189,10 +189,10 @@ def add_new_member():
     selected_armwrestler_2 = request.form.get('armwrestler2', 'none')
     supermatch_formats = list(SUPERMATCH_FORMATS.keys())
     value_for_score = None
-    right_elo = request.form.get('right_elo', 0)
-    left_elo = request.form.get('left_elo', 0)
-    refs_right = request.form.get('refs_right', 0)
-    refs_left = request.form.get('refs_left', 0)
+    right_elo = request.form.get('right_elo', '0')
+    left_elo = request.form.get('left_elo', '0')
+    refs_right = request.form.get('refs_right', '0')
+    refs_left = request.form.get('refs_left', '0')
     custom_score = request.form.get('custom_score', False)
     armwrestler_1_score, armwrestler_2_score = None, None
     calculation_ready = False
@@ -218,6 +218,14 @@ def add_new_member():
             selected_armwrestler_2 in armwrestler_names:
         calculation_ready = True
 
+    try:
+        if not right_elo.isdigit() or not left_elo.isdigit():
+            raise ValueError
+        right_elo, left_elo = int(right_elo), int(left_elo)
+        refs_right, refs_left = int(refs_right), int(refs_left)
+    except (ValueError):
+        error = "Invalid ELO data"
+
     if calculation_ready:
         if custom_score:
             try:
@@ -240,28 +248,20 @@ def add_new_member():
 
         add_to_avg_pressed = request.form.get('add_to_avg', False)
         if add_to_avg_pressed:
-            try:
-                if not right_elo.isdigit() or not left_elo.isdigit():
-                    raise ValueError
-                right_elo, left_elo = int(right_elo), int(left_elo)
-                refs_right, refs_left = int(refs_right), int(refs_left)
+            if arm == 'right' and elo_from_match:
+                if refs_right == 0:
+                    right_elo += expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
+                else:
+                    right_elo = ((right_elo * refs_right) + expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))) / (refs_right + 1)
+                refs_right += 1
+            elif arm == 'left' and elo_from_match:
+                if refs_left == 0:
+                    left_elo += expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
+                else:
+                    left_elo = ((left_elo * refs_left) + expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))) / (refs_left + 1)
+                refs_left += 1
 
-                if arm == 'right' and elo_from_match:
-                    if refs_right == 0:
-                        right_elo += expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
-                    else:
-                        right_elo = ((right_elo * refs_right) + expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))) / (refs_right + 1)
-                    refs_right += 1
-                elif arm == 'left' and elo_from_match:
-                    if refs_left == 0:
-                        left_elo += expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
-                    else:
-                        left_elo = ((left_elo * refs_left) + expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))) / (refs_left + 1)
-                    refs_left += 1
-
-                right_elo, left_elo = round(right_elo), round(left_elo)
-            except (ValueError):
-                error = "Invalid ELO data"
+            right_elo, left_elo = round(right_elo), round(left_elo)
 
         reset_pressed = request.form.get('reset', False)
         if reset_pressed:
@@ -270,7 +270,9 @@ def add_new_member():
             refs_right, refs_left = 0, 0
             calculation_ready = False
 
-    if name and name not in armwrestler_names:
+    if name and name not in armwrestler_names and \
+        right_elo > 0 and \
+        left_elo > 0:
         member_ready = True
 
     if 'add_member' in request.form and member_ready:
@@ -500,8 +502,8 @@ def prediction():
         armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
         expected_1, expected_2 = expected_score_rounds(armwrestler_1_elo, armwrestler_2_elo, SUPERMATCH_FORMATS[selected_format][2], max_rounds)
         binom_predicted_1, binom_predicted_2 = binom_prediction(armwrestler_1_elo, armwrestler_2_elo, max_rounds)
-        binom_draw = 100 - (binom_predicted_1 + binom_predicted_2)
-        binom_predicted_1, binom_predicted_2, binom_draw = round(binom_predicted_1, 1), round(binom_predicted_2, 1), round(binom_draw, 1)
+        binom_draw = 1 - (binom_predicted_1 + binom_predicted_2)
+        binom_predicted_1, binom_predicted_2, binom_draw = round(binom_predicted_1 * 100, 1), round(binom_predicted_2 * 100, 1), round(binom_draw * 100, 1)
         win_chance_color = (f"success", "danger") if binom_predicted_1 > binom_predicted_2 else ((f"danger", "success") if binom_predicted_1 < binom_predicted_2 else ("secondary", "secondary"))
         score_color = win_chance_color
         if expected_1 == expected_2:
