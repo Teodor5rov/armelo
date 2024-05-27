@@ -271,6 +271,7 @@ def add_new_member():
             calculation_ready = False
 
     if name and name not in armwrestler_names and \
+        error == None and \
         right_elo > 0 and \
         left_elo > 0:
         member_ready = True
