@@ -225,6 +225,8 @@ def add_new_member():
         refs_right, refs_left = int(refs_right), int(refs_left)
     except (ValueError):
         error = "Invalid ELO data"
+        right_elo, left_elo = 0, 0
+        refs_right, refs_left = 0, 0
 
     if calculation_ready:
         if custom_score:
