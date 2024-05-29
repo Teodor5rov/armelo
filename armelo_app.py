@@ -90,6 +90,9 @@ def inject_user():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    if session.get('username'):
+        return redirect(url_for('ranking'))
+
     if request.method == "POST":
         username = request.form.get('username')
         password = request.form.get('password')
