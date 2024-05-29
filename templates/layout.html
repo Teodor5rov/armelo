@@ -15,7 +15,7 @@
         <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
         <script src="https://unpkg.com/htmx.org@1.9.12"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-        <script type="speculationrules" nonce="{{ request.csp_nonce }}">
+        <script type="speculationrules" nonce="{{ csp_nonce() }}">
             {
               "prerender": [
                 {
@@ -24,9 +24,8 @@
               ]
             }
         </script>
-        <!-- Google tag (gtag.js) -->
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-WM53LCFHKN"></script>
-        <script>
+        <script nonce="{{ csp_nonce() }}">
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());

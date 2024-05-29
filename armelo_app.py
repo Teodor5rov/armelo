@@ -37,7 +37,8 @@ csp = {
     'script-src': [
         '\'self\'',
         'https://cdn.jsdelivr.net',
-        'https://unpkg.com'
+        'https://unpkg.com',
+        'https://www.googletagmanager.com'
     ],
     'style-src': [
         '\'self\'',
@@ -49,10 +50,14 @@ csp = {
         '\'self\'',
         'https://fonts.gstatic.com',
         'https://cdn.jsdelivr.net'
+    ],
+    'connect-src': [
+        '\'self\'',
+        'https://*.google-analytics.com'
     ]
 }
 
-# Talisman(app, content_security_policy=csp, content_security_policy_nonce_in=['script-src'])
+# talisman = Talisman(app, content_security_policy=csp, content_security_policy_nonce_in=['script-src'])
 
 
 SUPERMATCH_FORMATS = {
@@ -197,7 +202,7 @@ def closest_matches():
 def add_new_member():
     if not session.get('username'):
         return redirect(url_for('login'))
-    
+
     current_user = session.get('username')
 
     name = request.form.get('name', '')
@@ -290,9 +295,9 @@ def add_new_member():
             calculation_ready = False
 
     if name and name not in armwrestler_names and \
-        error == None and \
-        right_elo > 0 and \
-        left_elo > 0:
+            error == None and \
+            right_elo > 0 and \
+            left_elo > 0:
         member_ready = True
 
     if 'add_member' in request.form and member_ready:
@@ -372,7 +377,7 @@ def undo_last_match():
 def supermatch():
     if not session.get('username'):
         return redirect(url_for('login'))
-    
+
     current_user = session.get('username')
 
     arm = request.form.get('arm', 'right')
@@ -755,10 +760,12 @@ def page_not_found(e):
     app.logger.error('Server Error: %s', e, exc_info=True)
     return render_template('500.html'), 500
 
+
 @app.errorhandler(Exception)
 def handle_exception(e):
     app.logger.error('Unhandled Exception: %s', e, exc_info=True)
     return render_template('500.html'), 500
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
