@@ -8,10 +8,6 @@
 
 <p>Official rankings for armwrestlers at the <strong>Armwrestling Zurich</strong> club. Scores are based on the ELO rating system.</p>
 
-<div class="alert alert-danger" role="alert">
-    Left arm ranking are still provisional.
-</div>
-
 <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
     <a href="{{ url_for('ranking', arm='right') }}" 
        class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}" role="button" aria-pressed="{{ 'true' if arm == 'right' else 'false' }}">Right arm</a>

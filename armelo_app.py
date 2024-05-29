@@ -18,6 +18,9 @@ csp = {
         'https://fonts.googleapis.com',
         'https://unpkg.com'
     ],
+    'base-uri': [
+        '\'self\''
+    ],
     'img-src': [
         '\'self\'',
         'data:'
@@ -182,6 +185,8 @@ def closest_matches():
 def add_new_member():
     if not session.get('username'):
         return redirect(url_for('login'))
+    
+    current_user = session.get('username')
 
     name = request.form.get('name', '')
     arm = request.form.get('arm', 'right')
@@ -280,7 +285,7 @@ def add_new_member():
 
     if 'add_member' in request.form and member_ready:
         try:
-            db_execute("INSERT INTO armwrestlers (name, right_elo, left_elo) VALUES (?, ?, ?)", name, right_elo, left_elo)
+            db_execute("INSERT INTO armwrestlers (name, right_elo, left_elo, added_by) VALUES (?, ?, ?, ?)", name, right_elo, left_elo, current_user)
         except sqlite3.DatabaseError as error:
             print(error)
         return redirect(url_for('ranking'))
@@ -355,6 +360,8 @@ def undo_last_match():
 def supermatch():
     if not session.get('username'):
         return redirect(url_for('login'))
+    
+    current_user = session.get('username')
 
     arm = request.form.get('arm', 'right')
     selected_armwrestler_1 = request.form.get('armwrestler1', 'none')
@@ -412,7 +419,7 @@ def supermatch():
 
     submit_pressed = 'submit_match' in request.form
     if submit_pressed and supermatch_ready:
-        submit_supermatch(arm, selected_armwrestler_1, selected_armwrestler_2, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format)
+        submit_supermatch(arm, selected_armwrestler_1, selected_armwrestler_2, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format, current_user)
         return redirect(url_for('ranking'))
 
     template_data = {
@@ -434,7 +441,7 @@ def supermatch():
         return render_template('supermatch.html', **template_data)
 
 
-def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format):
+def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format, current_user):
 
     dbarm = 'right_elo' if arm == 'right' else 'left_elo'
     updated_1, updated_2 = calculate_elo_with_bonus(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
@@ -453,8 +460,9 @@ def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, ar
         armwrestler1_rank, armwrestler2_rank, 
         armwrestler1_elo, armwrestler2_elo, 
         armwrestler1_score, armwrestler2_score, 
-        armwrestler1_elo_diff, armwrestler2_elo_diff ) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        armwrestler1_elo_diff, armwrestler2_elo_diff,
+        added_by ) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         '''
         db_execute(query,
                    armwrestler_1, armwrestler_2,
@@ -463,7 +471,8 @@ def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, ar
                    armwrestler_1_rank, armwrestler_2_rank,
                    armwrestler_1_elo, armwrestler_2_elo,
                    armwrestler_1_score, armwrestler_2_score,
-                   armwrestler_1_diff, armwrestler_2_diff)
+                   armwrestler_1_diff, armwrestler_2_diff,
+                   current_user)
 
         db_execute("UPDATE armwrestlers SET {} = ? WHERE name = ?".format(dbarm), updated_1, armwrestler_1)
         db_execute("UPDATE armwrestlers SET {} = ? WHERE name = ?".format(dbarm), updated_2, armwrestler_2)
