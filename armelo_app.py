@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, session, g, send_from_directory
 from flask_talisman import Talisman
 from werkzeug.security import check_password_hash
+import logging
+from logging.handlers import RotatingFileHandler
 import sqlite3
 import os
 
@@ -10,6 +12,13 @@ DATABASE = 'database.db'
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', '%%8hF$7ALEy8Msw2')
+
+handler = RotatingFileHandler('armelo_app.log', maxBytes=10000, backupCount=3)
+handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+handler.setFormatter(formatter)
+app.logger.addHandler(handler)
+app.logger.setLevel(logging.DEBUG)
 
 csp = {
     'default-src': [
@@ -737,13 +746,19 @@ def expected_score_rounds(armwrestler_a_elo, armwrestler_b_elo, format_type, max
 
 @app.errorhandler(404)
 def page_not_found(e):
+    app.logger.error(f"404 Error: {e}, path: {request.path}")
     return render_template('404.html'), 404
 
 
 @app.errorhandler(500)
 def page_not_found(e):
+    app.logger.error('Server Error: %s', e, exc_info=True)
     return render_template('500.html'), 500
 
+@app.errorhandler(Exception)
+def handle_exception(e):
+    app.logger.error('Unhandled Exception: %s', e, exc_info=True)
+    return render_template('500.html'), 500
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
