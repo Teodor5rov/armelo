@@ -13,7 +13,7 @@ DATABASE = 'database.db'
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', '%%8hF$7ALEy8Msw2')
 
-handler = RotatingFileHandler('armelo_app.log', maxBytes=10000, backupCount=3)
+handler = RotatingFileHandler('armelo_app.log', maxBytes=100000, backupCount=3)
 handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
 handler.setFormatter(formatter)
@@ -37,8 +37,7 @@ csp = {
     'script-src': [
         '\'self\'',
         'https://cdn.jsdelivr.net',
-        'https://unpkg.com',
-        'https://www.googletagmanager.com'
+        'https://unpkg.com'
     ],
     'style-src': [
         '\'self\'',
@@ -52,8 +51,7 @@ csp = {
         'https://cdn.jsdelivr.net'
     ],
     'connect-src': [
-        '\'self\'',
-        'https://*.google-analytics.com'
+        '\'self\''
     ]
 }
 
