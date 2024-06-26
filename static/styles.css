@@ -16,3 +16,10 @@ body {
 html::-webkit-scrollbar, body::-webkit-scrollbar {
     display: none;
 }
+
+.navbar-brand {
+    transition: opacity 0.15s ease;
+}
+.navbar-brand:hover {
+    opacity: 0.8;
+}

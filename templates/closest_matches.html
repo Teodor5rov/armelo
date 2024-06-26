@@ -29,7 +29,7 @@
             <div class="card-header bg-transparent">
                 <div class="row mt-2">
                     <div class="col-12 col-lg-auto text-center mb-2">
-                        <div class="text-nowrap">
+                        <div>
                             <strong>#{{ match[0] }}</strong> {{ match[1] }}<strong>({{ match[2] }})</strong>
                         </div>
                     </div>
@@ -37,7 +37,7 @@
                         <span class="badge bg-dark">VS</span>
                     </div>
                     <div class="col-12 col-lg-auto text-center mb-2">
-                        <div class="text-nowrap">
+                        <div>
                             <strong>#{{ match[3] }}</strong> {{ match[4] }}<strong>({{ match[5] }})</strong>
                         </div>
                     </div>
@@ -45,11 +45,11 @@
             </div>
             <div class="card-body">
                 <div class="card-text">
-                    <div class="row justify-content-start">
-                        <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
+                    <div class="row justify-content-md-center justify-content-lg-start">
+                        <div class="col-12 col-md-auto mb-2 mb-md-0 text-start">
                             Win chance:<span class="fs-6 badge text-{{ match[9] }}">{{ match[7] }}%</span>|<span class="fs-6 badge text-{{ match[10] }}">{{ match[8] }}%</span>
                         </div>
-                        <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
+                        <div class="col-12 col-md-auto mb-2 mb-md-0 text-start">
                             ELO difference:<span class="fs-6 badge text-dark">{{ match[6] }}</span>
                         </div>
                     </div>
