@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, g, send_from_directory
 from flask_talisman import Talisman
 from werkzeug.security import check_password_hash
+from datetime import datetime
 import logging
 from logging.handlers import RotatingFileHandler
 import sqlite3
@@ -336,8 +337,8 @@ def update_name():
 
 @app.route("/history")
 def history():
-    history = db_execute('SELECT * FROM history ORDER BY id DESC LIMIT 20')
-    colors = []
+    history = db_execute('SELECT * FROM history ORDER BY id DESC')
+    formatted_data = []
     for record in history:
         armwrestler_1_diff_format, armwrestler_2_diff_format = record[10], record[11]
         armwrestler_1_score_color, armwrestler_2_score_color = record[8], record[9]
@@ -348,10 +349,12 @@ def history():
             (str(armwrestler_2_diff_format), "text-danger") if armwrestler_2_diff_format < 0 else ("0", "text-secondary"))
         armwrestler_1_score_color, armwrestler_2_score_color = ("bg-success", "bg-danger") if armwrestler_1_score_color > armwrestler_2_score_color else (
             ("bg-danger", "bg-success") if armwrestler_1_score_color < armwrestler_2_score_color else ("bg-secondary", "bg-secondary"))
+        
+        date = datetime.strptime(record[13], "%Y-%m-%d %H:%M:%S").strftime("%d %B %Y")
 
-        colors.append((armwrestler_1_score_color, armwrestler_2_score_color, armwrestler_1_diff_color, armwrestler_2_diff_color, armwrestler_1_diff_format, armwrestler_2_diff_format))
+        formatted_data.append((armwrestler_1_score_color, armwrestler_2_score_color, armwrestler_1_diff_color, armwrestler_2_diff_color, armwrestler_1_diff_format, armwrestler_2_diff_format, date))
 
-    return render_template('history.html', history=history, colors=colors)
+    return render_template('history.html', history=history, formatted_data=formatted_data)
 
 
 @app.route("/undo_last_match", methods=["POST"])
