@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, g, send_from_directory
 from flask_talisman import Talisman
 from werkzeug.security import check_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta 
 import logging
 from logging.handlers import RotatingFileHandler
 import sqlite3
@@ -128,9 +128,10 @@ def logout():
 @app.route("/<any(right, left):arm>")
 def ranking(arm='right'):
     order_by = 'right_elo' if arm == 'right' else 'left_elo'
-    armwrestlers = db_execute('SELECT DENSE_RANK() OVER (ORDER BY {0} DESC) AS rank, name, {0} FROM armwrestlers'.format(order_by))
+    active_armwrestlers = db_execute('''SELECT DENSE_RANK() OVER (ORDER BY {0} DESC) AS rank, name, {0} FROM armwrestlers WHERE active_until >= DATE('now')'''.format(order_by))
+    inactive_armwrestlers = db_execute('''SELECT name, {0} FROM armwrestlers WHERE active_until < DATE('now') ORDER BY {0} DESC'''.format(order_by))
     username = session.get('username')
-    return render_template('ranking.html', armwrestlers=armwrestlers, username=username, arm=arm)
+    return render_template('ranking.html', active_armwrestlers=active_armwrestlers, inactive_armwrestlers=inactive_armwrestlers, username=username, arm=arm)
 
 
 @app.route("/remove_member", methods=["POST"])
@@ -204,7 +205,7 @@ def add_new_member():
 
     current_user = session.get('username')
 
-    name = request.form.get('name', '')
+    name = request.form.get('name', '').strip()
     arm = request.form.get('arm', 'right')
     armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
     selected_armwrestler_2 = request.form.get('armwrestler2', 'none')
@@ -301,7 +302,11 @@ def add_new_member():
 
     if 'add_member' in request.form and member_ready:
         try:
-            db_execute("INSERT INTO armwrestlers (name, right_elo, left_elo, added_by) VALUES (?, ?, ?, ?)", name, right_elo, left_elo, current_user)
+            today = datetime.today()
+            active_until_date = today + timedelta(days=180)
+            active_until_str = active_until_date.strftime('%Y-%m-%d')
+
+            db_execute("INSERT INTO armwrestlers (name, right_elo, left_elo, added_by, active_until) VALUES (?, ?, ?, ?, ?)", name, right_elo, left_elo, current_user, active_until_str)
         except sqlite3.DatabaseError as error:
             print(error)
         return redirect(url_for('ranking'))
@@ -492,8 +497,12 @@ def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, ar
                    armwrestler_1_diff, armwrestler_2_diff,
                    current_user)
 
-        db_execute("UPDATE armwrestlers SET {} = ? WHERE name = ?".format(dbarm), updated_1, armwrestler_1)
-        db_execute("UPDATE armwrestlers SET {} = ? WHERE name = ?".format(dbarm), updated_2, armwrestler_2)
+        today = datetime.today()
+        active_until_date = today + timedelta(days=180)
+        active_until_str = active_until_date.strftime('%Y-%m-%d')
+
+        db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE name = ?".format(dbarm), updated_1, active_until_str, armwrestler_1)
+        db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE name = ?".format(dbarm), updated_2, active_until_str, armwrestler_2)
 
     except sqlite3.DatabaseError as error:
         print(error)

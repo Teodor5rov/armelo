@@ -15,7 +15,7 @@
        class="btn btn-primary w-50 {{ 'active' if arm == 'left' else '' }}" role="button" aria-pressed="{{ 'true' if arm == 'left' else 'false' }}">Left arm</a>
 </div>
 
-<div class="table-responsive rounded">
+<div class="table-responsive rounded mb-2">
     <table class="table">
         <thead class="table-dark">
             <tr>
@@ -28,7 +28,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for armwrestler in armwrestlers %}
+            {% for armwrestler in active_armwrestlers %}
             <tr>
                 <td style="width: 5%;"><strong>#{{ armwrestler[0] }}</strong></td>
                 <td style="width: 75%;">{{ armwrestler[1] }}</td>
@@ -45,6 +45,38 @@
         </tbody>
     </table>
 </div>
+
+<h2 class="mb-4">Inactive armwrestlers</h2>
+
+<div class="table-responsive rounded mb-4">
+    <table class="table">
+        <thead class="table-dark">
+            <tr>
+                <th style="width: 75%;">Name</th>
+                <th class="text-end text-nowrap" style="width: 10%;">{{ "Right ELO" if arm == 'right' else "Left ELO" }}</th>
+                {% if username %}
+                <th class="text-center" style="width: 10%;">Action</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for armwrestler in inactive_armwrestlers %}
+            <tr>
+                <td style="width: 75%;">{{ armwrestler[0] }}</td>
+                <td style="width: 10%;" class="text-end"><strong>{{ armwrestler[1] }}</strong></td>
+                {% if username %}
+                <td style="width: 10%;" class="text-center">
+                    <button type="button" class="btn btn-danger btn-sm" 
+                    hx-post="{{ url_for('confirm_remove', name=armwrestler[0]) }}" hx-target="#confirmModalRemove" hx-trigger="click" 
+                    data-bs-toggle="modal" data-bs-target="#confirmModal">Remove</button>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
 <div class="alert alert-secondary" role="alert">
     The ELO rating system is used to calculate the relative skill levels of players in competitor vs competitor games/sports. 
     The number of points won/lost after a match depends on the expected outcome of the match.
