@@ -3,17 +3,18 @@
 {% block title %}Closest Matches{% endblock %}
 
 {% block content %}
-
-<div class="row align-items-center mb-4">
-    <div class="col-auto p-0">
-        <form action="{{ url_for('ranking') }}" method="GET">
-            <button type="submit" class="btn">
-                <i class="bi bi-arrow-left fs-3"></i>
-            </button>
-        </form>
-    </div>
-    <div class="col d-flex align-items-center px-1">
-        <h2 class="mb-0">Closest matches</h2>
+<div class="mb-4">
+    <div class="row p-auto m-auto">
+        <div class="col-auto p-0">
+            <form action="{{ url_for('ranking') }}" method="GET">
+                <button type="submit" class="btn px-1 py-0 d-inline-flex">
+                    <i class="bi bi-arrow-left fs-3"></i>
+                </button>
+            </form>
+        </div>
+        <div class="col d-flex align-items-center px-2">
+            <h2 class="mb-0">Closest matches</h2>
+        </div>
     </div>
 </div>
 
@@ -34,14 +35,14 @@
 {% endif %}
     <input type="hidden" name="arm" value="{{ arm }}">
     <input type="hidden" name="armwrestler1" value="{{ match[1] }}">
-    <input type="hidden" name="armwrestler2" value="{{ match[4] }}">
+    <input type="hidden" name="armwrestler2" value="{{ match[5] }}">
     <button type="submit" class="btn btn-light p-0 w-100">
         <div class="card">
             <div class="card-header bg-transparent">
                 <div class="row mt-2">
                     <div class="col-12 col-lg-auto text-center mb-2">
                         <div>
-                            <strong>#{{ match[0] }}</strong> {{ match[1] }}<strong>({{ match[2] }})</strong>
+                            <strong>#{{ match[0] }}</strong> {{ match[2] }}<strong>({{ match[3] }})</strong>
                         </div>
                     </div>
                     <div class="col-12 col-lg-auto text-center mb-2">
@@ -49,7 +50,7 @@
                     </div>
                     <div class="col-12 col-lg-auto text-center mb-2">
                         <div>
-                            <strong>#{{ match[3] }}</strong> {{ match[4] }}<strong>({{ match[5] }})</strong>
+                            <strong>#{{ match[4] }}</strong> {{ match[6] }}<strong>({{ match[7] }})</strong>
                         </div>
                     </div>
                 </div>
@@ -58,10 +59,10 @@
                 <div class="card-text">
                     <div class="row justify-content-md-center justify-content-lg-start">
                         <div class="col-12 col-md-auto mb-2 mb-md-0 text-start">
-                            Win chance:<span class="fs-6 badge text-{{ match[9] }}">{{ match[7] }}%</span>|<span class="fs-6 badge text-{{ match[10] }}">{{ match[8] }}%</span>
+                            Win chance:<span class="fs-6 badge text-{{ match[11] }}">{{ match[9] }}%</span>|<span class="fs-6 badge text-{{ match[12] }}">{{ match[10] }}%</span>
                         </div>
                         <div class="col-12 col-md-auto mb-2 mb-md-0 text-start">
-                            ELO difference:<span class="fs-6 badge text-dark">{{ match[6] }}</span>
+                            ELO difference:<span class="fs-6 badge text-dark">{{ match[8] }}</span>
                         </div>
                     </div>
                 </div>

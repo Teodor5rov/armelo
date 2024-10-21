@@ -4,16 +4,18 @@
 
 {% block content %}
 <div class="mx-auto" style="max-width: 800px;">
-    <div class="row align-items-center mb-4">
-        <div class="col-auto p-0">
-            <form action="{{ url_for('ranking') }}" method="GET">
-                <button type="submit" class="btn">
-                    <i class="bi bi-arrow-left fs-3"></i>
-                </button>
-            </form>
-        </div>
-        <div class="col d-flex align-items-center px-1">
-            <h2 class="mb-0">Prediction</h2>
+    <div class="mb-4">
+        <div class="row p-auto m-auto">
+            <div class="col-auto p-0">
+                <form action="{{ url_for('ranking') }}" method="GET">
+                    <button type="submit" class="btn px-1 py-0 d-inline-flex">
+                        <i class="bi bi-arrow-left fs-3"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="col d-flex align-items-center px-2">
+                <h2 class="mb-0">Prediction</h2>
+            </div>
         </div>
     </div>
     <div class="alert alert-secondary" role="alert">

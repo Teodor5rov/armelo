@@ -39,11 +39,11 @@
         </div>
     </div>
     
-    <div class="additional-controls mt-2">
+    <div class="additional-controls mt-4">
         <div class="row">
             <div class="col">
                 {% if member_ready %}
-                <button type="submit" name="edit_member" class="btn btn-success mt-2">Edit member</button>
+                <button type="submit" name="edit_member" class="btn btn-success mt-2">Save changes</button>
                 {% elif error %}
                 <div class="text-danger mt-2">{{ error }}</div>
                 {% endif %}

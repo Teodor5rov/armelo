@@ -133,12 +133,13 @@ def ranking(arm='right'):
     username = session.get('username')
     return render_template('ranking.html', active_armwrestlers=active_armwrestlers, inactive_armwrestlers=inactive_armwrestlers, username=username, arm=arm)
 
+
 @app.route("/edit_member", methods=["GET", "POST"])
 def edit_member():
     if not session.get('username'):
         return redirect(url_for('login'))
 
-    status_options = ["active", "inactive"] 
+    status_options = ["active", "inactive"]
 
     current_user = session.get('username')
 
@@ -147,8 +148,8 @@ def edit_member():
     name = request.form.get('name', current_name)
     current_status = db_execute('''SELECT CASE WHEN active_until >= DATE('now') THEN 'active' ELSE 'inactive' END AS current_status FROM armwrestlers WHERE id = ?''', id)[0][0]
     armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
-    right_elo = request.form.get('right_elo', str(get_current_elo_new("right", [id])[0]))
-    left_elo = request.form.get('left_elo', str(get_current_elo_new("left", [id])[0]))
+    right_elo = request.form.get('right_elo', str(get_current_elo("right", [id])[0]))
+    left_elo = request.form.get('left_elo', str(get_current_elo("left", [id])[0]))
     selected_status = request.form.get('selected_status', current_status)
     member_ready = False
     error = None
@@ -195,7 +196,7 @@ def edit_member():
         except sqlite3.DatabaseError as error:
             print(error)
         return redirect(url_for('ranking'))
-    
+
     template_data = {
         'id': id,
         'name': name,
@@ -227,7 +228,7 @@ def confirm_remove():
         except sqlite3.DatabaseError as error:
             print(error)
         return redirect(url_for('ranking'))
-    
+
     return render_template('confirm_remove.html', id=id, current_name=current_name)
 
 
@@ -243,15 +244,17 @@ def closest_matches():
     query = """
     WITH rankedarmwrestlers AS (
         SELECT DENSE_RANK() OVER (ORDER BY {0} DESC) AS rank, 
-               name, 
+               id, name, 
                {0} AS elo
         FROM armwrestlers
     )
     SELECT 
         a.rank AS rank1, 
-        a.name AS armwrestler1, 
+        a.id AS armwrestler1_id,
+        a.name AS armwrestler1,
         a.elo AS elo1, 
-        b.rank AS rank2, 
+        b.rank AS rank2,
+        b.id AS armwrestler2_id,
         b.name AS armwrestler2, 
         b.elo AS elo2, 
         ABS(a.elo - b.elo) AS elo_difference
@@ -264,7 +267,7 @@ def closest_matches():
     closest_matches = db_execute(query)
     closest_matches_with_predictions = []
     for match in closest_matches:
-        binom_predicted_1, binom_predicted_2 = binom_prediction(match[2], match[5])
+        binom_predicted_1, binom_predicted_2 = binom_prediction(match[3], match[7])
         binom_predicted_1, binom_predicted_2 = round(binom_predicted_1 * 100, 1), round(binom_predicted_2 * 100, 1)
         color_1, color_2 = (f"success", "danger") if binom_predicted_1 > binom_predicted_2 else ((f"danger", "success") if binom_predicted_1 < binom_predicted_2 else ("secondary", "secondary"))
         match_with_prediction = match + (binom_predicted_1, binom_predicted_2, color_1, color_2)
@@ -282,8 +285,13 @@ def add_new_member():
 
     name = request.form.get('name', '').strip()
     arm = request.form.get('arm', 'right')
-    armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
-    selected_armwrestler_2 = request.form.get('armwrestler2', 'none')
+    armwrestlers = db_execute('SELECT id, name FROM armwrestlers ORDER BY LOWER(name)')
+    try:
+        selected_armwrestler_2_id = int(request.form.get('armwrestler2')) if request.form.get('armwrestler2') else None
+        selected_armwrestler_2_name = db_execute('SELECT name FROM armwrestlers WHERE id = ?', selected_armwrestler_2_id)[0][0] if selected_armwrestler_2_id else 'none'
+    except (ValueError, IndexError):
+        selected_armwrestler_2_id = None
+        selected_armwrestler_2_name = 'none'
     supermatch_formats = list(SUPERMATCH_FORMATS.keys())
     value_for_score = None
     right_elo = request.form.get('right_elo', '0')
@@ -300,7 +308,7 @@ def add_new_member():
     if not name and request.method == "POST":
         error = "No name entered"
 
-    armwrestler_names = [aw[0] for aw in armwrestlers]
+    armwrestler_names = [aw[1] for aw in armwrestlers]
     if name in armwrestler_names:
         error = "Name already taken"
 
@@ -311,8 +319,8 @@ def add_new_member():
     max_rounds = SUPERMATCH_FORMATS[selected_format][0]
 
     if arm in ['left', 'right'] and \
-            name != selected_armwrestler_2 and \
-            selected_armwrestler_2 in armwrestler_names:
+            name != selected_armwrestler_2_name and \
+            selected_armwrestler_2_name in armwrestler_names:
         calculation_ready = True
 
     try:
@@ -342,7 +350,7 @@ def add_new_member():
                 value_for_score = (max_rounds // 2) + 1
             armwrestler_1_score, armwrestler_2_score = match_result(max_rounds, value_for_score, SUPERMATCH_FORMATS[selected_format][2])
 
-        armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_2])[0]
+        armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_2_id])[0]
         elo_from_match = expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
 
         add_to_avg_pressed = request.form.get('add_to_avg', False)
@@ -364,7 +372,7 @@ def add_new_member():
 
         reset_pressed = request.form.get('reset', False)
         if reset_pressed:
-            selected_armwrestler_2 = 'none'
+            selected_armwrestler_2_id, selected_armwrestler_2_name = None, 'none'
             right_elo, left_elo = 0, 0
             refs_right, refs_left = 0, 0
             calculation_ready = False
@@ -389,7 +397,7 @@ def add_new_member():
     template_data = {
         'arm': arm,
         'armwrestlers': armwrestlers,
-        'selected_armwrestler_2': selected_armwrestler_2,
+        'selected_armwrestler_2_id': selected_armwrestler_2_id,
         'supermatch_formats': supermatch_formats, 'selected_format': selected_format,
         'value_for_score': value_for_score, 'max_rounds': max_rounds,
         'name': name,
@@ -411,7 +419,17 @@ def add_new_member():
 
 @app.route("/history")
 def history():
-    history = db_execute('SELECT * FROM history ORDER BY id DESC')
+    history = db_execute('''
+        SELECT h.id, a1.name AS armwrestler1_name, a2.name AS armwrestler2_name, h.arm, 
+               h.armwrestler1_rank, h.armwrestler2_rank, h.armwrestler1_elo, h.armwrestler2_elo, 
+               h.armwrestler1_score, h.armwrestler2_score, h.armwrestler1_elo_diff, h.armwrestler2_elo_diff, 
+               h.selected_format, h.date
+        FROM history h
+        JOIN armwrestlers a1 ON h.armwrestler1_id = a1.id
+        JOIN armwrestlers a2 ON h.armwrestler2_id = a2.id
+        ORDER BY h.id DESC
+    ''')
+
     formatted_data = []
     for record in history:
         armwrestler_1_diff_format, armwrestler_2_diff_format = record[10], record[11]
@@ -437,11 +455,11 @@ def undo_last_match():
         return redirect(url_for('login'))
 
     try:
-        armwrestler1_name, armwrestler2_name, arm, armwrestler1_elo, armwrestler2_elo = db_execute(
-            'SELECT armwrestler1_name, armwrestler2_name, arm, armwrestler1_elo, armwrestler2_elo FROM history ORDER BY id DESC LIMIT 1')[0]
+        armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo = db_execute(
+            'SELECT armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo FROM history ORDER BY id DESC LIMIT 1')[0]
         dbarm = 'right_elo' if arm == 'right' else 'left_elo'
-        db_execute("UPDATE armwrestlers SET {} = ? WHERE name = ?".format(dbarm), armwrestler1_elo, armwrestler1_name)
-        db_execute("UPDATE armwrestlers SET {} = ? WHERE name = ?".format(dbarm), armwrestler2_elo, armwrestler2_name)
+        db_execute("UPDATE armwrestlers SET {} = ? WHERE id = ?".format(dbarm), armwrestler1_elo, armwrestler1_id)
+        db_execute("UPDATE armwrestlers SET {} = ? WHERE id = ?".format(dbarm), armwrestler2_elo, armwrestler2_id)
         db_execute('DELETE FROM history WHERE id = (SELECT MAX(id) FROM history)')
     except (sqlite3.DatabaseError, IndexError) as error:
         print(error)
@@ -456,8 +474,11 @@ def supermatch():
     current_user = session.get('username')
 
     arm = request.form.get('arm', 'right')
-    selected_armwrestler_1 = request.form.get('armwrestler1', 'none')
-    selected_armwrestler_2 = request.form.get('armwrestler2', 'none')
+    try:
+        selected_armwrestler_1_id = int(request.form.get('armwrestler1')) if request.form.get('armwrestler1') else None
+        selected_armwrestler_2_id = int(request.form.get('armwrestler2')) if request.form.get('armwrestler2') else None
+    except (ValueError, IndexError):
+        selected_armwrestler_1_id, selected_armwrestler_2_id = None, None
     supermatch_formats = list(SUPERMATCH_FORMATS.keys())
     supermatch_ready = False
     value_for_score = None
@@ -466,7 +487,8 @@ def supermatch():
     armwrestler_1_color, armwrestler_2_color = None, None
     custom_score = request.form.get('custom_score', False)
     armwrestler_1_elo, armwrestler_2_elo = None, None
-    armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
+    armwrestlers = db_execute('SELECT id, name FROM armwrestlers ORDER BY LOWER(name)')
+    armwrestlers_2 = None
 
     selected_format = request.form.get('supermatch_format', 'none')
     if selected_format not in supermatch_formats:
@@ -474,16 +496,18 @@ def supermatch():
 
     max_rounds = SUPERMATCH_FORMATS[selected_format][0]
 
-    if selected_armwrestler_1 == selected_armwrestler_2:
-        selected_armwrestler_2 = 'none'
-    armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1] if selected_armwrestler_1 != 'none' else None
+    if selected_armwrestler_1_id:
+        armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1_id]
+
+    if selected_armwrestler_1_id is selected_armwrestler_2_id:
+        selected_armwrestler_2_id = None
 
     # Checks if all conditions are met for supermatch ready
-    armwrestler_names = [aw[0] for aw in armwrestlers]
+    armwrestler_ids = [aw[0] for aw in armwrestlers]
     if arm in ['left', 'right'] and \
-            selected_armwrestler_1 != selected_armwrestler_2 and \
-            selected_armwrestler_1 in armwrestler_names and \
-            selected_armwrestler_2 in armwrestler_names and \
+            selected_armwrestler_1_id != selected_armwrestler_2_id and \
+            selected_armwrestler_1_id in armwrestler_ids and \
+            selected_armwrestler_2_id in armwrestler_ids and \
             selected_format in supermatch_formats:
         if custom_score:
             try:
@@ -501,7 +525,7 @@ def supermatch():
                 value_for_score = (max_rounds // 2) + 1
             armwrestler_1_score, armwrestler_2_score = match_result(max_rounds, value_for_score, SUPERMATCH_FORMATS[selected_format][2])
 
-        armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
+        armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1_id, selected_armwrestler_2_id])
         armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
         armwrestler_1_diff, armwrestler_1_color = (f"+{armwrestler_1_diff}", "text-success") if armwrestler_1_diff > 0 else ((str(armwrestler_1_diff),
                                                                                                                               "text-danger") if armwrestler_1_diff < 0 else ("0", "text-secondary"))
@@ -511,13 +535,13 @@ def supermatch():
 
     submit_pressed = 'submit_match' in request.form
     if submit_pressed and supermatch_ready:
-        submit_supermatch(arm, selected_armwrestler_1, selected_armwrestler_2, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format, current_user)
+        submit_supermatch(arm, selected_armwrestler_1_id, selected_armwrestler_2_id, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format, current_user)
         return redirect(url_for('ranking'))
 
     template_data = {
         'arm': arm,
         'armwrestlers': armwrestlers, 'armwrestlers_2': armwrestlers_2,
-        'selected_armwrestler_1': selected_armwrestler_1, 'selected_armwrestler_2': selected_armwrestler_2,
+        'selected_armwrestler_1_id': selected_armwrestler_1_id, 'selected_armwrestler_2_id': selected_armwrestler_2_id,
         'supermatch_formats': supermatch_formats, 'selected_format': selected_format, 'supermatch_ready': supermatch_ready,
         'value_for_score': value_for_score, 'max_rounds': max_rounds,
         'armwrestler_1_score': armwrestler_1_score, 'armwrestler_2_score': armwrestler_2_score,
@@ -533,20 +557,20 @@ def supermatch():
         return render_template('supermatch.html', **template_data)
 
 
-def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format, current_user):
+def submit_supermatch(arm, armwrestler1_id, armwrestler2_id, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format, current_user):
 
     dbarm = 'right_elo' if arm == 'right' else 'left_elo'
     updated_1, updated_2 = calculate_elo_with_bonus(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
 
-    armwrestler_1_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, name FROM armwrestlers) AS RankedArmwrestlers WHERE name = ?'.format(dbarm), armwrestler_1)[0][0]
-    armwrestler_2_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, name FROM armwrestlers) AS RankedArmwrestlers WHERE name = ?'.format(dbarm), armwrestler_2)[0][0]
+    armwrestler_1_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, id FROM armwrestlers) AS RankedArmwrestlers WHERE id = ?'.format(dbarm), armwrestler1_id)[0][0]
+    armwrestler_2_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, id FROM armwrestlers) AS RankedArmwrestlers WHERE id = ?'.format(dbarm), armwrestler2_id)[0][0]
 
     armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
 
     try:
         query = '''
         INSERT INTO history ( 
-        armwrestler1_name, armwrestler2_name, 
+        armwrestler1_id, armwrestler2_id, 
         arm, 
         selected_format,
         armwrestler1_rank, armwrestler2_rank, 
@@ -557,7 +581,7 @@ def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, ar
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         '''
         db_execute(query,
-                   armwrestler_1, armwrestler_2,
+                   armwrestler1_id, armwrestler2_id,
                    arm,
                    selected_format,
                    armwrestler_1_rank, armwrestler_2_rank,
@@ -570,8 +594,8 @@ def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, ar
         active_until_date = today + timedelta(days=180)
         active_until_str = active_until_date.strftime('%Y-%m-%d')
 
-        db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE name = ?".format(dbarm), updated_1, active_until_str, armwrestler_1)
-        db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE name = ?".format(dbarm), updated_2, active_until_str, armwrestler_2)
+        db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE id = ?".format(dbarm), updated_1, active_until_str, armwrestler1_id)
+        db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE id = ?".format(dbarm), updated_2, active_until_str, armwrestler2_id)
 
     except sqlite3.DatabaseError as error:
         print(error)
@@ -581,20 +605,19 @@ def submit_supermatch(arm, armwrestler_1, armwrestler_2, armwrestler_1_score, ar
 def prediction():
 
     arm = request.args.get('arm', 'right')
-    selected_armwrestler_1 = request.args.get('armwrestler1', 'none')
-    selected_armwrestler_2 = request.args.get('armwrestler2', 'none')
+    try:
+        selected_armwrestler_1_id = int(request.args.get('armwrestler1')) if request.args.get('armwrestler1') else None
+        selected_armwrestler_2_id = int(request.args.get('armwrestler2')) if request.args.get('armwrestler2') else None
+    except (ValueError, IndexError):
+        selected_armwrestler_1_id, selected_armwrestler_2_id = None, None
     supermatch_formats = list(SUPERMATCH_FORMATS.keys())
-    armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
+    armwrestlers = db_execute('SELECT id, name FROM armwrestlers ORDER BY LOWER(name)')
+    armwrestlers_2 = None
     prediction_ready = False
     armwrestler_1_elo, armwrestler_2_elo = None, None
     expected_1, expected_2 = None, None
     binom_predicted_1, binom_predicted_2, binom_draw = None, None, None
     win_chance_color, score_color = None, None
-
-    if selected_armwrestler_1 == selected_armwrestler_2:
-        selected_armwrestler_2 = 'none'
-    armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1] if selected_armwrestler_1 != 'none' else None
-    armwrestler_names = [aw[0] for aw in armwrestlers]
 
     selected_format = request.args.get('supermatch_format', 'none')
     if selected_format not in supermatch_formats:
@@ -602,12 +625,19 @@ def prediction():
 
     max_rounds = SUPERMATCH_FORMATS[selected_format][0]
 
+    if selected_armwrestler_1_id:
+        armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1_id]
+
+    if selected_armwrestler_1_id is selected_armwrestler_2_id:
+        selected_armwrestler_2_id = None
+
+    armwrestler_ids = [aw[0] for aw in armwrestlers]
     if arm in ['left', 'right'] and \
-            selected_armwrestler_1 != selected_armwrestler_2 and \
-            selected_armwrestler_1 in armwrestler_names and \
-            selected_armwrestler_2 in armwrestler_names and \
+            selected_armwrestler_1_id != selected_armwrestler_2_id and \
+            selected_armwrestler_1_id in armwrestler_ids and \
+            selected_armwrestler_2_id in armwrestler_ids and \
             selected_format in supermatch_formats:
-        armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
+        armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1_id, selected_armwrestler_2_id])
         expected_1, expected_2 = expected_score_rounds(armwrestler_1_elo, armwrestler_2_elo, SUPERMATCH_FORMATS[selected_format][2], max_rounds)
         binom_predicted_1, binom_predicted_2 = binom_prediction(armwrestler_1_elo, armwrestler_2_elo, max_rounds)
         binom_draw = 1 - (binom_predicted_1 + binom_predicted_2)
@@ -620,7 +650,7 @@ def prediction():
 
     template_data = {
         'arm': arm,
-        'selected_armwrestler_1': selected_armwrestler_1, 'selected_armwrestler_2': selected_armwrestler_2,
+        'selected_armwrestler_1_id': selected_armwrestler_1_id, 'selected_armwrestler_2_id': selected_armwrestler_2_id,
         'armwrestlers': armwrestlers, 'armwrestlers_2': armwrestlers_2,
         'supermatch_formats': supermatch_formats, 'selected_format': selected_format,
         'prediction_ready': prediction_ready,
@@ -641,11 +671,14 @@ def elo_from_match():
 
     ranked = request.args.get('ranked', 'ranked')
     arm = request.args.get('arm', 'right')
-    selected_armwrestler_1 = request.args.get('armwrestler1', 'none')
-    selected_armwrestler_2 = request.args.get('armwrestler2', 'none')
+    try:
+        selected_armwrestler_1_id = int(request.args.get('armwrestler1')) if request.args.get('armwrestler1') else None
+        selected_armwrestler_2_id = int(request.args.get('armwrestler2')) if request.args.get('armwrestler2') else None
+    except (ValueError, IndexError):
+        selected_armwrestler_1_id, selected_armwrestler_2_id = None, None
     supermatch_formats = list(SUPERMATCH_FORMATS.keys())
     value_for_score = None
-    armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
+    armwrestlers = db_execute('SELECT id, name FROM armwrestlers ORDER BY LOWER(name)')
     armwrestlers_2 = None
     armwrestler_1_score, armwrestler_2_score = None, None
     armwrestler_1_diff, armwrestler_2_diff = None, None
@@ -655,29 +688,31 @@ def elo_from_match():
     calculation_ready = False
     elo_from_match = None
 
-    if ranked == 'ranked':
-        if selected_armwrestler_1 == selected_armwrestler_2:
-            selected_armwrestler_2 = 'none'
-        armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1] if selected_armwrestler_1 != 'none' else None
-    armwrestler_names = [aw[0] for aw in armwrestlers]
-
     selected_format = request.args.get('supermatch_format', 'none')
     if selected_format not in supermatch_formats:
         selected_format = 'Best of 5'
 
     max_rounds = SUPERMATCH_FORMATS[selected_format][0]
 
+    if ranked == 'ranked':
+        if selected_armwrestler_1_id:
+            armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1_id]
+
+        if selected_armwrestler_1_id is selected_armwrestler_2_id:
+            selected_armwrestler_2_id = None
+
+    armwrestler_ids = [aw[0] for aw in armwrestlers]
     if arm in ['left', 'right'] and \
             ranked == 'ranked' and \
-            selected_armwrestler_1 != selected_armwrestler_2 and \
-            selected_armwrestler_1 in armwrestler_names and \
-            selected_armwrestler_2 in armwrestler_names and \
+            selected_armwrestler_1_id != selected_armwrestler_2_id and \
+            selected_armwrestler_1_id in armwrestler_ids and \
+            selected_armwrestler_2_id in armwrestler_ids and \
             selected_format in supermatch_formats:
         calculation_ready = True
 
     elif arm in ['left', 'right'] and \
             ranked == 'unranked' and \
-            selected_armwrestler_1 in armwrestler_names and \
+            selected_armwrestler_1_id in armwrestler_ids and \
             selected_format in supermatch_formats:
         calculation_ready = True
 
@@ -699,7 +734,7 @@ def elo_from_match():
             armwrestler_1_score, armwrestler_2_score = match_result(max_rounds, value_for_score, SUPERMATCH_FORMATS[selected_format][2])
 
         if ranked == 'ranked':
-            armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1, selected_armwrestler_2])
+            armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1_id, selected_armwrestler_2_id])
             armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
             armwrestler_1_diff, armwrestler_1_color = (f"+{armwrestler_1_diff}", "text-success") if armwrestler_1_diff > 0 else ((str(armwrestler_1_diff),
                                                                                                                                   "text-danger") if armwrestler_1_diff < 0 else ("0", "text-secondary"))
@@ -707,12 +742,12 @@ def elo_from_match():
                                                                                                                                   "text-danger") if armwrestler_2_diff < 0 else ("0", "text-secondary"))
 
         elif ranked == 'unranked':
-            armwrestler_1_elo = get_current_elo(arm, [selected_armwrestler_1])[0]
+            armwrestler_1_elo = get_current_elo(arm, [selected_armwrestler_1_id])[0]
             elo_from_match = expected_elo_from_score(armwrestler_1_elo, (armwrestler_1_score, armwrestler_2_score))
 
     template_data = {
         'ranked': ranked, 'arm': arm,
-        'selected_armwrestler_1': selected_armwrestler_1, 'selected_armwrestler_2': selected_armwrestler_2,
+        'selected_armwrestler_1_id': selected_armwrestler_1_id, 'selected_armwrestler_2_id': selected_armwrestler_2_id,
         'armwrestlers': armwrestlers, 'armwrestlers_2': armwrestlers_2,
         'supermatch_formats': supermatch_formats, 'selected_format': selected_format,
         'value_for_score': value_for_score, 'max_rounds': max_rounds,
@@ -730,22 +765,7 @@ def elo_from_match():
         return render_template('elo_from_match.html', **template_data)
 
 
-def get_current_elo(arm, armwrestlers):
-    if arm not in ['right', 'left']:
-        raise ValueError("Invalid arm. Must be 'right' or 'left'.")
-
-    dbarm = 'right_elo' if arm == 'right' else 'left_elo'
-    elos = []
-
-    for armwrestler in armwrestlers:
-        result = db_execute('SELECT {} FROM armwrestlers WHERE name = ?'.format(dbarm), armwrestler)
-        elo = result[0][0]
-        elos.append(elo)
-
-    return elos
-
-
-def get_current_elo_new(arm, armwrestler_ids):
+def get_current_elo(arm, armwrestler_ids):
     if arm not in ['right', 'left']:
         raise ValueError("Invalid arm. Must be 'right' or 'left'.")
 

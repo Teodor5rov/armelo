@@ -17,7 +17,7 @@
             <select class="form-select text-truncate" id="armwrestler1" name="armwrestler1" required>
                 <option disabled selected value="none">Choose...</option>
                 {% for armwrestler in armwrestlers %}
-                    <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_1 == armwrestler[0] %}selected{% endif %}>{{ armwrestler[0] }}</option>
+                <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_1_id == armwrestler[0] %}selected{% endif %}>{{ armwrestler[1] }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -30,11 +30,11 @@
 
         <div class="col">
             <label for="armwrestler2" class="form-label">Armwrestler 2:</label>
-            {% if selected_armwrestler_1 != 'none' %}
+            {% if selected_armwrestler_1_id %}
                 <select class="form-select text-truncate" id="armwrestler2" name="armwrestler2" required>
                     <option disabled selected value="none">Choose...</option>
                     {% for armwrestler in armwrestlers_2 %}
-                        <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_2 == armwrestler[0] %}selected{% endif %}>{{ armwrestler[0] }}</option>
+                    <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_2_id == armwrestler[0] %}selected{% endif %}>{{ armwrestler[1] }}</option>
                     {% endfor %}
                 </select>
             {% else %}
