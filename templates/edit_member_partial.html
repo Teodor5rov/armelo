@@ -1,5 +1,6 @@
 <form class="mb-4" method="POST" action="{{ url_for('edit_member') }}" hx-post="{{ url_for('edit_member') }}" hx-trigger="change, keyup delay:1s" hx-swap="outerHTML">
     <div class="mx-auto" style="max-width: 400px;">
+        <input type="hidden" name="id" value="{{ id }}">
         <div class="mb-2">
             <label for="name" class="form-label">Name</label>
             <input type="text" class="form-control" id="name" name="name" value="{{ name }}" autocomplete="name">
@@ -37,24 +38,21 @@
             </div>
         </div>
     </div>
-
-    {% if member_ready %}
+    
     <div class="additional-controls mt-2">
         <div class="row">
             <div class="col">
+                {% if member_ready %}
                 <button type="submit" name="edit_member" class="btn btn-success mt-2">Edit member</button>
+                {% elif error %}
+                <div class="text-danger mt-2">{{ error }}</div>
+                {% endif %}
             </div>
             <div class="col text-end">
                 <button type="button" class="btn btn-danger mt-2" 
-                hx-post="{{ url_for('confirm_remove', name=name) }}" hx-target="#confirmModalRemove" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#confirmModal">Remove</button>
+                hx-post="{{ url_for('confirm_remove', id=id, current_name=current_name) }}" hx-target="#confirmModalRemove" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#confirmModal">Remove</button>
             </div>
         </div>
-
-        {% if error %}
-        <div class="text-danger my-2">
-            {{ error }}
-        </div>
-        {% endif %}
 
         <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
@@ -68,5 +66,4 @@
             </div>
         </div>   
     </div>
-    {% endif %}
 </form>    

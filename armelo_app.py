@@ -128,11 +128,10 @@ def logout():
 @app.route("/<any(right, left):arm>")
 def ranking(arm='right'):
     order_by = 'right_elo' if arm == 'right' else 'left_elo'
-    active_armwrestlers = db_execute('''SELECT DENSE_RANK() OVER (ORDER BY {0} DESC) AS rank, name, {0} FROM armwrestlers WHERE active_until >= DATE('now')'''.format(order_by))
-    inactive_armwrestlers = db_execute('''SELECT name, {0} FROM armwrestlers WHERE active_until < DATE('now') ORDER BY {0} DESC'''.format(order_by))
+    active_armwrestlers = db_execute('''SELECT DENSE_RANK() OVER (ORDER BY {0} DESC) AS rank, id, name, {0} FROM armwrestlers WHERE active_until >= DATE('now')'''.format(order_by))
+    inactive_armwrestlers = db_execute('''SELECT id, name, {0} FROM armwrestlers WHERE active_until < DATE('now') ORDER BY {0} DESC'''.format(order_by))
     username = session.get('username')
     return render_template('ranking.html', active_armwrestlers=active_armwrestlers, inactive_armwrestlers=inactive_armwrestlers, username=username, arm=arm)
-
 
 @app.route("/edit_member", methods=["GET", "POST"])
 def edit_member():
@@ -143,11 +142,13 @@ def edit_member():
 
     current_user = session.get('username')
 
-    name = request.form.get('name').strip()
-    current_status = db_execute('''SELECT CASE WHEN active_until >= DATE('now') THEN 'active' ELSE 'inactive' END AS current_status FROM armwrestlers WHERE name = ?''', name)[0][0]
+    id = request.form.get('id')
+    current_name = db_execute('SELECT name FROM armwrestlers WHERE id = ?', id)[0][0]
+    name = request.form.get('name', current_name)
+    current_status = db_execute('''SELECT CASE WHEN active_until >= DATE('now') THEN 'active' ELSE 'inactive' END AS current_status FROM armwrestlers WHERE id = ?''', id)[0][0]
     armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
-    right_elo = request.form.get('right_elo', str(get_current_elo("right", [name])[0]))
-    left_elo = request.form.get('left_elo', str(get_current_elo("left", [name])[0]))
+    right_elo = request.form.get('right_elo', str(get_current_elo_new("right", [id])[0]))
+    left_elo = request.form.get('left_elo', str(get_current_elo_new("left", [id])[0]))
     selected_status = request.form.get('selected_status', current_status)
     member_ready = False
     error = None
@@ -156,8 +157,8 @@ def edit_member():
         error = "No name entered"
 
     armwrestler_names = [aw[0] for aw in armwrestlers]
-    # if name in armwrestler_names:
-    #     error = "Name already taken"
+    if name in armwrestler_names and name != current_name:
+        error = "Name already taken"
 
     if selected_status not in status_options:
         error = "Invalid status"
@@ -168,8 +169,9 @@ def edit_member():
         right_elo, left_elo = int(right_elo), int(left_elo)
     except (ValueError):
         error = "Invalid ELO data"
+        right_elo, left_elo = 0, 0
 
-    if name and name in armwrestler_names and \
+    if name and \
             error == None and \
             right_elo > 0 and \
             left_elo > 0 and \
@@ -187,15 +189,17 @@ def edit_member():
                     today = datetime.today()
                     active_until_date = today - timedelta(days=2)
                     active_until_str = active_until_date.strftime('%Y-%m-%d')
-                db_execute("UPDATE armwrestlers SET right_elo = ?, left_elo = ?, active_until = ? WHERE name = ?", right_elo, left_elo, active_until_str, name)
+                db_execute("UPDATE armwrestlers SET name = ?, right_elo = ?, left_elo = ?, active_until = ?, last_edited_by = ? WHERE id = ?", name, right_elo, left_elo, active_until_str, current_user, id)
             else:
-                db_execute("UPDATE armwrestlers SET right_elo = ?, left_elo = ? WHERE name = ?", right_elo, left_elo, name)
+                db_execute("UPDATE armwrestlers SET name = ?, right_elo = ?, left_elo = ? WHERE id = ?", name, right_elo, left_elo, id)
         except sqlite3.DatabaseError as error:
             print(error)
         return redirect(url_for('ranking'))
     
     template_data = {
+        'id': id,
         'name': name,
+        'current_name': current_name,
         'right_elo': right_elo, 'left_elo': left_elo,
         'status_options': status_options,
         'selected_status': selected_status,
@@ -209,26 +213,22 @@ def edit_member():
         return render_template('edit_member.html', **template_data)
 
 
-@app.route("/remove_member", methods=["POST"])
-def remove_member():
-    if not session.get('username'):
-        return redirect(url_for('login'))
-
-    name = request.form.get('name')
-    try:
-        db_execute("DELETE FROM armwrestlers WHERE name = ?", name)
-    except sqlite3.DatabaseError as error:
-        print(error)
-    return redirect(url_for('ranking'))
-
-
 @app.route("/confirm_remove", methods=["POST"])
 def confirm_remove():
     if not session.get('username'):
         return redirect(url_for('login'))
 
-    name = request.args.get('name')
-    return render_template('confirm_remove.html', name=name)
+    id = request.form.get('id') or request.args.get('id')
+    current_name = request.form.get('current_name') or request.args.get('current_name')
+
+    if 'confirm_remove' in request.form:
+        try:
+            db_execute("DELETE FROM armwrestlers WHERE id = ?", id)
+        except sqlite3.DatabaseError as error:
+            print(error)
+        return redirect(url_for('ranking'))
+    
+    return render_template('confirm_remove.html', id=id, current_name=current_name)
 
 
 @app.route("/closest_matches")
@@ -739,6 +739,21 @@ def get_current_elo(arm, armwrestlers):
 
     for armwrestler in armwrestlers:
         result = db_execute('SELECT {} FROM armwrestlers WHERE name = ?'.format(dbarm), armwrestler)
+        elo = result[0][0]
+        elos.append(elo)
+
+    return elos
+
+
+def get_current_elo_new(arm, armwrestler_ids):
+    if arm not in ['right', 'left']:
+        raise ValueError("Invalid arm. Must be 'right' or 'left'.")
+
+    dbarm = 'right_elo' if arm == 'right' else 'left_elo'
+    elos = []
+
+    for id in armwrestler_ids:
+        result = db_execute('SELECT {} FROM armwrestlers WHERE id = ?'.format(dbarm), id)
         elo = result[0][0]
         elos.append(elo)
 

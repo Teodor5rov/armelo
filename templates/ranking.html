@@ -31,12 +31,12 @@
             {% for armwrestler in active_armwrestlers %}
             <tr>
                 <td style="width: 5%;"><strong>#{{ armwrestler[0] }}</strong></td>
-                <td style="width: 75%;">{{ armwrestler[1] }}</td>
-                <td style="width: 10%;" class="text-end"><strong>{{ armwrestler[2] }}</strong></td>
+                <td style="width: 75%;">{{ armwrestler[2] }}</td>
+                <td style="width: 10%;" class="text-end"><strong>{{ armwrestler[3] }}</strong></td>
                 {% if username %}
                 <td style="width: 10%;" class="text-center">
                     <form action="{{ url_for('edit_member') }}" method="POST">
-                        <input type="hidden" name="name" value="{{ armwrestler[1] }}">
+                        <input type="hidden" name="id" value="{{ armwrestler[1] }}">
                         <button type="submit" class="btn btn-success btn-sm">Edit</button>
                     </form>
                 </td>
@@ -63,12 +63,12 @@
         <tbody>
             {% for armwrestler in inactive_armwrestlers %}
             <tr>
-                <td style="width: 75%;">{{ armwrestler[0] }}</td>
-                <td style="width: 10%;" class="text-end"><strong>{{ armwrestler[1] }}</strong></td>
+                <td style="width: 75%;">{{ armwrestler[1] }}</td>
+                <td style="width: 10%;" class="text-end"><strong>{{ armwrestler[2] }}</strong></td>
                 {% if username %}
                 <td style="width: 10%;" class="text-center">
                     <form action="{{ url_for('edit_member') }}" method="POST">
-                        <input type="hidden" name="name" value="{{ armwrestler[0] }}">
+                        <input type="hidden" name="id" value="{{ armwrestler[0] }}">
                         <button type="submit" class="btn btn-success btn-sm">Edit</button>
                     </form>
                 </td>
