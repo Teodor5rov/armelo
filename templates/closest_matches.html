@@ -4,7 +4,18 @@
 
 {% block content %}
 
-<h2 class="mb-4">Closest matches</h2>
+<div class="row align-items-center mb-4">
+    <div class="col-auto p-0">
+        <form action="{{ url_for('ranking') }}" method="GET">
+            <button type="submit" class="btn">
+                <i class="bi bi-arrow-left fs-3"></i>
+            </button>
+        </form>
+    </div>
+    <div class="col d-flex align-items-center px-1">
+        <h2 class="mb-0">Closest matches</h2>
+    </div>
+</div>
 
 <p>The top 15 closest matches between ranked armwrestlers based on the ELO scores.</p>
 

@@ -1,0 +1,72 @@
+<form class="mb-4" method="POST" action="{{ url_for('edit_member') }}" hx-post="{{ url_for('edit_member') }}" hx-trigger="change, keyup delay:1s" hx-swap="outerHTML">
+    <div class="mx-auto" style="max-width: 400px;">
+        <div class="mb-2">
+            <label for="name" class="form-label">Name</label>
+            <input type="text" class="form-control" id="name" name="name" value="{{ name }}" autocomplete="name">
+        </div>
+        <!-- Right ELO Section -->
+        <div class="row align-items-center">
+            <div class="col-md-5">
+                <label for="right_elo" class="form-label text-nowrap">Right ELO:</label>
+            </div>
+            <div class="col-md-7 d-flex justify-content-end">
+                <input type="number" class="form-control" id="right_elo" name="right_elo" value="{{ right_elo }}">
+            </div>
+        </div>
+    
+        <!-- Left ELO Section -->
+        <div class="row align-items-center mt-2">
+            <div class="col-md-5">
+                <label for="left_elo" class="form-label text-nowrap">Left ELO:</label>
+            </div>
+            <div class="col-md-7 d-flex justify-content-end">
+                <input type="number" class="form-control" id="left_elo" name="left_elo" value="{{ left_elo }}">
+            </div>
+        </div>
+
+        <div class="row align-items-center mt-2">  
+            <div class="col-md-5">
+                <label for="status" class="form-label">Status:</label>
+            </div>
+            <div class="col-md-7 d-flex justify-content-end">
+                <select class="form-select text-truncate" id="selected_status" name="selected_status" required>
+                    {% for status in status_options %}
+                        <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ status }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    {% if member_ready %}
+    <div class="additional-controls mt-2">
+        <div class="row">
+            <div class="col">
+                <button type="submit" name="edit_member" class="btn btn-success mt-2">Edit member</button>
+            </div>
+            <div class="col text-end">
+                <button type="button" class="btn btn-danger mt-2" 
+                hx-post="{{ url_for('confirm_remove', name=name) }}" hx-target="#confirmModalRemove" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#confirmModal">Remove</button>
+            </div>
+        </div>
+
+        {% if error %}
+        <div class="text-danger my-2">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmModalLabel">Confirm Removal</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div id="confirmModalRemove"></div>
+                </div>
+            </div>
+        </div>   
+    </div>
+    {% endif %}
+</form>    

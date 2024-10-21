@@ -35,9 +35,10 @@
                 <td style="width: 10%;" class="text-end"><strong>{{ armwrestler[2] }}</strong></td>
                 {% if username %}
                 <td style="width: 10%;" class="text-center">
-                    <button type="button" class="btn btn-danger btn-sm" 
-                    hx-post="{{ url_for('confirm_remove', name=armwrestler[1]) }}" hx-target="#confirmModalRemove" hx-trigger="click" 
-                    data-bs-toggle="modal" data-bs-target="#confirmModal">Remove</button>
+                    <form action="{{ url_for('edit_member') }}" method="POST">
+                        <input type="hidden" name="name" value="{{ armwrestler[1] }}">
+                        <button type="submit" class="btn btn-success btn-sm">Edit</button>
+                    </form>
                 </td>
                 {% endif %}
             </tr>
@@ -66,9 +67,10 @@
                 <td style="width: 10%;" class="text-end"><strong>{{ armwrestler[1] }}</strong></td>
                 {% if username %}
                 <td style="width: 10%;" class="text-center">
-                    <button type="button" class="btn btn-danger btn-sm" 
-                    hx-post="{{ url_for('confirm_remove', name=armwrestler[0]) }}" hx-target="#confirmModalRemove" hx-trigger="click" 
-                    data-bs-toggle="modal" data-bs-target="#confirmModal">Remove</button>
+                    <form action="{{ url_for('edit_member') }}" method="POST">
+                        <input type="hidden" name="name" value="{{ armwrestler[0] }}">
+                        <button type="submit" class="btn btn-success btn-sm">Edit</button>
+                    </form>
                 </td>
                 {% endif %}
             </tr>
@@ -81,18 +83,6 @@
     The ELO rating system is used to calculate the relative skill levels of players in competitor vs competitor games/sports. 
     The number of points won/lost after a match depends on the expected outcome of the match.
     If a lower-rated armwrestler wins against a higher-rated armwrestler, they gain more points than if they won against someone of equal or lower rating.
-</div>
-
-<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmModalLabel">Confirm Removal</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div id="confirmModalRemove"></div>
-        </div>
-    </div>
 </div>
 
 {% endblock %}

@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, g, send_from_directory
 from flask_talisman import Talisman
 from werkzeug.security import check_password_hash
-from datetime import datetime, timedelta 
+from datetime import datetime, timedelta
 import logging
 from logging.handlers import RotatingFileHandler
 import sqlite3
@@ -132,6 +132,81 @@ def ranking(arm='right'):
     inactive_armwrestlers = db_execute('''SELECT name, {0} FROM armwrestlers WHERE active_until < DATE('now') ORDER BY {0} DESC'''.format(order_by))
     username = session.get('username')
     return render_template('ranking.html', active_armwrestlers=active_armwrestlers, inactive_armwrestlers=inactive_armwrestlers, username=username, arm=arm)
+
+
+@app.route("/edit_member", methods=["GET", "POST"])
+def edit_member():
+    if not session.get('username'):
+        return redirect(url_for('login'))
+
+    status_options = ["active", "inactive"] 
+
+    current_user = session.get('username')
+
+    name = request.form.get('name').strip()
+    current_status = db_execute('''SELECT CASE WHEN active_until >= DATE('now') THEN 'active' ELSE 'inactive' END AS current_status FROM armwrestlers WHERE name = ?''', name)[0][0]
+    armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
+    right_elo = request.form.get('right_elo', str(get_current_elo("right", [name])[0]))
+    left_elo = request.form.get('left_elo', str(get_current_elo("left", [name])[0]))
+    selected_status = request.form.get('selected_status', current_status)
+    member_ready = False
+    error = None
+
+    if not name and request.method == "POST":
+        error = "No name entered"
+
+    armwrestler_names = [aw[0] for aw in armwrestlers]
+    # if name in armwrestler_names:
+    #     error = "Name already taken"
+
+    if selected_status not in status_options:
+        error = "Invalid status"
+
+    try:
+        if not right_elo.isdigit() or not left_elo.isdigit():
+            raise ValueError
+        right_elo, left_elo = int(right_elo), int(left_elo)
+    except (ValueError):
+        error = "Invalid ELO data"
+
+    if name and name in armwrestler_names and \
+            error == None and \
+            right_elo > 0 and \
+            left_elo > 0 and \
+            selected_status in status_options:
+        member_ready = True
+
+    if 'edit_member' in request.form and member_ready:
+        try:
+            if selected_status != current_status:
+                if selected_status == status_options[0]:
+                    today = datetime.today()
+                    active_until_date = today + timedelta(days=180)
+                    active_until_str = active_until_date.strftime('%Y-%m-%d')
+                elif selected_status == status_options[1]:
+                    today = datetime.today()
+                    active_until_date = today - timedelta(days=2)
+                    active_until_str = active_until_date.strftime('%Y-%m-%d')
+                db_execute("UPDATE armwrestlers SET right_elo = ?, left_elo = ?, active_until = ? WHERE name = ?", right_elo, left_elo, active_until_str, name)
+            else:
+                db_execute("UPDATE armwrestlers SET right_elo = ?, left_elo = ? WHERE name = ?", right_elo, left_elo, name)
+        except sqlite3.DatabaseError as error:
+            print(error)
+        return redirect(url_for('ranking'))
+    
+    template_data = {
+        'name': name,
+        'right_elo': right_elo, 'left_elo': left_elo,
+        'status_options': status_options,
+        'selected_status': selected_status,
+        'member_ready': member_ready,
+        'error': error
+    }
+
+    if request.headers.get('HX-Request'):
+        return render_template('edit_member_partial.html', **template_data)
+    else:
+        return render_template('edit_member.html', **template_data)
 
 
 @app.route("/remove_member", methods=["POST"])
@@ -334,12 +409,6 @@ def add_new_member():
         return render_template('add_new_member.html', **template_data)
 
 
-@app.route("/update_name", methods=["POST"])
-def update_name():
-    name = request.form.get('name')
-    return render_template('add_new_member_name_display.html', name=name)
-
-
 @app.route("/history")
 def history():
     history = db_execute('SELECT * FROM history ORDER BY id DESC')
@@ -354,7 +423,7 @@ def history():
             (str(armwrestler_2_diff_format), "text-danger") if armwrestler_2_diff_format < 0 else ("0", "text-secondary"))
         armwrestler_1_score_color, armwrestler_2_score_color = ("bg-success", "bg-danger") if armwrestler_1_score_color > armwrestler_2_score_color else (
             ("bg-danger", "bg-success") if armwrestler_1_score_color < armwrestler_2_score_color else ("bg-secondary", "bg-secondary"))
-        
+
         date = datetime.strptime(record[13], "%Y-%m-%d %H:%M:%S").strftime("%d %B %Y")
 
         formatted_data.append((armwrestler_1_score_color, armwrestler_2_score_color, armwrestler_1_diff_color, armwrestler_2_diff_color, armwrestler_1_diff_format, armwrestler_2_diff_format, date))
@@ -662,6 +731,9 @@ def elo_from_match():
 
 
 def get_current_elo(arm, armwrestlers):
+    if arm not in ['right', 'left']:
+        raise ValueError("Invalid arm. Must be 'right' or 'left'.")
+
     dbarm = 'right_elo' if arm == 'right' else 'left_elo'
     elos = []
 
