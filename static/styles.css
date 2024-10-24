@@ -23,3 +23,12 @@ html::-webkit-scrollbar, body::-webkit-scrollbar {
 .navbar-brand:hover {
     opacity: 0.8;
 }
+
+.btn-generic {
+    --bs-btn-bg: transparent;
+    --bs-btn-border-color: transparent;
+    --bs-btn-hover-bg: transparent;
+    --bs-btn-hover-border-color: transparent;
+    --bs-btn-active-border-color: var(--bs-secondary);
+    --bs-btn-active-bg: transparent;
+}

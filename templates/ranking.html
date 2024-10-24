@@ -16,25 +16,29 @@
 </div>
 
 <div class="table-responsive rounded mb-2">
-    <table class="table">
+    <table class="table table-hover">
         <thead class="table-dark">
             <tr>
-                <th style="width: 5%;">Rank</th>
-                <th style="width: 75%;">Name</th>
-                <th class="text-end text-nowrap" style="width: 10%;">{{ "Right ELO" if arm == 'right' else "Left ELO" }}</th>
+                <th>Rank</th>
+                <th class="ps-3 w-100">Name</th>
+                <th class="text-end text-nowrap">{{ "Right ELO" if arm == 'right' else "Left ELO" }}</th>
                 {% if username %}
-                <th class="text-center" style="width: 10%;">Action</th>
+                <th class="text-center">Action</th>
                 {% endif %}
             </tr>
         </thead>
         <tbody>
             {% for armwrestler in active_armwrestlers %}
             <tr>
-                <td style="width: 5%;"><strong>#{{ armwrestler[0] }}</strong></td>
-                <td style="width: 75%;">{{ armwrestler[2] }}</td>
-                <td style="width: 10%;" class="text-end"><strong>{{ armwrestler[3] }}</strong></td>
+                <td class="align-middle text-center"><strong>#{{ armwrestler[0] }}</strong></td>
+                <td class="align-middle w-100">
+                    <a href="{{ url_for('view_member', id=armwrestler[1]) }}" class="btn text-start px-2 py-1 m-0">
+                        {{ armwrestler[2] }}
+                    </a>
+                </td>
+                <td class="align-middle text-end"><strong>{{ armwrestler[3] }}</strong></td>
                 {% if username %}
-                <td style="width: 10%;" class="text-center">
+                <td class="align-middle text-center">
                     <form action="{{ url_for('edit_member') }}" method="POST">
                         <input type="hidden" name="id" value="{{ armwrestler[1] }}">
                         <button type="submit" class="btn btn-success btn-sm">Edit</button>
@@ -53,20 +57,24 @@
     <table class="table">
         <thead class="table-dark">
             <tr>
-                <th style="width: 75%;">Name</th>
-                <th class="text-end text-nowrap" style="width: 10%;">{{ "Right ELO" if arm == 'right' else "Left ELO" }}</th>
+                <th class="ps-3 w-100">Name</th>
+                <th class="text-end text-nowrap">{{ "Right ELO" if arm == 'right' else "Left ELO" }}</th>
                 {% if username %}
-                <th class="text-center" style="width: 10%;">Action</th>
+                <th class="text-center">Action</th>
                 {% endif %}
             </tr>
         </thead>
         <tbody>
             {% for armwrestler in inactive_armwrestlers %}
             <tr>
-                <td style="width: 75%;">{{ armwrestler[1] }}</td>
-                <td style="width: 10%;" class="text-end"><strong>{{ armwrestler[2] }}</strong></td>
+                <td class="align-middle w-100">
+                    <a href="{{ url_for('view_member', id=armwrestler[0]) }}" class="btn text-start px-2 py-1 m-0">
+                        {{ armwrestler[1] }}
+                    </a>
+                </td>
+                <td  class="align-middle text-end"><strong>{{ armwrestler[2] }}</strong></td>
                 {% if username %}
-                <td style="width: 10%;" class="text-center">
+                <td class="align-middle text-center">
                     <form action="{{ url_for('edit_member') }}" method="POST">
                         <input type="hidden" name="id" value="{{ armwrestler[0] }}">
                         <button type="submit" class="btn btn-success btn-sm">Edit</button>

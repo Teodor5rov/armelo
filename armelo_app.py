@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, g, send_from_directory
 from flask_talisman import Talisman
 from werkzeug.security import check_password_hash
+from werkzeug.exceptions import NotFound
 from datetime import datetime, timedelta
 import logging
 from logging.handlers import RotatingFileHandler
@@ -143,8 +144,11 @@ def edit_member():
 
     current_user = session.get('username')
 
-    id = request.form.get('id')
-    current_name = db_execute('SELECT name FROM armwrestlers WHERE id = ?', id)[0][0]
+    id = int(request.form.get('id'))
+    name_result = db_execute('SELECT name FROM armwrestlers WHERE id = ?', id)
+    if not name_result:
+        raise NotFound()
+    current_name = name_result[0][0]
     name = request.form.get('name', current_name)
     current_status = db_execute('''SELECT CASE WHEN active_until >= DATE('now') THEN 'active' ELSE 'inactive' END AS current_status FROM armwrestlers WHERE id = ?''', id)[0][0]
     armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
@@ -219,7 +223,7 @@ def confirm_remove():
     if not session.get('username'):
         return redirect(url_for('login'))
 
-    id = request.form.get('id') or request.args.get('id')
+    id = int(request.form.get('id')) or int(request.args.get('id'))
     current_name = request.form.get('current_name') or request.args.get('current_name')
 
     if 'confirm_remove' in request.form:
@@ -274,6 +278,106 @@ def closest_matches():
         closest_matches_with_predictions.append(match_with_prediction)
 
     return render_template('closest_matches.html', closest_matches_with_predictions=closest_matches_with_predictions, arm=arm, supermatch_add=supermatch_add)
+
+
+@app.route("/view_member", methods=["GET"])
+def view_member():
+
+    id = int(request.args.get('id'))
+
+    name_result = db_execute('SELECT name FROM armwrestlers WHERE id = ?', id)
+    if not name_result:
+        raise NotFound()
+    name = name_result[0][0]
+
+    query = '''
+        WITH ranked_right AS (
+            SELECT id, DENSE_RANK() OVER (ORDER BY right_elo DESC) AS right_rank
+            FROM armwrestlers
+            WHERE active_until >= DATE('now')
+        ),
+        ranked_left AS (
+            SELECT id, DENSE_RANK() OVER (ORDER BY left_elo DESC) AS left_rank
+            FROM armwrestlers
+            WHERE active_until >= DATE('now')
+        )
+        SELECT 
+            CASE WHEN a.active_until >= DATE('now') THEN 'active' ELSE 'inactive' END AS current_status,
+            a.right_elo, 
+            a.left_elo,
+            rr.right_rank,
+            rl.left_rank,
+            a.active_until
+        FROM armwrestlers a
+        LEFT JOIN ranked_right rr ON a.id = rr.id
+        LEFT JOIN ranked_left rl ON a.id = rl.id
+        WHERE a.id = ?
+    '''
+
+    current_status, current_right_elo, current_left_elo, current_right_rank, current_left_rank, active_until = db_execute(query, id)[0]
+
+    active_until_date = datetime.strptime(active_until, '%Y-%m-%d')
+    days_left = (active_until_date - datetime.today()).days
+    days_left = days_left if days_left > 0 else "inactive"
+
+    history = db_execute('''
+        SELECT a1.id AS armwrestler1_id, a1.name AS armwrestler1_name, a2.id AS armwrestler2_id, a2.name AS armwrestler2_name, h.arm, 
+               h.armwrestler1_rank, h.armwrestler2_rank, h.armwrestler1_elo, h.armwrestler2_elo, 
+               h.armwrestler1_score, h.armwrestler2_score, h.armwrestler1_elo_diff, h.armwrestler2_elo_diff, 
+               h.selected_format, h.date
+        FROM history h
+        JOIN armwrestlers a1 ON h.armwrestler1_id = a1.id
+        JOIN armwrestlers a2 ON h.armwrestler2_id = a2.id
+        WHERE h.armwrestler1_id = ? OR h.armwrestler2_id = ?
+        ORDER BY h.id DESC
+    ''', id, id)
+
+    if history:
+        best_right_elo = current_right_elo
+        best_left_elo = current_left_elo
+        best_right_rank = current_right_rank
+        best_left_rank = current_left_rank
+
+        for record in history:
+            is_armwrestler1 = record[0] == id
+
+            arm = record[4]
+            elo = record[7] if is_armwrestler1 else record[8]
+            rank = record[5] if is_armwrestler1 else record[6]
+
+            if arm == 'right':
+                best_right_elo = max(best_right_elo, elo)
+                best_right_rank = min(best_right_rank, rank) if best_right_rank is not None else rank
+            elif arm == 'left':
+                best_left_elo = max(best_left_elo, elo)
+                best_left_rank = min(best_left_rank, rank) if best_left_rank is not None else rank
+
+        formatted_data = get_history_formatted_data(history)
+        total_matches = len(history)
+
+    else:
+        best_right_elo = current_right_elo
+        best_left_elo = current_left_elo
+        best_right_rank = current_right_rank
+        best_left_rank = current_left_rank
+        history = None
+        formatted_data = None
+        total_matches = None
+
+    template_data = {
+        'id': id,
+        'name': name,
+        'current_right_elo': current_right_elo, 'current_left_elo': current_left_elo,
+        'current_right_rank': current_right_rank, 'current_left_rank': current_left_rank,
+        'best_right_elo': best_right_elo, 'best_left_elo': best_left_elo,
+        'best_right_rank': best_right_rank, 'best_left_rank': best_left_rank,
+        'current_status': current_status,
+        'history': history, 'formatted_data': formatted_data,
+        'total_matches': total_matches,
+        'days_left': days_left
+    }
+
+    return render_template('view_member.html', **template_data)
 
 
 @app.route("/add_new_member", methods=["GET", "POST"])
@@ -420,7 +524,7 @@ def add_new_member():
 @app.route("/history")
 def history():
     history = db_execute('''
-        SELECT h.id, a1.name AS armwrestler1_name, a2.name AS armwrestler2_name, h.arm, 
+        SELECT a1.id AS armwrestler1_id, a1.name AS armwrestler1_name, a2.id AS armwrestler2_id, a2.name AS armwrestler2_name, h.arm, 
                h.armwrestler1_rank, h.armwrestler2_rank, h.armwrestler1_elo, h.armwrestler2_elo, 
                h.armwrestler1_score, h.armwrestler2_score, h.armwrestler1_elo_diff, h.armwrestler2_elo_diff, 
                h.selected_format, h.date
@@ -430,21 +534,7 @@ def history():
         ORDER BY h.id DESC
     ''')
 
-    formatted_data = []
-    for record in history:
-        armwrestler_1_diff_format, armwrestler_2_diff_format = record[10], record[11]
-        armwrestler_1_score_color, armwrestler_2_score_color = record[8], record[9]
-
-        armwrestler_1_diff_format, armwrestler_1_diff_color = (f"+{armwrestler_1_diff_format}", "text-success") if armwrestler_1_diff_format > 0 else (
-            (str(armwrestler_1_diff_format), "text-danger") if armwrestler_1_diff_format < 0 else ("0", "text-secondary"))
-        armwrestler_2_diff_format, armwrestler_2_diff_color = (f"+{armwrestler_2_diff_format}", "text-success") if armwrestler_2_diff_format > 0 else (
-            (str(armwrestler_2_diff_format), "text-danger") if armwrestler_2_diff_format < 0 else ("0", "text-secondary"))
-        armwrestler_1_score_color, armwrestler_2_score_color = ("bg-success", "bg-danger") if armwrestler_1_score_color > armwrestler_2_score_color else (
-            ("bg-danger", "bg-success") if armwrestler_1_score_color < armwrestler_2_score_color else ("bg-secondary", "bg-secondary"))
-
-        date = datetime.strptime(record[13], "%Y-%m-%d %H:%M:%S").strftime("%d %B %Y")
-
-        formatted_data.append((armwrestler_1_score_color, armwrestler_2_score_color, armwrestler_1_diff_color, armwrestler_2_diff_color, armwrestler_1_diff_format, armwrestler_2_diff_format, date))
+    formatted_data = get_history_formatted_data(history)
 
     return render_template('history.html', history=history, formatted_data=formatted_data)
 
@@ -778,6 +868,26 @@ def get_current_elo(arm, armwrestler_ids):
         elos.append(elo)
 
     return elos
+
+
+def get_history_formatted_data(history):
+    formatted_data = []
+    for record in history:
+        armwrestler_1_diff_format, armwrestler_2_diff_format = record[11], record[12]
+        armwrestler_1_score_color, armwrestler_2_score_color = record[9], record[10]
+
+        armwrestler_1_diff_format, armwrestler_1_diff_color = (f"+{armwrestler_1_diff_format}", "text-success") if armwrestler_1_diff_format > 0 else (
+            (str(armwrestler_1_diff_format), "text-danger") if armwrestler_1_diff_format < 0 else ("0", "text-secondary"))
+        armwrestler_2_diff_format, armwrestler_2_diff_color = (f"+{armwrestler_2_diff_format}", "text-success") if armwrestler_2_diff_format > 0 else (
+            (str(armwrestler_2_diff_format), "text-danger") if armwrestler_2_diff_format < 0 else ("0", "text-secondary"))
+        armwrestler_1_score_color, armwrestler_2_score_color = ("bg-success", "bg-danger") if armwrestler_1_score_color > armwrestler_2_score_color else (
+            ("bg-danger", "bg-success") if armwrestler_1_score_color < armwrestler_2_score_color else ("bg-secondary", "bg-secondary"))
+
+        date = datetime.strptime(record[14], "%Y-%m-%d %H:%M:%S").strftime("%d %B %Y")
+
+        formatted_data.append((armwrestler_1_score_color, armwrestler_2_score_color, armwrestler_1_diff_color, armwrestler_2_diff_color, armwrestler_1_diff_format, armwrestler_2_diff_format, date))
+
+    return formatted_data
 
 
 def match_result(max_rounds, value, format_type):

@@ -1,0 +1,98 @@
+{% extends "layout.html" %}
+
+{% block title %}View member{% endblock %}
+
+{% block content %}
+<div class="mx-auto" style="max-width: 800px;">
+    <div class="mb-4">
+        <div class="row p-auto m-auto">
+            <div class="col-auto p-0">
+                <form action="{{ url_for('ranking') }}" method="GET">
+                    <button type="submit" class="btn btn-generic px-1 py-0 d-inline-flex">
+                        <i class="bi bi-arrow-left fs-4"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="col d-flex align-items-center px-2">
+                <h2 class="mb-0">{{ name }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive rounded">
+        <table class="table table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th class="w-50 align-middle">Records</th>
+                    <th class="text-center w-25 align-middle">Current</th>
+                    <th class="text-center w-25 align-middle">Best</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="align-middle">Right ELO</td>
+                    <td class="text-center align-middle">{{ current_right_elo }}</td>
+                    <td class="text-center align-middle">{{ best_right_elo }}</td>
+                </tr>
+                <tr>
+                    <td class="align-middle">Right Rank</td>
+                    <td class="text-center align-middle">#{{ current_right_rank }}</td>
+                    <td class="text-center align-middle">#{{ best_right_rank }}</td>
+                </tr>
+                <tr>
+                    <td class="align-middle">Left ELO</td>
+                    <td class="text-center align-middle">{{ current_left_elo }}</td>
+                    <td class="text-center align-middle">{{ best_left_elo }}</td>
+                </tr>
+                <tr>
+                    <td class="align-middle">Left Rank</td>
+                    <td class="text-center align-middle">#{{ current_left_rank }}</td>
+                    <td class="text-center align-middle">#{{ best_left_rank }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="table-responsive rounded">
+        <table class="table table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th colspan="2" class="align-middle">Activity</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="w-50 align-middle">Status</td>
+                    <td class="text-center align-middle">{{ current_status }}</td>
+                </tr>
+                <tr>
+                    <td class="w-50 align-middle">Total matches</td>
+                    <td class="text-center align-middle">{{ total_matches }}</td>
+                </tr>
+                <tr>
+                    <td class="w-50 align-middle">Days left for match</td>
+                    <td class="text-center align-middle">{{ days_left }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+</div>
+
+<div class="col-auto text-center mb-4">
+    <h2>Matches</h2>
+</div>
+
+{% if history %}
+
+{% include 'history_partial.html' %}
+
+{% else %}
+
+<div class="alert alert-secondary">
+    <strong>The armwrestler has not had any matches yet.</strong>
+</div>
+
+{% endif%}
+
+{% endblock %}

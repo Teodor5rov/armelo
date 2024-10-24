@@ -7,8 +7,8 @@
     <div class="row p-auto m-auto">
         <div class="col-auto p-0">
             <form action="{{ url_for('ranking') }}" method="GET">
-                <button type="submit" class="btn px-1 py-0 d-inline-flex">
-                    <i class="bi bi-arrow-left fs-3"></i>
+                <button type="submit" class="btn btn-generic px-1 py-0 d-inline-flex">
+                    <i class="bi bi-arrow-left fs-4"></i>
                 </button>
             </form>
         </div>
@@ -40,17 +40,25 @@
         <div class="card">
             <div class="card-header bg-transparent">
                 <div class="row mt-2">
-                    <div class="col-12 col-lg-auto text-center mb-2">
-                        <div>
-                            <strong>#{{ match[0] }}</strong> {{ match[2] }}<strong>({{ match[3] }})</strong>
+                    <div class="col-12 col-lg-auto mb-2 d-flex justify-content-center">
+                        <div class="d-flex align-items-center gap-0 align-middle">
+                            <strong class="align-middle p-1">#{{ match[0] }}</strong>
+                            <a href="{{ url_for('view_member', id=match[1]) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
+                                {{ match[2] }}
+                            </a>
+                            <strong class="text-nowrap align-middle">({{ match[3] }})</strong>
                         </div>
                     </div>
-                    <div class="col-12 col-lg-auto text-center mb-2">
+                    <div class="col-12 col-lg-auto text-center mb-2 d-flex align-items-center justify-content-center">
                         <span class="badge bg-dark">VS</span>
                     </div>
-                    <div class="col-12 col-lg-auto text-center mb-2">
-                        <div>
-                            <strong>#{{ match[4] }}</strong> {{ match[6] }}<strong>({{ match[7] }})</strong>
+                    <div class="col-12 col-lg-auto mb-2 d-flex justify-content-center">
+                        <div class="d-flex align-items-center gap-0 align-middle">
+                            <strong class="align-middle p-1">#{{ match[4] }}</strong>
+                            <a href="{{ url_for('view_member', id=match[5]) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
+                                {{ match[6] }}
+                            </a>
+                            <strong class="text-nowrap align-middle">({{ match[7] }})</strong>
                         </div>
                     </div>
                 </div>
