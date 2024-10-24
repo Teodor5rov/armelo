@@ -143,8 +143,10 @@ def edit_member():
     status_options = ["active", "inactive"]
 
     current_user = session.get('username')
-
-    id = int(request.form.get('id'))
+    try:
+        id = int(request.form.get('id'))
+    except (ValueError, IndexError):
+        raise NotFound()
     name_result = db_execute('SELECT name FROM armwrestlers WHERE id = ?', id)
     if not name_result:
         raise NotFound()
@@ -223,7 +225,10 @@ def confirm_remove():
     if not session.get('username'):
         return redirect(url_for('login'))
 
-    id = int(request.form.get('id')) or int(request.args.get('id'))
+    try:
+        id = int(request.form.get('id')) or int(request.args.get('id'))
+    except (ValueError, IndexError):
+        raise NotFound()
     current_name = request.form.get('current_name') or request.args.get('current_name')
 
     if 'confirm_remove' in request.form:
@@ -283,8 +288,10 @@ def closest_matches():
 @app.route("/view_member", methods=["GET"])
 def view_member():
 
-    id = int(request.args.get('id'))
-
+    try:
+        id = int(request.args.get('id'))
+    except (ValueError, IndexError):
+        raise NotFound()
     name_result = db_execute('SELECT name FROM armwrestlers WHERE id = ?', id)
     if not name_result:
         raise NotFound()

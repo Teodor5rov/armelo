@@ -6,10 +6,12 @@
 <div class="mx-auto" style="max-width: 800px;">
     <div class="mb-4">
         <div class="row p-auto m-auto">
-            <div class="col-auto p-0">
+            <div class="col-auto p-0 d-flex align-items-center">
                 <form action="{{ url_for('ranking') }}" method="GET">
-                    <button type="submit" class="btn btn-generic px-1 py-0 d-inline-flex">
-                        <i class="bi bi-arrow-left fs-4"></i>
+                    <button type="submit" class="btn btn-generic px-1 py-1 d-flex align-items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
+                        </svg>
                     </button>
                 </form>
             </div>
@@ -20,7 +22,7 @@
     </div>
 
     <div class="table-responsive rounded">
-        <table class="table table-bordered">
+        <table class="table">
             <thead class="table-dark">
                 <tr>
                     <th class="w-50 align-middle">Records</th>
@@ -36,8 +38,12 @@
                 </tr>
                 <tr>
                     <td class="align-middle">Right Rank</td>
-                    <td class="text-center align-middle">#{{ current_right_rank }}</td>
-                    <td class="text-center align-middle">#{{ best_right_rank }}</td>
+                    <td class="text-center align-middle">
+                        <strong>{% if current_right_rank %}#{% endif %}{{ current_right_rank }}</strong>
+                    </td>
+                    <td class="text-center align-middle">
+                        <strong>{% if best_right_rank %}#{% endif %}{{ best_right_rank }}</strong>
+                    </td>
                 </tr>
                 <tr>
                     <td class="align-middle">Left ELO</td>
@@ -46,15 +52,19 @@
                 </tr>
                 <tr>
                     <td class="align-middle">Left Rank</td>
-                    <td class="text-center align-middle">#{{ current_left_rank }}</td>
-                    <td class="text-center align-middle">#{{ best_left_rank }}</td>
+                    <td class="text-center align-middle">
+                        <strong>{% if current_left_rank %}#{% endif %}{{ current_left_rank }}</strong>
+                    </td>
+                    <td class="text-center align-middle">
+                        <strong>{% if best_left_rank %}#{% endif %}{{ best_left_rank }}</strong>
+                    </td>
                 </tr>
             </tbody>
         </table>
     </div>
     
     <div class="table-responsive rounded">
-        <table class="table table-bordered">
+        <table class="table">
             <thead class="table-dark">
                 <tr>
                     <th colspan="2" class="align-middle">Activity</th>
@@ -63,15 +73,23 @@
             <tbody>
                 <tr>
                     <td class="w-50 align-middle">Status</td>
-                    <td class="text-center align-middle">{{ current_status }}</td>
+                    <td class="text-center align-middle">
+                        <span class="{% if current_status == 'active' %}text-success{% else %}text-secondary{% endif %}">
+                            <strong>{{ current_status }}</strong>
+                        </span>
+                    </td>
                 </tr>
                 <tr>
                     <td class="w-50 align-middle">Total matches</td>
-                    <td class="text-center align-middle">{{ total_matches }}</td>
+                    <td class="text-center align-middle">
+                        <strong>{{ total_matches }}</strong>
+                    </td>
                 </tr>
                 <tr>
                     <td class="w-50 align-middle">Days left for match</td>
-                    <td class="text-center align-middle">{{ days_left }}</td>
+                    <td class="text-center align-middle {% if days_left == 'inactive' %}text-secondary{% endif %}">
+                        <strong>{{ days_left }}</strong>
+                    </td>
                 </tr>
             </tbody>
         </table>
@@ -90,7 +108,7 @@
 {% else %}
 
 <div class="alert alert-secondary">
-    <strong>The armwrestler has not had any matches yet.</strong>
+    The armwrestler has <strong>not had any matches yet.</strong>
 </div>
 
 {% endif%}
