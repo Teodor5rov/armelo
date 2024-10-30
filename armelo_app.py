@@ -1,112 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for, session, g, send_from_directory, make_response
-from flask_talisman import Talisman
-from werkzeug.security import check_password_hash
-from werkzeug.exceptions import NotFound
-from datetime import datetime, timedelta
-import logging
-import requests
-from logging.handlers import RotatingFileHandler
-import sqlite3
-import os
-
-from elo import diff_supermatch, calculate_elo_with_bonus, expected_elo_from_score, expected_score, binom_prediction
-
-DATABASE = 'database.db'
-
-app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', '%%8hF$7ALEy8Msw2')
-CLOUDFLARE_SECRET_KEY = os.environ.get('CLOUDFLARE_SECRET_KEY', '1x0000000000000000000000000000000AA')
-
-handler = RotatingFileHandler('armelo_app.log', maxBytes=100000, backupCount=3)
-handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
-handler.setFormatter(formatter)
-app.logger.addHandler(handler)
-app.logger.setLevel(logging.DEBUG)
-
-csp = {
-    'default-src': [
-        '\'self\'',
-        'https://cdn.jsdelivr.net',
-        'https://fonts.googleapis.com',
-        'https://unpkg.com'
-    ],
-    'base-uri': [
-        '\'self\''
-    ],
-    'img-src': [
-        '\'self\'',
-        'data:'
-    ],
-    'script-src': [
-        '\'self\'',
-        'https://cdn.jsdelivr.net',
-        'https://unpkg.com',
-        'https://challenges.cloudflare.com'
-    ],
-    'script-src-elem': [
-        "'self'",
-        'https://cdn.jsdelivr.net',
-        'https://unpkg.com',
-        'https://challenges.cloudflare.com'
-    ],
-    'style-src': [
-        '\'self\'',
-        'https://cdn.jsdelivr.net',
-        'https://fonts.googleapis.com',
-        '\'unsafe-inline\''
-    ],
-    'font-src': [
-        '\'self\'',
-        'https://fonts.gstatic.com',
-        'https://cdn.jsdelivr.net'
-    ],
-    'connect-src': [
-        '\'self\''
-    ],
-    'frame-src': [
-        "'self'",
-        'https://challenges.cloudflare.com'
-    ]
-}
-
-talisman = Talisman(app, content_security_policy=csp, content_security_policy_nonce_in=['script-src', 'script-src-elem'])
-
-
-SUPERMATCH_FORMATS = {
-    "Single round": [1, 64, "Best of"],
-    "Best of 3": [3, 96, "Best of"],
-    "Best of 5": [5, 128, "Best of"],
-    "5 round match": [5, 144, "All rounds"],
-    "6 round Vendetta": [6 + 1, 144, "Vendetta"],
-    "Best of 7": [7, 144, "Best of"],
-    "10 round Speculative": [10, 128, "All rounds"],
-}
+from config import *
+from elo import *
+from helpers import *
 
 
 @app.route('/robots.txt')
 def serve_robots_txt():
     return send_from_directory(app.static_folder, 'robots.txt')
-
-
-def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
-    return db
-
-
-def db_execute(query, *args):
-    db = get_db()
-    cur = db.cursor()
-    cur.execute(query, args)
-    if query.strip().upper().startswith(("SELECT", "WITH")):
-        rv = cur.fetchall()
-        cur.close()
-        return rv
-    else:
-        db.commit()
-        cur.close()
 
 
 @app.context_processor
@@ -300,14 +199,8 @@ def closest_matches():
 
     query = """
         SELECT 
-            a.{0} AS rank1, 
-            a.id AS armwrestler1_id,
-            a.name AS armwrestler1,
-            a.{1} AS elo1, 
-            b.{0} AS rank2,
-            b.id AS armwrestler2_id,
-            b.name AS armwrestler2, 
-            b.{1} AS elo2, 
+            a.{0} AS rank1, a.id AS armwrestler1_id, a.name AS armwrestler1, a.{1} AS elo1, 
+            b.{0} AS rank2, b.id AS armwrestler2_id, b.name AS armwrestler2, b.{1} AS elo2, 
             ABS(a.{1} - b.{1}) AS elo_difference
         FROM armwrestlers a, armwrestlers b
         WHERE a.name < b.name
@@ -351,10 +244,7 @@ def view_member():
     query = '''
         SELECT 
             CASE WHEN a.active_until >= DATE('now') THEN 'active' ELSE 'inactive' END AS current_status,
-            a.right_elo, 
-            a.left_elo,
-            a.right_rank,
-            a.left_rank,
+            a.right_elo, a.left_elo, a.right_rank, a.left_rank,
             a.active_until
         FROM armwrestlers a
         WHERE a.id = ?
@@ -656,7 +546,7 @@ def supermatch():
             unconfirmed_matches u
         JOIN armwrestlers a1 ON u.armwrestler1_id = a1.id
         JOIN armwrestlers a2 ON u.armwrestler2_id = a2.id
-        ORDER BY u.id DESC;
+        ORDER BY u.id ASC;
     '''
 
     db_unconfirmed_matches = db_execute(query)
@@ -810,73 +700,6 @@ def confirm_match():
         return render_template('confirmation_screen.html', message="Match removed", redirect="supermatch")
 
     return render_template('confirm_match.html', match_id=match_id, matches=match, formatted_data=formatted_data)
-
-
-def submit_supermatch(arm, armwrestler1_id, armwrestler2_id, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format, current_user):
-
-    dbarm = 'right_elo' if arm == 'right' else 'left_elo'
-    updated_1, updated_2 = calculate_elo_with_bonus(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
-
-    armwrestler_1_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, id FROM armwrestlers) AS RankedArmwrestlers WHERE id = ?'.format(dbarm), armwrestler1_id)[0][0]
-    armwrestler_2_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, id FROM armwrestlers) AS RankedArmwrestlers WHERE id = ?'.format(dbarm), armwrestler2_id)[0][0]
-
-    armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
-
-    try:
-        query = '''
-        INSERT INTO history ( 
-        armwrestler1_id, armwrestler2_id, 
-        arm, 
-        selected_format,
-        armwrestler1_rank, armwrestler2_rank, 
-        armwrestler1_elo, armwrestler2_elo, 
-        armwrestler1_score, armwrestler2_score, 
-        armwrestler1_elo_diff, armwrestler2_elo_diff,
-        added_by ) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        '''
-        db_execute(query,
-                   armwrestler1_id, armwrestler2_id,
-                   arm,
-                   selected_format,
-                   armwrestler_1_rank, armwrestler_2_rank,
-                   armwrestler_1_elo, armwrestler_2_elo,
-                   armwrestler_1_score, armwrestler_2_score,
-                   armwrestler_1_diff, armwrestler_2_diff,
-                   current_user)
-
-        today = datetime.today()
-        active_until_date = today + timedelta(days=180)
-        active_until_str = active_until_date.strftime('%Y-%m-%d')
-
-        db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE id = ?".format(dbarm), updated_1, active_until_str, armwrestler1_id)
-        db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE id = ?".format(dbarm), updated_2, active_until_str, armwrestler2_id)
-        update_ranks()
-    except sqlite3.DatabaseError as error:
-        app.logger.error(f"Database error occurred: {error}", exc_info=True)
-        app.logger.error(f"Operation context: {request.path} - {request.method}")
-
-
-def submit_unconfirmed_supermatch(arm, armwrestler1_id, armwrestler2_id, armwrestler_1_score, armwrestler_2_score, selected_format):
-
-    try:
-        query = '''
-        INSERT INTO unconfirmed_matches ( 
-        armwrestler1_id, armwrestler2_id, 
-        arm, 
-        selected_format,
-        armwrestler1_score, armwrestler2_score ) 
-        VALUES (?, ?, ?, ?, ?, ?)
-        '''
-        db_execute(query,
-                   armwrestler1_id, armwrestler2_id,
-                   arm,
-                   selected_format,
-                   armwrestler_1_score, armwrestler_2_score)
-
-    except sqlite3.DatabaseError as error:
-        app.logger.error(f"Database error occurred: {error}", exc_info=True)
-        app.logger.error(f"Operation context: {request.path} - {request.method}")
 
 
 @app.route("/prediction")
@@ -1041,156 +864,7 @@ def elo_from_match():
         return render_template('elo_from_match_partial.html', **template_data)
     else:
         return render_template('elo_from_match.html', **template_data)
-
-
-def get_current_elo(arm, armwrestler_ids):
-    if arm not in ['right', 'left']:
-        raise ValueError("Invalid arm. Must be 'right' or 'left'.")
-
-    dbarm = 'right_elo' if arm == 'right' else 'left_elo'
-    elos = []
-
-    for id in armwrestler_ids:
-        result = db_execute('SELECT {} FROM armwrestlers WHERE id = ?'.format(dbarm), id)
-        elo = result[0][0]
-        elos.append(elo)
-
-    return elos
-
-
-def get_matches_formatted_data(matches):
-    formatted_data = []
-    for match in matches:
-        armwrestler_1_diff_format, armwrestler_2_diff_format = match[11], match[12]
-        armwrestler_1_score_color, armwrestler_2_score_color = match[9], match[10]
-
-        armwrestler_1_diff_format, armwrestler_1_diff_color = (f"+{armwrestler_1_diff_format}", "text-success") if armwrestler_1_diff_format > 0 else (
-            (str(armwrestler_1_diff_format), "text-danger") if armwrestler_1_diff_format < 0 else ("0", "text-secondary"))
-        armwrestler_2_diff_format, armwrestler_2_diff_color = (f"+{armwrestler_2_diff_format}", "text-success") if armwrestler_2_diff_format > 0 else (
-            (str(armwrestler_2_diff_format), "text-danger") if armwrestler_2_diff_format < 0 else ("0", "text-secondary"))
-        armwrestler_1_score_color, armwrestler_2_score_color = ("bg-success", "bg-danger") if armwrestler_1_score_color > armwrestler_2_score_color else (
-            ("bg-danger", "bg-success") if armwrestler_1_score_color < armwrestler_2_score_color else ("bg-secondary", "bg-secondary"))
-
-        date = datetime.strptime(match[14], "%Y-%m-%d %H:%M:%S").strftime("%d %B %Y")
-
-        formatted_data.append((armwrestler_1_score_color, armwrestler_2_score_color, armwrestler_1_diff_color, armwrestler_2_diff_color, armwrestler_1_diff_format, armwrestler_2_diff_format, date))
-
-    return formatted_data
-
-
-def update_ranks():
-    query_update_ranks = '''
-    WITH
-        ranked_right AS (
-            SELECT id, DENSE_RANK() OVER (ORDER BY right_elo DESC) AS right_rank
-            FROM armwrestlers
-            WHERE active_until >= DATE('now')
-        ),
-        ranked_left AS (
-            SELECT id, DENSE_RANK() OVER (ORDER BY left_elo DESC) AS left_rank
-            FROM armwrestlers
-            WHERE active_until >= DATE('now')
-        )
-    UPDATE armwrestlers
-    SET
-        right_rank = (SELECT right_rank FROM ranked_right WHERE ranked_right.id = armwrestlers.id),
-        left_rank = (SELECT left_rank FROM ranked_left WHERE ranked_left.id = armwrestlers.id);
-    '''
-
-    query_nullify_ranks = '''
-    UPDATE armwrestlers SET right_rank = NULL, left_rank = NULL
-    WHERE active_until < DATE('now');
-    '''
-
-    db_execute(query_update_ranks)
-    db_execute(query_nullify_ranks)
-
-
-def match_result(max_rounds, value, format_type):
-    if value < 0:
-        value = 0
-    elif value > max_rounds:
-        value = max_rounds
-
-    if format_type == "Best of":
-        wins_required = (max_rounds // 2) + 1
-
-        if value < wins_required:
-            armwrestler1_score = value
-            armwrestler2_score = wins_required
-        else:
-            armwrestler1_score = wins_required
-            armwrestler2_score = max_rounds - value
-
-        if max_rounds % 2 == 0 and value == max_rounds // 2:
-            armwrestler1_score = value
-            armwrestler2_score = value
-
-    elif format_type == "All rounds":
-        armwrestler1_score = value
-        armwrestler2_score = max_rounds - value
-
-    elif format_type == "Vendetta":
-        wins_required = (max_rounds // 2) + 1
-
-        if value < wins_required:
-            armwrestler1_score = value
-            armwrestler2_score = (max_rounds - 1) - value
-            if value == (wins_required - 1):
-                armwrestler2_score = wins_required
-        else:
-            armwrestler1_score = value - 1
-            armwrestler2_score = (max_rounds - 1) - (value - 1)
-            if value == wins_required:
-                armwrestler1_score = wins_required
-                armwrestler2_score = (wins_required - 1)
-
-    return armwrestler1_score, armwrestler2_score
-
-
-def expected_score_rounds(armwrestler_a_elo, armwrestler_b_elo, format_type, max_rounds=5):
-    armwrestler1_score, armwrestler2_score = expected_score(armwrestler_a_elo, armwrestler_b_elo)
-
-    if format_type == "All rounds":
-        if armwrestler1_score != armwrestler2_score:
-            armwrestler1_score = round(armwrestler1_score * max_rounds)
-            armwrestler2_score = round(armwrestler2_score * max_rounds)
-        else:
-            armwrestler1_score = armwrestler2_score = "Equal"
-
-    elif format_type == "Best of":
-        wins_required = (max_rounds // 2) + 1
-        if armwrestler1_score > armwrestler2_score:
-            factor = wins_required / armwrestler1_score
-            armwrestler1_score = wins_required
-            armwrestler2_score = round(armwrestler2_score * factor)
-            if armwrestler1_score == armwrestler2_score:
-                armwrestler2_score -= 1
-        elif armwrestler1_score < armwrestler2_score:
-            factor = wins_required / armwrestler2_score
-            armwrestler2_score = wins_required
-            armwrestler1_score = round(armwrestler1_score * factor)
-            if armwrestler1_score == armwrestler2_score:
-                armwrestler1_score -= 1
-        else:
-            armwrestler1_score = armwrestler2_score = "Equal"
-
-    elif format_type == "Vendetta":
-        max_rounds = max_rounds - 1
-        if armwrestler1_score != armwrestler2_score:
-            prov1_score = round(armwrestler1_score * max_rounds)
-            prov2_score = round(armwrestler2_score * max_rounds)
-            if prov1_score != prov2_score:
-                armwrestler1_score, armwrestler2_score = prov1_score, prov2_score
-            elif armwrestler1_score > armwrestler2_score:
-                armwrestler1_score, armwrestler2_score = prov1_score + 1, prov2_score
-            else:
-                armwrestler1_score, armwrestler2_score = prov1_score, prov2_score + 1
-        else:
-            armwrestler1_score = armwrestler2_score = "Equal"
-
-    return armwrestler1_score, armwrestler2_score
-
+    
 
 @app.errorhandler(404)
 def page_not_found(e):

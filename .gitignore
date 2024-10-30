@@ -4,6 +4,7 @@
 /__pycache__
 /pass_hasher.py
 /armelo_app.log
+/notes.txt
 
 
 /init_matches/query.sql
