@@ -20,6 +20,37 @@
             </div>
         </div>
     </div>
-    {% include 'supermatch_partial.html' %}
+
+    <div class="alert alert-secondary" role="alert">
+        You can add a supermatch to the system, without logging in.<br>
+        Select the arm, armwrestlers, the supermatch format and the result in the form below, then submit it for confirmation.
+    </div>
+
+    <form class="mb-4" method="POST" action="{{ url_for('supermatch') }}">
+        <div id="form-content" hx-post="{{ url_for('supermatch') }}" hx-trigger="change" hx-target="#form-content" hx-swap="innerHTML">
+            {% include 'supermatch_partial.html' %}
+        </div>
+        {% if not current_user %}
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" nonce="{{ csp_nonce() }}"></script>
+        <div class="checkbox mt-4">
+            <div class="cf-turnstile" data-sitekey="0x4AAAAAAAyqdmZPnUPAkQNL" data-theme="light"></div>
+        </div>
+        {% endif %}
+    </form>
 </div>
+
+{% if matches %}
+
+<div class="col-auto text-center mb-4">
+    <h2>Unconfirmed matches</h2>
+</div>
+
+<div class="alert alert-secondary">
+    This is a list of the supermatches submitted for confirmation by the admin.<br>
+    These matches are not valid until confirmed.
+</div>
+
+{% include 'matches_partial.html' %}
+
+{% endif %}
 {% endblock %}

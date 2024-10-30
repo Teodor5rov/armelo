@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+
+{% block title %}Confirmation screen{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-center align-items-center mt-5" hx-get="{{ url_for('confirmation_redirect', redirect=redirect) }}" hx-trigger="load delay:1s" hx-swap="none">
+    <div class="col-auto text-center">
+        <h3 class="text-wrap d-inline-block">{{ message }}</h3>
+        <div class="d-flex justify-content-center mt-4">
+            <div class="loading-container">
+                <div class="loading-slider"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

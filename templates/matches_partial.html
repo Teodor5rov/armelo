@@ -1,0 +1,88 @@
+{% for match in matches %}
+
+<div class="col-12 mb-3">
+    {% if unconfirmed %}
+    <button type="button" class="btn btn-light p-0 w-100" 
+    hx-post="{{ url_for('confirm_match', match_id=match[15]) }}" hx-target="#confirmMatch" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#confirmModal">
+    {% endif %}
+    {% if wins_losses %}
+        {% if wins_losses[loop.index - 1] == 'win' %}
+            <div class="card border-success card-wider-border">
+        {% elif wins_losses[loop.index - 1] == 'loss' %}
+            <div class="card border-danger card-wider-border">
+        {% else %}
+            <div class="card card-wider-border">
+        {% endif %}
+    {% else %}
+        <div class="card">
+    {% endif %}
+            <div class="card-header bg-transparent">
+                <div class="row mt-2">
+                    <div class="col-12 col-lg-auto mb-2 d-flex justify-content-center">
+                        <div class="d-flex align-items-center gap-0 align-middle">
+                            {% if match[5] %}
+                            <strong class="align-middle p-1">#{{ match[5] }}</strong>
+                            {% endif %}
+                            <a href="{{ url_for('view_member', id=match[0]) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
+                            {{ match[1] }}
+                            </a>
+                            <strong class="text-nowrap align-middle">({{ match[7] }} <span class="{{ formatted_data[loop.index - 1][2] }}">{{ formatted_data[loop.index - 1][4] }}</span>)</strong>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-auto text-center mb-2 d-flex align-items-center justify-content-center">
+                        <span class="badge bg-dark">VS</span>
+                    </div>
+                    <div class="col-12 col-lg-auto mb-2 d-flex justify-content-center">
+                        <div class="d-flex align-items-center gap-0 align-middle">
+
+                            {% if match[6] %}
+                            <strong class="align-middle p-1">#{{ match[6] }}</strong>
+                            {% endif %}
+
+                            <a href="{{ url_for('view_member', id=match[2]) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
+                                {{ match[3] }}
+                            </a>
+                            <strong class="text-nowrap align-middle">({{ match[8] }} <span class="{{ formatted_data[loop.index - 1][3] }}">{{ formatted_data[loop.index - 1][5] }}</span>)</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="card-text">
+                    <div class="row justify-content-start">
+                        <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
+                            Arm:<span class="fs-6 mx-0 badge text-dark">{{ match[4] }}</span>
+                        </div>
+                        <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
+                            Format:<span class="fs-6 mx-0 badge text-dark">{{ match[13] }}</span>
+                        </div>
+                        <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
+                            Result:<span class="fs-6 ms-2 me-1 badge {{ formatted_data[loop.index - 1][0] }}">{{ match[9] }}</span>:<span class="fs-6 ms-1 me-0 badge {{ formatted_data[loop.index - 1][1] }}">{{ match[10] }}</span>
+                        </div>
+                        <div class="col-12 col-lg-auto mb-0 mb-lg-0 text-start">
+                            Date:<span class="fs-6 mx-0 badge text-dark">{{ formatted_data[loop.index - 1][6] }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% if unconfirmed %}
+    </button>
+    {% endif %}
+</div>
+
+{% endfor %}
+
+{% if unconfirmed %}
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">Confirm Match</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div id="confirmMatch"></div>
+        </div>
+    </div>
+</div>   
+{% endif %}

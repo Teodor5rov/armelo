@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, session, g, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, session, g, send_from_directory, make_response
 from flask_talisman import Talisman
 from werkzeug.security import check_password_hash
 from werkzeug.exceptions import NotFound
 from datetime import datetime, timedelta
 import logging
+import requests
 from logging.handlers import RotatingFileHandler
 import sqlite3
 import os
@@ -14,6 +15,7 @@ DATABASE = 'database.db'
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', '%%8hF$7ALEy8Msw2')
+CLOUDFLARE_SECRET_KEY = os.environ.get('CLOUDFLARE_SECRET_KEY', '1x0000000000000000000000000000000AA')
 
 handler = RotatingFileHandler('armelo_app.log', maxBytes=100000, backupCount=3)
 handler.setLevel(logging.DEBUG)
@@ -39,7 +41,14 @@ csp = {
     'script-src': [
         '\'self\'',
         'https://cdn.jsdelivr.net',
-        'https://unpkg.com'
+        'https://unpkg.com',
+        'https://challenges.cloudflare.com'
+    ],
+    'script-src-elem': [
+        "'self'",
+        'https://cdn.jsdelivr.net',
+        'https://unpkg.com',
+        'https://challenges.cloudflare.com'
     ],
     'style-src': [
         '\'self\'',
@@ -54,10 +63,14 @@ csp = {
     ],
     'connect-src': [
         '\'self\''
+    ],
+    'frame-src': [
+        "'self'",
+        'https://challenges.cloudflare.com'
     ]
 }
 
-# talisman = Talisman(app, content_security_policy=csp, content_security_policy_nonce_in=['script-src'])
+talisman = Talisman(app, content_security_policy=csp, content_security_policy_nonce_in=['script-src', 'script-src-elem'])
 
 
 SUPERMATCH_FORMATS = {
@@ -125,14 +138,44 @@ def logout():
     return redirect(url_for('ranking'))
 
 
+@app.route("/confirmation_redirect")
+def confirmation_redirect():
+
+    redirect = request.args.get('redirect')
+
+    response = make_response("")
+    response.headers["HX-Redirect"] = url_for(redirect)
+    return response
+
+
 @app.route("/")
 @app.route("/<any(right, left):arm>")
 def ranking(arm='right'):
-    order_by = 'right_elo' if arm == 'right' else 'left_elo'
-    active_armwrestlers = db_execute('''SELECT DENSE_RANK() OVER (ORDER BY {0} DESC) AS rank, id, name, {0} FROM armwrestlers WHERE active_until >= DATE('now')'''.format(order_by))
-    inactive_armwrestlers = db_execute('''SELECT id, name, {0} FROM armwrestlers WHERE active_until < DATE('now') ORDER BY {0} DESC'''.format(order_by))
-    username = session.get('username')
-    return render_template('ranking.html', active_armwrestlers=active_armwrestlers, inactive_armwrestlers=inactive_armwrestlers, username=username, arm=arm)
+    rank_column = 'right_rank' if arm == 'right' else 'left_rank'
+    elo_column = 'right_elo' if arm == 'right' else 'left_elo'
+    current_user = session.get('username', None)
+    update_ranks()
+    active_armwrestlers = db_execute('''
+        SELECT {0}, id, name, {1} FROM armwrestlers
+        WHERE active_until >= DATE('now') ORDER BY {0} ASC
+    '''.format(rank_column, elo_column))
+
+    inactive_armwrestlers = db_execute('''
+        SELECT id, name, {0} FROM armwrestlers
+        WHERE active_until < DATE('now') ORDER BY {1} DESC
+    '''.format(elo_column, elo_column))
+
+    template_data = {
+        'active_armwrestlers': active_armwrestlers,
+        'inactive_armwrestlers': inactive_armwrestlers,
+        'current_user': current_user,
+        'arm': arm
+    }
+
+    if request.headers.get('HX-Request'):
+        return render_template('ranking_partial.html', **template_data)
+
+    return render_template('ranking.html', **template_data)
 
 
 @app.route("/edit_member", methods=["GET", "POST"])
@@ -199,9 +242,11 @@ def edit_member():
                 db_execute("UPDATE armwrestlers SET name = ?, right_elo = ?, left_elo = ?, active_until = ?, last_edited_by = ? WHERE id = ?", name, right_elo, left_elo, active_until_str, current_user, id)
             else:
                 db_execute("UPDATE armwrestlers SET name = ?, right_elo = ?, left_elo = ? WHERE id = ?", name, right_elo, left_elo, id)
+            update_ranks()
         except sqlite3.DatabaseError as error:
-            print(error)
-        return redirect(url_for('ranking'))
+            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+            app.logger.error(f"Operation context: {request.path} - {request.method}")
+        return render_template('confirmation_screen.html', message="Member saved", redirect="ranking")
 
     template_data = {
         'id': id,
@@ -234,9 +279,11 @@ def confirm_remove():
     if 'confirm_remove' in request.form:
         try:
             db_execute("DELETE FROM armwrestlers WHERE id = ?", id)
+            update_ranks()
         except sqlite3.DatabaseError as error:
-            print(error)
-        return redirect(url_for('ranking'))
+            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+            app.logger.error(f"Operation context: {request.path} - {request.method}")
+        return render_template('confirmation_screen.html', message="Member deleted", redirect="ranking")
 
     return render_template('confirm_remove.html', id=id, current_name=current_name)
 
@@ -244,34 +291,29 @@ def confirm_remove():
 @app.route("/closest_matches")
 def closest_matches():
     arm = request.args.get('arm', 'right')
-    supermatch_add = False
+    rank_column = 'right_rank' if arm == 'right' else 'left_rank'
+    elo_column = 'right_elo' if arm == 'right' else 'left_elo'
 
-    order_by = 'right_elo' if arm == 'right' else 'left_elo'
+    supermatch_add = False
     if session.get('username'):
         supermatch_add = True
 
     query = """
-    WITH rankedarmwrestlers AS (
-        SELECT DENSE_RANK() OVER (ORDER BY {0} DESC) AS rank, 
-               id, name, 
-               {0} AS elo
-        FROM armwrestlers
-    )
-    SELECT 
-        a.rank AS rank1, 
-        a.id AS armwrestler1_id,
-        a.name AS armwrestler1,
-        a.elo AS elo1, 
-        b.rank AS rank2,
-        b.id AS armwrestler2_id,
-        b.name AS armwrestler2, 
-        b.elo AS elo2, 
-        ABS(a.elo - b.elo) AS elo_difference
-    FROM rankedarmwrestlers a, rankedarmwrestlers b
-    WHERE a.name < b.name
-    ORDER BY elo_difference ASC
-    LIMIT 15;
-    """.format(order_by)
+        SELECT 
+            a.{0} AS rank1, 
+            a.id AS armwrestler1_id,
+            a.name AS armwrestler1,
+            a.{1} AS elo1, 
+            b.{0} AS rank2,
+            b.id AS armwrestler2_id,
+            b.name AS armwrestler2, 
+            b.{1} AS elo2, 
+            ABS(a.{1} - b.{1}) AS elo_difference
+        FROM armwrestlers a, armwrestlers b
+        WHERE a.name < b.name
+        ORDER BY elo_difference ASC
+        LIMIT 15;
+    """.format(rank_column, elo_column)
 
     closest_matches = db_execute(query)
     closest_matches_with_predictions = []
@@ -282,7 +324,16 @@ def closest_matches():
         match_with_prediction = match + (binom_predicted_1, binom_predicted_2, color_1, color_2)
         closest_matches_with_predictions.append(match_with_prediction)
 
-    return render_template('closest_matches.html', closest_matches_with_predictions=closest_matches_with_predictions, arm=arm, supermatch_add=supermatch_add)
+    template_data = {
+        'closest_matches_with_predictions': closest_matches_with_predictions,
+        'arm': arm,
+        'supermatch_add': supermatch_add
+    }
+
+    if request.headers.get('HX-Request'):
+        return render_template('closest_matches_partial.html', **template_data)
+
+    return render_template('closest_matches.html', **template_data)
 
 
 @app.route("/view_member", methods=["GET"])
@@ -298,30 +349,19 @@ def view_member():
     name = name_result[0][0]
 
     query = '''
-        WITH ranked_right AS (
-            SELECT id, DENSE_RANK() OVER (ORDER BY right_elo DESC) AS right_rank
-            FROM armwrestlers
-            WHERE active_until >= DATE('now')
-        ),
-        ranked_left AS (
-            SELECT id, DENSE_RANK() OVER (ORDER BY left_elo DESC) AS left_rank
-            FROM armwrestlers
-            WHERE active_until >= DATE('now')
-        )
         SELECT 
             CASE WHEN a.active_until >= DATE('now') THEN 'active' ELSE 'inactive' END AS current_status,
             a.right_elo, 
             a.left_elo,
-            rr.right_rank,
-            rl.left_rank,
+            a.right_rank,
+            a.left_rank,
             a.active_until
         FROM armwrestlers a
-        LEFT JOIN ranked_right rr ON a.id = rr.id
-        LEFT JOIN ranked_left rl ON a.id = rl.id
         WHERE a.id = ?
     '''
 
     current_status, current_right_elo, current_left_elo, current_right_rank, current_left_rank, active_until = db_execute(query, id)[0]
+    wins, losses = 0, 0
 
     active_until_date = datetime.strptime(active_until, '%Y-%m-%d')
     days_left = (active_until_date - datetime.today()).days
@@ -344,13 +384,22 @@ def view_member():
         best_left_elo = current_left_elo
         best_right_rank = current_right_rank
         best_left_rank = current_left_rank
-
+        wins_losses = []
         for record in history:
             is_armwrestler1 = record[0] == id
 
             arm = record[4]
             elo = record[7] if is_armwrestler1 else record[8]
             rank = record[5] if is_armwrestler1 else record[6]
+
+            if (is_armwrestler1 and record[9] > record[10]) or (not is_armwrestler1 and record[9] < record[10]):
+                wins += 1
+                wins_losses.append("win")
+            elif (is_armwrestler1 and record[9] < record[10]) or (not is_armwrestler1 and record[9] > record[10]):
+                losses += 1
+                wins_losses.append("loss")
+            else:
+                wins_losses.append("draw")
 
             if arm == 'right':
                 best_right_elo = max(best_right_elo, elo)
@@ -359,7 +408,7 @@ def view_member():
                 best_left_elo = max(best_left_elo, elo)
                 best_left_rank = min(best_left_rank, rank) if best_left_rank is not None else rank
 
-        formatted_data = get_history_formatted_data(history)
+        formatted_data = get_matches_formatted_data(history)
         total_matches = len(history)
 
     else:
@@ -367,9 +416,9 @@ def view_member():
         best_left_elo = current_left_elo
         best_right_rank = current_right_rank
         best_left_rank = current_left_rank
-        history = None
         formatted_data = None
-        total_matches = None
+        wins_losses = None
+        total_matches = 0
 
     template_data = {
         'id': id,
@@ -379,9 +428,9 @@ def view_member():
         'best_right_elo': best_right_elo, 'best_left_elo': best_left_elo,
         'best_right_rank': best_right_rank, 'best_left_rank': best_left_rank,
         'current_status': current_status,
-        'history': history, 'formatted_data': formatted_data,
-        'total_matches': total_matches,
-        'days_left': days_left
+        'matches': history, 'formatted_data': formatted_data,
+        'wins': wins, 'losses': losses, 'total_matches': total_matches,
+        'days_left': days_left, 'wins_losses': wins_losses
     }
 
     return render_template('view_member.html', **template_data)
@@ -501,9 +550,11 @@ def add_new_member():
             active_until_str = active_until_date.strftime('%Y-%m-%d')
 
             db_execute("INSERT INTO armwrestlers (name, right_elo, left_elo, added_by, active_until) VALUES (?, ?, ?, ?, ?)", name, right_elo, left_elo, current_user, active_until_str)
+            update_ranks()
         except sqlite3.DatabaseError as error:
-            print(error)
-        return redirect(url_for('ranking'))
+            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+            app.logger.error(f"Operation context: {request.path} - {request.method}")
+        return render_template('confirmation_screen.html', message="New member added", redirect="ranking")
 
     template_data = {
         'arm': arm,
@@ -541,9 +592,9 @@ def history():
         ORDER BY h.id DESC
     ''')
 
-    formatted_data = get_history_formatted_data(history)
+    formatted_data = get_matches_formatted_data(history)
 
-    return render_template('history.html', history=history, formatted_data=formatted_data)
+    return render_template('history.html', matches=history, formatted_data=formatted_data)
 
 
 @app.route("/undo_last_match", methods=["POST"])
@@ -558,17 +609,17 @@ def undo_last_match():
         db_execute("UPDATE armwrestlers SET {} = ? WHERE id = ?".format(dbarm), armwrestler1_elo, armwrestler1_id)
         db_execute("UPDATE armwrestlers SET {} = ? WHERE id = ?".format(dbarm), armwrestler2_elo, armwrestler2_id)
         db_execute('DELETE FROM history WHERE id = (SELECT MAX(id) FROM history)')
+        update_ranks()
     except (sqlite3.DatabaseError, IndexError) as error:
-        print(error)
-    return redirect(url_for('history'))
+        app.logger.error(f"Database error occurred: {error}", exc_info=True)
+        app.logger.error(f"Operation context: {request.path} - {request.method}")
+    return render_template('confirmation_screen.html', message="Last match deleted", redirect="history")
 
 
 @app.route("/supermatch", methods=["GET", "POST"])
 def supermatch():
-    if not session.get('username'):
-        return redirect(url_for('login'))
-
-    current_user = session.get('username')
+    current_user = session.get('username', None)
+    unconfirmed = True if current_user else None
 
     arm = request.form.get('arm', 'right')
     try:
@@ -586,6 +637,36 @@ def supermatch():
     armwrestler_1_elo, armwrestler_2_elo = None, None
     armwrestlers = db_execute('SELECT id, name FROM armwrestlers ORDER BY LOWER(name)')
     armwrestlers_2 = None
+    error = None
+
+    query = '''
+        SELECT
+            u.armwrestler1_id, a1.name AS armwrestler1_name,
+            u.armwrestler2_id, a2.name AS armwrestler2_name,
+            u.arm,
+            CASE u.arm WHEN 'right' THEN a1.right_rank WHEN 'left' THEN a1.left_rank END AS armwrestler1_rank,
+            CASE u.arm WHEN 'right' THEN a2.right_rank WHEN 'left' THEN a2.left_rank END AS armwrestler2_rank,
+            CASE u.arm WHEN 'right' THEN a1.right_elo WHEN 'left' THEN a1.left_elo END AS armwrestler1_elo,
+            CASE u.arm WHEN 'right' THEN a2.right_elo WHEN 'left' THEN a2.left_elo END AS armwrestler2_elo,
+            u.armwrestler1_score, u.armwrestler2_score,
+            u.selected_format,
+            u.date,
+            u.id
+        FROM
+            unconfirmed_matches u
+        JOIN armwrestlers a1 ON u.armwrestler1_id = a1.id
+        JOIN armwrestlers a2 ON u.armwrestler2_id = a2.id
+        ORDER BY u.id DESC;
+    '''
+
+    db_unconfirmed_matches = db_execute(query)
+
+    unconfirmed_matches = [
+        match[:11] + diff_supermatch(match[7], match[8], (match[9], match[10]), SUPERMATCH_FORMATS[match[11]][1]) + match[11:]
+        for match in db_unconfirmed_matches
+    ]
+
+    formatted_data = get_matches_formatted_data(unconfirmed_matches)
 
     selected_format = request.form.get('supermatch_format', 'none')
     if selected_format not in supermatch_formats:
@@ -632,11 +713,28 @@ def supermatch():
 
     submit_pressed = 'submit_match' in request.form
     if submit_pressed and supermatch_ready:
-        submit_supermatch(arm, selected_armwrestler_1_id, selected_armwrestler_2_id, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format, current_user)
-        return redirect(url_for('ranking'))
+        if current_user:
+            submit_supermatch(arm, selected_armwrestler_1_id, selected_armwrestler_2_id, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format, current_user)
+            return render_template('confirmation_screen.html', message="Supermatch added", redirect="supermatch")
+        else:
+            token = request.form.get("cf-turnstile-response")
+            if not token:
+                error = 'CAPTCHA error'
+
+            response = requests.post(
+                "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+                data={"secret": CLOUDFLARE_SECRET_KEY, "response": token, "remoteip": request.remote_addr}
+            )
+            result = response.json()
+
+            if result.get("success"):
+                submit_unconfirmed_supermatch(arm, selected_armwrestler_1_id, selected_armwrestler_2_id, armwrestler_1_score, armwrestler_2_score, selected_format)
+                return render_template('confirmation_screen.html', message="Supermatch added", redirect="supermatch")
+            else:
+                error = "CAPTCHA verification failed"
 
     template_data = {
-        'arm': arm,
+        'current_user': current_user, 'error': error, 'arm': arm,
         'armwrestlers': armwrestlers, 'armwrestlers_2': armwrestlers_2,
         'selected_armwrestler_1_id': selected_armwrestler_1_id, 'selected_armwrestler_2_id': selected_armwrestler_2_id,
         'supermatch_formats': supermatch_formats, 'selected_format': selected_format, 'supermatch_ready': supermatch_ready,
@@ -645,13 +743,73 @@ def supermatch():
         'armwrestler_1_diff': armwrestler_1_diff, 'armwrestler_2_diff': armwrestler_2_diff,
         'armwrestler_1_color': armwrestler_1_color, 'armwrestler_2_color': armwrestler_2_color,
         'armwrestler_1_elo': armwrestler_1_elo, 'armwrestler_2_elo': armwrestler_2_elo,
-        'custom_score': custom_score, 'custom_score_1': armwrestler_1_score, 'custom_score_2': armwrestler_2_score
+        'custom_score': custom_score, 'custom_score_1': armwrestler_1_score, 'custom_score_2': armwrestler_2_score,
+        'matches': unconfirmed_matches, 'formatted_data': formatted_data, 'unconfirmed': unconfirmed
     }
 
     if request.headers.get('HX-Request'):
         return render_template('supermatch_partial.html', **template_data)
     else:
         return render_template('supermatch.html', **template_data)
+
+
+@app.route("/confirm_match", methods=["POST"])
+def confirm_match():
+    if not session.get('username'):
+        return redirect(url_for('login'))
+
+    current_user = session.get('username', None)
+    match_id = request.form.get('match_id') or request.args.get('match_id')
+
+    query = '''
+        SELECT
+            u.armwrestler1_id, a1.name AS armwrestler1_name,
+            u.armwrestler2_id, a2.name AS armwrestler2_name,
+            u.arm,
+            CASE u.arm WHEN 'right' THEN a1.right_rank WHEN 'left' THEN a1.left_rank END AS armwrestler1_rank,
+            CASE u.arm WHEN 'right' THEN a2.right_rank WHEN 'left' THEN a2.left_rank END AS armwrestler2_rank,
+            CASE u.arm WHEN 'right' THEN a1.right_elo WHEN 'left' THEN a1.left_elo END AS armwrestler1_elo,
+            CASE u.arm WHEN 'right' THEN a2.right_elo WHEN 'left' THEN a2.left_elo END AS armwrestler2_elo,
+            u.armwrestler1_score, u.armwrestler2_score,
+            u.selected_format,
+            u.date,
+            u.id
+        FROM
+            unconfirmed_matches u
+        JOIN armwrestlers a1 ON u.armwrestler1_id = a1.id
+        JOIN armwrestlers a2 ON u.armwrestler2_id = a2.id
+        WHERE u.id = ?;
+    '''
+
+    db_match = db_execute(query, match_id)
+
+    match = [
+        match[:11] + diff_supermatch(match[7], match[8], (match[9], match[10]), SUPERMATCH_FORMATS[match[11]][1]) + match[11:]
+        for match in db_match
+    ]
+
+    formatted_data = get_matches_formatted_data(match)
+
+    if 'confirm_match' in request.form:
+        try:
+            match = match[0]
+            armwrestler_1_elo, armwrestler_2_elo = get_current_elo(match[4], (match[0], match[2]))
+            submit_supermatch(match[4], match[0], match[2], match[9], match[10], armwrestler_1_elo, armwrestler_2_elo, match[13], current_user)
+            db_execute("DELETE FROM unconfirmed_matches WHERE id = ?", match_id)
+            update_ranks()
+        except sqlite3.DatabaseError as error:
+            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+            app.logger.error(f"Operation context: {request.path} - {request.method}")
+        return render_template('confirmation_screen.html', message="Match confirmed", redirect="supermatch")
+    elif 'remove_match' in request.form:
+        try:
+            db_execute("DELETE FROM unconfirmed_matches WHERE id = ?", match_id)
+        except sqlite3.DatabaseError as error:
+            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+            app.logger.error(f"Operation context: {request.path} - {request.method}")
+        return render_template('confirmation_screen.html', message="Match removed", redirect="supermatch")
+
+    return render_template('confirm_match.html', match_id=match_id, matches=match, formatted_data=formatted_data)
 
 
 def submit_supermatch(arm, armwrestler1_id, armwrestler2_id, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format, current_user):
@@ -693,9 +851,32 @@ def submit_supermatch(arm, armwrestler1_id, armwrestler2_id, armwrestler_1_score
 
         db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE id = ?".format(dbarm), updated_1, active_until_str, armwrestler1_id)
         db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE id = ?".format(dbarm), updated_2, active_until_str, armwrestler2_id)
+        update_ranks()
+    except sqlite3.DatabaseError as error:
+        app.logger.error(f"Database error occurred: {error}", exc_info=True)
+        app.logger.error(f"Operation context: {request.path} - {request.method}")
+
+
+def submit_unconfirmed_supermatch(arm, armwrestler1_id, armwrestler2_id, armwrestler_1_score, armwrestler_2_score, selected_format):
+
+    try:
+        query = '''
+        INSERT INTO unconfirmed_matches ( 
+        armwrestler1_id, armwrestler2_id, 
+        arm, 
+        selected_format,
+        armwrestler1_score, armwrestler2_score ) 
+        VALUES (?, ?, ?, ?, ?, ?)
+        '''
+        db_execute(query,
+                   armwrestler1_id, armwrestler2_id,
+                   arm,
+                   selected_format,
+                   armwrestler_1_score, armwrestler_2_score)
 
     except sqlite3.DatabaseError as error:
-        print(error)
+        app.logger.error(f"Database error occurred: {error}", exc_info=True)
+        app.logger.error(f"Operation context: {request.path} - {request.method}")
 
 
 @app.route("/prediction")
@@ -877,11 +1058,11 @@ def get_current_elo(arm, armwrestler_ids):
     return elos
 
 
-def get_history_formatted_data(history):
+def get_matches_formatted_data(matches):
     formatted_data = []
-    for record in history:
-        armwrestler_1_diff_format, armwrestler_2_diff_format = record[11], record[12]
-        armwrestler_1_score_color, armwrestler_2_score_color = record[9], record[10]
+    for match in matches:
+        armwrestler_1_diff_format, armwrestler_2_diff_format = match[11], match[12]
+        armwrestler_1_score_color, armwrestler_2_score_color = match[9], match[10]
 
         armwrestler_1_diff_format, armwrestler_1_diff_color = (f"+{armwrestler_1_diff_format}", "text-success") if armwrestler_1_diff_format > 0 else (
             (str(armwrestler_1_diff_format), "text-danger") if armwrestler_1_diff_format < 0 else ("0", "text-secondary"))
@@ -890,11 +1071,39 @@ def get_history_formatted_data(history):
         armwrestler_1_score_color, armwrestler_2_score_color = ("bg-success", "bg-danger") if armwrestler_1_score_color > armwrestler_2_score_color else (
             ("bg-danger", "bg-success") if armwrestler_1_score_color < armwrestler_2_score_color else ("bg-secondary", "bg-secondary"))
 
-        date = datetime.strptime(record[14], "%Y-%m-%d %H:%M:%S").strftime("%d %B %Y")
+        date = datetime.strptime(match[14], "%Y-%m-%d %H:%M:%S").strftime("%d %B %Y")
 
         formatted_data.append((armwrestler_1_score_color, armwrestler_2_score_color, armwrestler_1_diff_color, armwrestler_2_diff_color, armwrestler_1_diff_format, armwrestler_2_diff_format, date))
 
     return formatted_data
+
+
+def update_ranks():
+    query_update_ranks = '''
+    WITH
+        ranked_right AS (
+            SELECT id, DENSE_RANK() OVER (ORDER BY right_elo DESC) AS right_rank
+            FROM armwrestlers
+            WHERE active_until >= DATE('now')
+        ),
+        ranked_left AS (
+            SELECT id, DENSE_RANK() OVER (ORDER BY left_elo DESC) AS left_rank
+            FROM armwrestlers
+            WHERE active_until >= DATE('now')
+        )
+    UPDATE armwrestlers
+    SET
+        right_rank = (SELECT right_rank FROM ranked_right WHERE ranked_right.id = armwrestlers.id),
+        left_rank = (SELECT left_rank FROM ranked_left WHERE ranked_left.id = armwrestlers.id);
+    '''
+
+    query_nullify_ranks = '''
+    UPDATE armwrestlers SET right_rank = NULL, left_rank = NULL
+    WHERE active_until < DATE('now');
+    '''
+
+    db_execute(query_update_ranks)
+    db_execute(query_nullify_ranks)
 
 
 def match_result(max_rounds, value, format_type):

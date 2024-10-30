@@ -28,7 +28,31 @@ html::-webkit-scrollbar, body::-webkit-scrollbar {
     --bs-btn-bg: transparent;
     --bs-btn-border-color: transparent;
     --bs-btn-hover-bg: transparent;
-    --bs-btn-hover-border-color: transparent;
+    --bs-btn-hover-border-color: var(--bs-secondary);
     --bs-btn-active-border-color: var(--bs-secondary);
     --bs-btn-active-bg: transparent;
+}
+
+.card-wider-border {
+    --bs-card-border-width: 2px;
+}
+
+.loading-container {
+    width: 20rem;
+    height: 0.5rem;
+    background-color: var(--bs-secondary-bg);
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.loading-slider {
+    height: 100%;
+    width: 0;
+    background-color: var(--bs-primary);
+    animation: fill 1s ease-in-out forwards;
+}
+
+@keyframes fill {
+    0% { width: 0; }
+    100% { width: 100%; }
 }

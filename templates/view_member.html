@@ -80,6 +80,12 @@
                     </td>
                 </tr>
                 <tr>
+                    <td class="w-50 align-middle">Wins / Losses</td>
+                    <td class="text-center align-middle">
+                        <strong>{{ wins }} / {{ losses }}</strong>
+                    </td>
+                </tr>
+                <tr>
                     <td class="w-50 align-middle">Total matches</td>
                     <td class="text-center align-middle">
                         <strong>{{ total_matches }}</strong>
@@ -101,9 +107,9 @@
     <h2>Matches</h2>
 </div>
 
-{% if history %}
+{% if matches %}
 
-{% include 'history_partial.html' %}
+{% include 'matches_partial.html' %}
 
 {% else %}
 
