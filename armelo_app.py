@@ -39,9 +39,7 @@ def logout():
 
 @app.route("/confirmation_redirect")
 def confirmation_redirect():
-
     redirect = request.args.get('redirect')
-
     response = make_response("")
     response.headers["HX-Redirect"] = url_for(redirect)
     return response
@@ -162,71 +160,6 @@ def edit_member():
         return render_template('edit_member_partial.html', **template_data)
     else:
         return render_template('edit_member.html', **template_data)
-
-
-@app.route("/confirm_remove", methods=["POST"])
-def confirm_remove():
-    if not session.get('username'):
-        return redirect(url_for('login'))
-
-    try:
-        id = int(request.form.get('id')) or int(request.args.get('id'))
-    except (ValueError, IndexError):
-        raise NotFound()
-    current_name = request.form.get('current_name') or request.args.get('current_name')
-
-    if 'confirm_remove' in request.form:
-        try:
-            db_execute("DELETE FROM armwrestlers WHERE id = ?", id)
-            update_ranks()
-        except sqlite3.DatabaseError as error:
-            app.logger.error(f"Database error occurred: {error}", exc_info=True)
-            app.logger.error(f"Operation context: {request.path} - {request.method}")
-        return render_template('confirmation_screen.html', message="Member deleted", redirect="ranking")
-
-    return render_template('confirm_remove.html', id=id, current_name=current_name)
-
-
-@app.route("/closest_matches")
-def closest_matches():
-    arm = request.args.get('arm', 'right')
-    rank_column = 'right_rank' if arm == 'right' else 'left_rank'
-    elo_column = 'right_elo' if arm == 'right' else 'left_elo'
-
-    supermatch_add = False
-    if session.get('username'):
-        supermatch_add = True
-
-    query = """
-        SELECT 
-            a.{0} AS rank1, a.id AS armwrestler1_id, a.name AS armwrestler1, a.{1} AS elo1, 
-            b.{0} AS rank2, b.id AS armwrestler2_id, b.name AS armwrestler2, b.{1} AS elo2, 
-            ABS(a.{1} - b.{1}) AS elo_difference
-        FROM armwrestlers a, armwrestlers b
-        WHERE a.name < b.name
-        ORDER BY elo_difference ASC
-        LIMIT 15;
-    """.format(rank_column, elo_column)
-
-    closest_matches = db_execute(query)
-    closest_matches_with_predictions = []
-    for match in closest_matches:
-        binom_predicted_1, binom_predicted_2 = binom_prediction(match[3], match[7])
-        binom_predicted_1, binom_predicted_2 = round(binom_predicted_1 * 100, 1), round(binom_predicted_2 * 100, 1)
-        color_1, color_2 = (f"success", "danger") if binom_predicted_1 > binom_predicted_2 else ((f"danger", "success") if binom_predicted_1 < binom_predicted_2 else ("secondary", "secondary"))
-        match_with_prediction = match + (binom_predicted_1, binom_predicted_2, color_1, color_2)
-        closest_matches_with_predictions.append(match_with_prediction)
-
-    template_data = {
-        'closest_matches_with_predictions': closest_matches_with_predictions,
-        'arm': arm,
-        'supermatch_add': supermatch_add
-    }
-
-    if request.headers.get('HX-Request'):
-        return render_template('closest_matches_partial.html', **template_data)
-
-    return render_template('closest_matches.html', **template_data)
 
 
 @app.route("/view_member", methods=["GET"])
@@ -467,6 +400,71 @@ def add_new_member():
         return render_template('add_new_member_partial.html', **template_data)
     else:
         return render_template('add_new_member.html', **template_data)
+
+
+@app.route("/confirm_remove", methods=["POST"])
+def confirm_remove():
+    if not session.get('username'):
+        return redirect(url_for('login'))
+
+    try:
+        id = int(request.form.get('id')) or int(request.args.get('id'))
+    except (ValueError, IndexError):
+        raise NotFound()
+    current_name = request.form.get('current_name') or request.args.get('current_name')
+
+    if 'confirm_remove' in request.form:
+        try:
+            db_execute("DELETE FROM armwrestlers WHERE id = ?", id)
+            update_ranks()
+        except sqlite3.DatabaseError as error:
+            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+            app.logger.error(f"Operation context: {request.path} - {request.method}")
+        return render_template('confirmation_screen.html', message="Member deleted", redirect="ranking")
+
+    return render_template('confirm_remove.html', id=id, current_name=current_name)
+
+
+@app.route("/closest_matches")
+def closest_matches():
+    arm = request.args.get('arm', 'right')
+    rank_column = 'right_rank' if arm == 'right' else 'left_rank'
+    elo_column = 'right_elo' if arm == 'right' else 'left_elo'
+
+    supermatch_add = False
+    if session.get('username'):
+        supermatch_add = True
+
+    query = """
+        SELECT 
+            a.{0} AS rank1, a.id AS armwrestler1_id, a.name AS armwrestler1, a.{1} AS elo1, 
+            b.{0} AS rank2, b.id AS armwrestler2_id, b.name AS armwrestler2, b.{1} AS elo2, 
+            ABS(a.{1} - b.{1}) AS elo_difference
+        FROM armwrestlers a, armwrestlers b
+        WHERE a.name < b.name
+        ORDER BY elo_difference ASC
+        LIMIT 15;
+    """.format(rank_column, elo_column)
+
+    closest_matches = db_execute(query)
+    closest_matches_with_predictions = []
+    for match in closest_matches:
+        binom_predicted_1, binom_predicted_2 = binom_prediction(match[3], match[7])
+        binom_predicted_1, binom_predicted_2 = round(binom_predicted_1 * 100, 1), round(binom_predicted_2 * 100, 1)
+        color_1, color_2 = (f"success", "danger") if binom_predicted_1 > binom_predicted_2 else ((f"danger", "success") if binom_predicted_1 < binom_predicted_2 else ("secondary", "secondary"))
+        match_with_prediction = match + (binom_predicted_1, binom_predicted_2, color_1, color_2)
+        closest_matches_with_predictions.append(match_with_prediction)
+
+    template_data = {
+        'closest_matches_with_predictions': closest_matches_with_predictions,
+        'arm': arm,
+        'supermatch_add': supermatch_add
+    }
+
+    if request.headers.get('HX-Request'):
+        return render_template('closest_matches_partial.html', **template_data)
+
+    return render_template('closest_matches.html', **template_data)
 
 
 @app.route("/history")
@@ -864,7 +862,7 @@ def elo_from_match():
         return render_template('elo_from_match_partial.html', **template_data)
     else:
         return render_template('elo_from_match.html', **template_data)
-    
+
 
 @app.errorhandler(404)
 def page_not_found(e):
