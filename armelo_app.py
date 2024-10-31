@@ -867,19 +867,18 @@ def elo_from_match():
 @app.errorhandler(404)
 def page_not_found(e):
     app.logger.error(f"404 Error: {e}, path: {request.path}")
-    return render_template('404.html'), 404
+    return render_template('error.html', error_code = "404", error_message = f"Page not found - {request.path}"), 404
 
 
 @app.errorhandler(500)
 def page_not_found(e):
     app.logger.error('Server Error: %s', e, exc_info=True)
-    return render_template('500.html'), 500
-
+    return render_template('error.html', error_code = "500", error_message = f"Internal server error"), 500
 
 @app.errorhandler(Exception)
 def handle_exception(e):
     app.logger.error('Unhandled Exception: %s', e, exc_info=True)
-    return render_template('500.html'), 500
+    return render_template('error.html', error_code = "500", error_message = f"Unhandled exception"), 500
 
 
 if __name__ == "__main__":

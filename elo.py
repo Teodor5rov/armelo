@@ -1,9 +1,4 @@
-import math
-from scipy.stats import binom
-
-CONTRAST = 400
-K = 128
-
+from config import math, binom, K, CONTRAST
 
 def expected_score(armwrestler_a_elo, armwrestler_b_elo, c=CONTRAST):
     expected_a = 1 / (1 + math.pow(10, ((armwrestler_b_elo - armwrestler_a_elo) / c)))

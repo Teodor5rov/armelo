@@ -8,8 +8,23 @@ import requests
 from logging.handlers import RotatingFileHandler
 import sqlite3
 import os
+import math
+from scipy.stats import binom
 
 DATABASE = 'database.db'
+
+SUPERMATCH_FORMATS = {
+    "Single round": [1, 64, "Best of"],
+    "Best of 3": [3, 96, "Best of"],
+    "Best of 5": [5, 128, "Best of"],
+    "5 round match": [5, 144, "All rounds"],
+    "6 round Vendetta": [6 + 1, 144, "Vendetta"],
+    "Best of 7": [7, 144, "Best of"],
+    "10 round Speculative": [10, 128, "All rounds"],
+}
+
+CONTRAST = 400
+K = 128
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', '%%8hF$7ALEy8Msw2')
@@ -69,17 +84,6 @@ csp = {
 }
 
 talisman = Talisman(app, content_security_policy=csp, content_security_policy_nonce_in=['script-src', 'script-src-elem'])
-
-
-SUPERMATCH_FORMATS = {
-    "Single round": [1, 64, "Best of"],
-    "Best of 3": [3, 96, "Best of"],
-    "Best of 5": [5, 128, "Best of"],
-    "5 round match": [5, 144, "All rounds"],
-    "6 round Vendetta": [6 + 1, 144, "Vendetta"],
-    "Best of 7": [7, 144, "Best of"],
-    "10 round Speculative": [10, 128, "All rounds"],
-}
 
 
 def get_db():

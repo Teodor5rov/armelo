@@ -1,9 +1,9 @@
 {% extends "layout.html" %}
 
-{% block title %}Internal Server Error{% endblock %}
+{% block title %}Error {{ error_code }}{% endblock %}
 
 {% block content %}
     <div class="alert alert-danger" role="alert">
-        <strong>Error 500:</strong> Internal Server Error.
+        <strong>Error {{ error_code }}:</strong> {{ error_message }}
     </div>
 {% endblock %}
