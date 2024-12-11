@@ -61,6 +61,8 @@ def submit_supermatch(arm, armwrestler1_id, armwrestler2_id, armwrestler_1_score
 
         db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE id = ?".format(dbarm), updated_1, active_until_str, armwrestler1_id)
         db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE id = ?".format(dbarm), updated_2, active_until_str, armwrestler2_id)
+
+        update_badges()   
         update_ranks()
     except sqlite3.DatabaseError as error:
         app.logger.error(f"Database error occurred: {error}", exc_info=True)
@@ -128,6 +130,38 @@ def update_ranks():
 
     db_execute(query_update_ranks)
     db_execute(query_nullify_ranks)
+
+
+def update_badges():
+    result = db_execute("SELECT id FROM badges WHERE name = 'Provisional';")
+    if not result:
+        return
+
+    provisional_badge_id = result[0][0]
+
+    db_execute('DELETE FROM armwrestler_badges WHERE badge_id = ?;', provisional_badge_id)
+
+    db_execute('''
+        INSERT INTO armwrestler_badges (armwrestler_id, badge_id, arm)
+        SELECT id, ?, 'right'
+        FROM armwrestlers
+        WHERE id NOT IN (
+            SELECT armwrestler1_id FROM history WHERE arm='right'
+            UNION
+            SELECT armwrestler2_id FROM history WHERE arm='right'
+        );
+    ''', provisional_badge_id)
+
+    db_execute('''
+        INSERT INTO armwrestler_badges (armwrestler_id, badge_id, arm)
+        SELECT id, ?, 'left'
+        FROM armwrestlers
+        WHERE id NOT IN (
+            SELECT armwrestler1_id FROM history WHERE arm='left'
+            UNION
+            SELECT armwrestler2_id FROM history WHERE arm='left'
+        );
+    ''', provisional_badge_id)
 
 
 def match_result(max_rounds, value, format_type):

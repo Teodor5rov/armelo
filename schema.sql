@@ -47,3 +47,20 @@ CREATE TABLE IF NOT EXISTS "unconfirmed_matches" (
     FOREIGN KEY (armwrestler1_id) REFERENCES armwrestlers(id),
     FOREIGN KEY (armwrestler2_id) REFERENCES armwrestlers(id)
 );
+CREATE TABLE IF NOT EXISTS "badges" (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    color TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS "armwrestler_badges" (
+    armwrestler_id INTEGER NOT NULL,
+    badge_id INTEGER NOT NULL,
+    arm TEXT NOT NULL CHECK (arm IN ('right', 'left')),
+    assigned_date DATE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    assigned_by TEXT,
+    PRIMARY KEY (armwrestler_id, badge_id, arm),
+    FOREIGN KEY (armwrestler_id) REFERENCES armwrestlers(id) ON DELETE CASCADE,
+    FOREIGN KEY (badge_id) REFERENCES badges(id) ON DELETE CASCADE
+); 
+INSERT INTO badges (name, color)
+VALUES ('Provisional', 'text-bg-success');

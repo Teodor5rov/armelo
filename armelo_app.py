@@ -62,11 +62,25 @@ def ranking(arm='right'):
         WHERE active_until < DATE('now') ORDER BY {1} DESC
     '''.format(elo_column, elo_column))
 
+    badge_data = db_execute('''
+        SELECT armwrestler_badges.armwrestler_id, badges.name, badges.color
+        FROM armwrestler_badges
+        JOIN badges ON armwrestler_badges.badge_id = badges.id
+        WHERE armwrestler_badges.arm = ?
+    ''', arm)
+
+    armwrestler_badges_dict = {}
+    for aw_id, bname, bcolor in badge_data:
+        if aw_id not in armwrestler_badges_dict:
+            armwrestler_badges_dict[aw_id] = []
+        armwrestler_badges_dict[aw_id].append((bname, bcolor))
+
     template_data = {
         'active_armwrestlers': active_armwrestlers,
         'inactive_armwrestlers': inactive_armwrestlers,
         'current_user': current_user,
-        'arm': arm
+        'arm': arm,
+        'armwrestler_badges_dict': armwrestler_badges_dict
     }
 
     if request.headers.get('HX-Request'):
@@ -169,6 +183,8 @@ def view_member():
         id = int(request.args.get('id'))
     except (ValueError, IndexError):
         raise NotFound()
+    arm = request.args.get('arm', 'right')
+
     name_result = db_execute('SELECT name FROM armwrestlers WHERE id = ?', id)
     if not name_result:
         raise NotFound()
@@ -202,6 +218,8 @@ def view_member():
         ORDER BY h.id DESC
     ''', id, id)
 
+    selected_arm_history = []
+
     if history:
         best_right_elo = current_right_elo
         best_left_elo = current_left_elo
@@ -211,27 +229,34 @@ def view_member():
         for record in history:
             is_armwrestler1 = record[0] == id
 
-            arm = record[4]
+            match_arm = record[4]
             elo = record[7] if is_armwrestler1 else record[8]
             rank = record[5] if is_armwrestler1 else record[6]
 
             if (is_armwrestler1 and record[9] > record[10]) or (not is_armwrestler1 and record[9] < record[10]):
                 wins += 1
-                wins_losses.append("win")
+                if match_arm == arm:
+                    wins_losses.append("win")
             elif (is_armwrestler1 and record[9] < record[10]) or (not is_armwrestler1 and record[9] > record[10]):
                 losses += 1
-                wins_losses.append("loss")
+                if match_arm == arm:
+                    wins_losses.append("loss")
             else:
-                wins_losses.append("draw")
+                if match_arm == arm:
+                    wins_losses.append("draw")
 
-            if arm == 'right':
+            if match_arm == 'right':
                 best_right_elo = max(best_right_elo, elo)
                 best_right_rank = min(best_right_rank, rank) if best_right_rank is not None else rank
-            elif arm == 'left':
+                if arm == 'right':
+                    selected_arm_history.append(record)
+            elif match_arm == 'left':
                 best_left_elo = max(best_left_elo, elo)
                 best_left_rank = min(best_left_rank, rank) if best_left_rank is not None else rank
+                if arm == 'left':
+                    selected_arm_history.append(record)
 
-        formatted_data = get_matches_formatted_data(history)
+        formatted_data = get_matches_formatted_data(selected_arm_history)
         total_matches = len(history)
 
     else:
@@ -243,6 +268,13 @@ def view_member():
         wins_losses = None
         total_matches = 0
 
+    badges_for_arm = db_execute('''
+        SELECT badges.name, badges.color
+        FROM armwrestler_badges
+        JOIN badges ON armwrestler_badges.badge_id = badges.id
+        WHERE armwrestler_badges.armwrestler_id = ? AND armwrestler_badges.arm = ?
+    ''', id, arm)
+
     template_data = {
         'id': id,
         'name': name,
@@ -251,10 +283,15 @@ def view_member():
         'best_right_elo': best_right_elo, 'best_left_elo': best_left_elo,
         'best_right_rank': best_right_rank, 'best_left_rank': best_left_rank,
         'current_status': current_status,
-        'matches': history, 'formatted_data': formatted_data,
+        'matches': selected_arm_history, 'formatted_data': formatted_data,
         'wins': wins, 'losses': losses, 'total_matches': total_matches,
-        'days_left': days_left, 'wins_losses': wins_losses
+        'days_left': days_left, 'wins_losses': wins_losses,
+        'arm': arm,
+        'badges_for_arm': badges_for_arm
     }
+
+    if request.headers.get('HX-Request'):
+        return render_template('view_member_partial.html', **template_data)
 
     return render_template('view_member.html', **template_data)
 
@@ -373,6 +410,8 @@ def add_new_member():
             active_until_str = active_until_date.strftime('%Y-%m-%d')
 
             db_execute("INSERT INTO armwrestlers (name, right_elo, left_elo, added_by, active_until) VALUES (?, ?, ?, ?, ?)", name, right_elo, left_elo, current_user, active_until_str)
+
+            update_badges()            
             update_ranks()
         except sqlite3.DatabaseError as error:
             app.logger.error(f"Database error occurred: {error}", exc_info=True)
@@ -416,6 +455,7 @@ def confirm_remove():
     if 'confirm_remove' in request.form:
         try:
             db_execute("DELETE FROM armwrestlers WHERE id = ?", id)
+
             update_ranks()
         except sqlite3.DatabaseError as error:
             app.logger.error(f"Database error occurred: {error}", exc_info=True)
@@ -497,6 +537,8 @@ def undo_last_match():
         db_execute("UPDATE armwrestlers SET {} = ? WHERE id = ?".format(dbarm), armwrestler1_elo, armwrestler1_id)
         db_execute("UPDATE armwrestlers SET {} = ? WHERE id = ?".format(dbarm), armwrestler2_elo, armwrestler2_id)
         db_execute('DELETE FROM history WHERE id = (SELECT MAX(id) FROM history)')
+
+        update_badges()
         update_ranks()
     except (sqlite3.DatabaseError, IndexError) as error:
         app.logger.error(f"Database error occurred: {error}", exc_info=True)

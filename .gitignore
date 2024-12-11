@@ -1,5 +1,6 @@
 /.idea
-/.venv
+/venv
+.env
 /configs
 /__pycache__
 /pass_hasher.py

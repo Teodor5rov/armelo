@@ -17,10 +17,10 @@ html::-webkit-scrollbar, body::-webkit-scrollbar {
     display: none;
 }
 
-.navbar-brand {
+.hover-text {
     transition: opacity 0.15s ease;
 }
-.navbar-brand:hover {
+.hover-text:hover {
     opacity: 0.8;
 }
 

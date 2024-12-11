@@ -25,48 +25,6 @@
         <table class="table">
             <thead class="table-dark">
                 <tr>
-                    <th class="w-50 align-middle">Records</th>
-                    <th class="text-center w-25 align-middle">Current</th>
-                    <th class="text-center w-25 align-middle">Best</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td class="align-middle">Right ELO</td>
-                    <td class="text-center align-middle">{{ current_right_elo }}</td>
-                    <td class="text-center align-middle">{{ best_right_elo }}</td>
-                </tr>
-                <tr>
-                    <td class="align-middle">Right Rank</td>
-                    <td class="text-center align-middle">
-                        <strong>{% if current_right_rank %}#{% endif %}{{ current_right_rank }}</strong>
-                    </td>
-                    <td class="text-center align-middle">
-                        <strong>{% if best_right_rank %}#{% endif %}{{ best_right_rank }}</strong>
-                    </td>
-                </tr>
-                <tr>
-                    <td class="align-middle">Left ELO</td>
-                    <td class="text-center align-middle">{{ current_left_elo }}</td>
-                    <td class="text-center align-middle">{{ best_left_elo }}</td>
-                </tr>
-                <tr>
-                    <td class="align-middle">Left Rank</td>
-                    <td class="text-center align-middle">
-                        <strong>{% if current_left_rank %}#{% endif %}{{ current_left_rank }}</strong>
-                    </td>
-                    <td class="text-center align-middle">
-                        <strong>{% if best_left_rank %}#{% endif %}{{ best_left_rank }}</strong>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-    
-    <div class="table-responsive rounded">
-        <table class="table">
-            <thead class="table-dark">
-                <tr>
                     <th colspan="2" class="align-middle">Activity</th>
                 </tr>
             </thead>
@@ -100,23 +58,10 @@
             </tbody>
         </table>
     </div>
-    
 </div>
 
-<div class="col-auto text-center mb-4">
-    <h2>Matches</h2>
+<div id="arm_info">
+    {% include 'view_member_partial.html' %}
 </div>
-
-{% if matches %}
-
-{% include 'matches_partial.html' %}
-
-{% else %}
-
-<div class="alert alert-secondary">
-    The armwrestler has <strong>not had any matches yet.</strong>
-</div>
-
-{% endif%}
 
 {% endblock %}

@@ -1,0 +1,91 @@
+<div class="mx-auto" style="max-width: 800px;">
+    <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
+        <a href="{{ url_for('view_member', arm='right', id=id) }}" 
+            class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}"
+            role="button"
+            hx-get="{{ url_for('view_member', id=id, arm='right') }}"
+            hx-target="#arm_info"
+            hx-swap="innerHTML"
+            aria-pressed="{{ 'true' if arm == 'right' else 'false' }}">Right arm</a>
+        <a href="{{ url_for('view_member', arm='left', id=id) }}"
+            class="btn btn-primary w-50 {{ 'active' if arm == 'left' else '' }}"
+            role="button"
+            hx-get="{{ url_for('view_member', id=id, arm='left') }}"
+            hx-target="#arm_info"
+            hx-swap="innerHTML"
+            aria-pressed="{{ 'true' if arm == 'left' else 'false' }}">Left arm</a>
+    </div>
+
+    <div class="table-responsive rounded">
+        <table class="table">
+            <thead class="table-dark">
+                <tr>
+                    <th class="w-50 align-middle">Records</th>
+                    <th class="text-center w-25 align-middle">Current</th>
+                    <th class="text-center w-25 align-middle">Best</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if arm == 'right' %}
+                <tr>
+                    <td class="d-flex align-middle align-items-center flex-wrap gap-2"><span class="me-2">Right ELO</span>
+                    {% if badges_for_arm and badges_for_arm|length > 0 %}
+                        {% for bname, bcolor in badges_for_arm %}
+                            <span class="badge {{ bcolor }}">{{ bname }}</span>
+                        {% endfor %}
+                    {% endif %}
+                    </td>
+                    <td class="text-center align-middle">{{ current_right_elo }}</td>
+                    <td class="text-center align-middle">{{ best_right_elo }}</td>
+                </tr>
+                <tr>
+                    <td class="align-middle">Right Rank</td>
+                    <td class="text-center align-middle">
+                        <strong>{% if current_right_rank %}#{% endif %}{{ current_right_rank }}</strong>
+                    </td>
+                    <td class="text-center align-middle">
+                        <strong>{% if best_right_rank %}#{% endif %}{{ best_right_rank }}</strong>
+                    </td>
+                </tr>
+                {% elif arm == 'left' %}
+                <tr>
+                    <td class="d-flex align-middle align-items-center flex-wrap gap-2"><span class="me-2">Left ELO</span>
+                    {% if badges_for_arm and badges_for_arm|length > 0 %}
+                        {% for bname, bcolor in badges_for_arm %}
+                            <span class="badge {{ bcolor }}">{{ bname }}</span>
+                        {% endfor %}
+                    {% endif %}
+                    </td>
+                    <td class="text-center align-middle">{{ current_left_elo }}</td>
+                    <td class="text-center align-middle">{{ best_left_elo }}</td>
+                </tr>
+                <tr>
+                    <td class="align-middle">Left Rank</td>
+                    <td class="text-center align-middle">
+                        <strong>{% if current_left_rank %}#{% endif %}{{ current_left_rank }}</strong>
+                    </td>
+                    <td class="text-center align-middle">
+                        <strong>{% if best_left_rank %}#{% endif %}{{ best_left_rank }}</strong>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="col-auto text-center mb-4">
+    <h2>Matches</h2>
+</div>
+
+{% if matches %}
+
+{% include 'matches_partial.html' %}
+
+{% else %}
+
+<div class="alert alert-secondary">
+    The armwrestler has not had any matches on the <strong>{{ arm }}</strong> arm.
+</div>
+
+{% endif%}

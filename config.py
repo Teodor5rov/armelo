@@ -10,6 +10,9 @@ import sqlite3
 import os
 import math
 from scipy.stats import binom
+from dotenv import load_dotenv
+
+load_dotenv()
 
 DATABASE = 'database.db'
 
@@ -27,8 +30,8 @@ CONTRAST = 400
 K = 128
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', '%%8hF$7ALEy8Msw2')
-CLOUDFLARE_SECRET_KEY = os.environ.get('CLOUDFLARE_SECRET_KEY', '1x0000000000000000000000000000000AA')
+app.secret_key = os.getenv('SECRET_KEY', '%%8hF$7ALEy8Msw2')
+CLOUDFLARE_SECRET_KEY = os.getenv('CLOUDFLARE_SECRET_KEY', '1x0000000000000000000000000000000AA')
 
 handler = RotatingFileHandler('armelo_app.log', maxBytes=100000, backupCount=3)
 handler.setLevel(logging.DEBUG)
