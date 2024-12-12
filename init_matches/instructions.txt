@@ -1,0 +1,11 @@
+Instructions:
+You'll see two scores – Score1 for you and Score2 for your opponent.
+Pretend it is a 10-round supermatch. Your total combined scores with your opponent should add up to 10.
+
+Close Matches: Even if you win every round against someone, if each win is a grinder, score the match as 6:4. 
+Super Close Matches: If every round feels like completely 50/50 super close, then it’s a 5:5.
+Dominant Wins: A 10:0 score means you’re totally dominating, like you can pin the other guy in any position without much challenge.
+
+This is about how relatively strong you are compared to your opponent, so think about how close the matches feel, not just win or lose. This is just for setting up the initial ranks, so it’s different from actual match outcomes.
+Some might have the same name, so make sure you’re scoring against the right person.
+If you do not know the other person/have no idea how you stack up against them then just do not write anything.

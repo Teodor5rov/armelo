@@ -6,17 +6,5 @@
 /pass_hasher.py
 /armelo_app.log
 /notes.txt
-
-
+/Club_init_data
 /init_matches/query.sql
-/init_matches/prov_names.txt
-/init_matches/Mitgliederverwaltung Armwrestling Zurich.xlsx
-/init_matches/names.csv
-/init_matches/input_matches_main_right.csv
-/init_matches/input_matches_main_left.csv
-/init_matches/input_matches_main_right.xlsx
-/init_matches/input_matches_main_left.xlsx
-/init_matches/input_matches_main_left_OLD.xlsx
-/init_matches/output_matches_main.csv
-/init_matches/ARMELO_RANKING_DATA
-/init_matches/instructions.txt

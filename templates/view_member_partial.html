@@ -28,13 +28,7 @@
             <tbody>
                 {% if arm == 'right' %}
                 <tr>
-                    <td class="d-flex align-middle align-items-center flex-wrap gap-2"><span class="me-2">Right ELO</span>
-                    {% if badges_for_arm and badges_for_arm|length > 0 %}
-                        {% for bname, bcolor in badges_for_arm %}
-                            <span class="badge {{ bcolor }}">{{ bname }}</span>
-                        {% endfor %}
-                    {% endif %}
-                    </td>
+                    <td class="align-middle">Right ELO</td>
                     <td class="text-center align-middle">{{ current_right_elo }}</td>
                     <td class="text-center align-middle">{{ best_right_elo }}</td>
                 </tr>
@@ -49,13 +43,7 @@
                 </tr>
                 {% elif arm == 'left' %}
                 <tr>
-                    <td class="d-flex align-middle align-items-center flex-wrap gap-2"><span class="me-2">Left ELO</span>
-                    {% if badges_for_arm and badges_for_arm|length > 0 %}
-                        {% for bname, bcolor in badges_for_arm %}
-                            <span class="badge {{ bcolor }}">{{ bname }}</span>
-                        {% endfor %}
-                    {% endif %}
-                    </td>
+                    <td class="align-middle">Left ELO</td>
                     <td class="text-center align-middle">{{ current_left_elo }}</td>
                     <td class="text-center align-middle">{{ best_left_elo }}</td>
                 </tr>
@@ -66,6 +54,17 @@
                     </td>
                     <td class="text-center align-middle">
                         <strong>{% if best_left_rank %}#{% endif %}{{ best_left_rank }}</strong>
+                    </td>
+                </tr>
+                {% endif %}
+                {% if badges_for_arm and badges_for_arm|length > 0 %}
+                <tr>
+                    <td class="text-center align-middle" colspan="3">
+                        <div class="d-flex justify-content-center align-items-center flex-wrap gap-2">
+                        {% for bname, bcolor in badges_for_arm %}
+                            <span class="badge {{ bcolor }}">{{ bname }}</span>
+                        {% endfor %}
+                        </div>
                     </td>
                 </tr>
                 {% endif %}
