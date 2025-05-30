@@ -23,28 +23,49 @@
 
 <p>The history of matches between ranked armwrestlers from the <strong>Armwrestling Zurich</strong> club.</p>
 
-{% if username %}
-<button type="button" class="btn btn-danger mb-3" data-bs-toggle="modal" data-bs-target="#undoModal">Undo last match</button>
+<div class="d-flex flex-column flex-lg-row flex-wrap align-items-start align-items-lg-center mb-3">
+  <span class="text-nowrap me-2">
+    Total matches: <strong>{{ total_matches }}</strong>
+  </span>
+
+  <div class="d-flex gap-2 mt-3 mt-lg-0 ms-lg-auto flex-wrap">
+    <form hx-get="{{ url_for('history') }}" hx-trigger="change" hx-target="body" hx-swap="outerHTML" class="d-flex gap-2">
+        <select name="month" class="form-select w-auto">
+          <option value="" {% if selected_month is none %}selected{% endif %}>All months</option>
+          {% for num, name in months %}
+          <option value="{{ num }}" {% if num == selected_month %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+        <select name="year" class="form-select w-auto">
+          {% for y in years %}
+          <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+    </form>
+    {% if username %}
+    <button type="button" class="btn btn-danger text-nowrap" 
+    hx-post="{{ url_for('undo_last_match') }}" hx-target="#undoMatch" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#undoModal">
+      Undo last match
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+{% if matches %}
+  {% include 'matches_partial.html' %}
+{% else %}
+<div class="alert alert-secondary">
+    There are no matches in the selected time period.
+</div>
 {% endif %}
-
-{% include 'matches_partial.html' %}
-
 <div class="modal fade" id="undoModal" tabindex="-1" aria-labelledby="undoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h1 class="modal-title fs-5" id="undoModalLabel">Undo last match</h1>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body">
-            Are you sure you want to undo the last match?
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
-          <form action="{{ url_for('undo_last_match') }}" method="POST">
-            <button type="submit" class="btn btn-danger">Undo match</button>
-          </form>
-        </div>
+        <div id="undoMatch"></div>
       </div>
     </div>
 </div>

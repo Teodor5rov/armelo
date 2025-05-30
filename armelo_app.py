@@ -144,11 +144,11 @@ def edit_member():
             if selected_status != current_status:
                 if selected_status == status_options[0]:
                     today = datetime.today()
-                    active_until_date = today + timedelta(days=180)
+                    active_until_date = today + timedelta(days=30)
                     active_until_str = active_until_date.strftime('%Y-%m-%d')
                 elif selected_status == status_options[1]:
                     today = datetime.today()
-                    active_until_date = today - timedelta(days=2)
+                    active_until_date = today - timedelta(days=1)
                     active_until_str = active_until_date.strftime('%Y-%m-%d')
                 db_execute("UPDATE armwrestlers SET name = ?, right_elo = ?, left_elo = ?, active_until = ?, last_edited_by = ? WHERE id = ?", name, right_elo, left_elo, active_until_str, current_user, id)
             else:
@@ -203,8 +203,8 @@ def view_member():
     wins, losses = 0, 0
 
     active_until_date = datetime.strptime(active_until, '%Y-%m-%d')
-    days_left = (active_until_date - datetime.today()).days
-    days_left = days_left if days_left > 0 else "inactive"
+    days_left = (active_until_date - datetime.today()).days + 1
+    days_left = days_left if days_left >= 0 else "inactive"
 
     history = db_execute('''
         SELECT a1.id AS armwrestler1_id, a1.name AS armwrestler1_name, a2.id AS armwrestler2_id, a2.name AS armwrestler2_name, h.arm, 
@@ -509,41 +509,87 @@ def closest_matches():
 
 @app.route("/history")
 def history():
-    history = db_execute('''
-        SELECT a1.id AS armwrestler1_id, a1.name AS armwrestler1_name, a2.id AS armwrestler2_id, a2.name AS armwrestler2_name, h.arm, 
-               h.armwrestler1_rank, h.armwrestler2_rank, h.armwrestler1_elo, h.armwrestler2_elo, 
-               h.armwrestler1_score, h.armwrestler2_score, h.armwrestler1_elo_diff, h.armwrestler2_elo_diff, 
+    month = request.args.get('month', '')
+    selected_month = int(month) if month else None
+    selected_year = int(request.args.get('year', datetime.now().year))
+
+    if selected_month is None:
+        start_date = datetime(selected_year, 1, 1)
+        end_date = datetime(selected_year + 1, 1, 1)
+    else:
+        start_date = datetime(selected_year, selected_month, 1)
+        if selected_month == 12:
+            end_date = datetime(selected_year + 1, 1, 1)
+        else:
+            end_date = datetime(selected_year, selected_month + 1, 1)
+
+    year_rows = db_execute("SELECT DISTINCT STRFTIME('%Y', date) FROM history ORDER BY 1 DESC")
+    years = [int(r[0]) for r in year_rows]
+    months = list(enumerate(month_name))[1:]
+
+    query = '''
+        SELECT a1.id AS armwrestler1_id, a1.name AS armwrestler1_name,
+               a2.id AS armwrestler2_id, a2.name AS armwrestler2_name,
+               h.arm, h.armwrestler1_rank, h.armwrestler2_rank,
+               h.armwrestler1_elo, h.armwrestler2_elo,
+               h.armwrestler1_score, h.armwrestler2_score,
+               h.armwrestler1_elo_diff, h.armwrestler2_elo_diff,
                h.selected_format, h.date
         FROM history h
         JOIN armwrestlers a1 ON h.armwrestler1_id = a1.id
         JOIN armwrestlers a2 ON h.armwrestler2_id = a2.id
+        WHERE h.date >= ? AND h.date < ?
         ORDER BY h.id DESC
-    ''')
+    '''
+    params = [start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')]
+    matches = db_execute(query, *params)
+    total_matches = db_execute('SELECT COUNT(*) FROM history')[0][0]
+    formatted_data = get_matches_formatted_data(matches)
 
-    formatted_data = get_matches_formatted_data(history)
+    template_data = {
+        'matches': matches, 'formatted_data': formatted_data,
+        'total_matches': total_matches,
+        'months': months, 'years': years,
+        'selected_month': selected_month, 'selected_year': selected_year
+    }
 
-    return render_template('history.html', matches=history, formatted_data=formatted_data)
-
+    return render_template('history.html', **template_data)
 
 @app.route("/undo_last_match", methods=["POST"])
 def undo_last_match():
     if not session.get('username'):
         return redirect(url_for('login'))
 
-    try:
-        armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo = db_execute(
-            'SELECT armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo FROM history ORDER BY id DESC LIMIT 1')[0]
-        dbarm = 'right_elo' if arm == 'right' else 'left_elo'
-        db_execute("UPDATE armwrestlers SET {} = ? WHERE id = ?".format(dbarm), armwrestler1_elo, armwrestler1_id)
-        db_execute("UPDATE armwrestlers SET {} = ? WHERE id = ?".format(dbarm), armwrestler2_elo, armwrestler2_id)
-        db_execute('DELETE FROM history WHERE id = (SELECT MAX(id) FROM history)')
+    if 'undo_match' in request.form:
+        try:
+            armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo = db_execute(
+                'SELECT armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo FROM history ORDER BY id DESC LIMIT 1')[0]
+            dbarm = 'right_elo' if arm == 'right' else 'left_elo'
+            db_execute(f"UPDATE armwrestlers SET {dbarm} = ? WHERE id = ?", armwrestler1_elo, armwrestler1_id)
+            db_execute(f"UPDATE armwrestlers SET {dbarm} = ? WHERE id = ?", armwrestler2_elo, armwrestler2_id)
+            db_execute('DELETE FROM history WHERE id = (SELECT MAX(id) FROM history)')
+            update_badges()
+            update_ranks()
+        except (sqlite3.DatabaseError, IndexError) as error:
+            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+            app.logger.error(f"Operation context: {request.path} - {request.method}")
+        return render_template('confirmation_screen.html', message="Last match deleted", redirect="history")
 
-        update_badges()
-        update_ranks()
-    except (sqlite3.DatabaseError, IndexError) as error:
-        app.logger.error(f"Database error occurred: {error}", exc_info=True)
-        app.logger.error(f"Operation context: {request.path} - {request.method}")
-    return render_template('confirmation_screen.html', message="Last match deleted", redirect="history")
+    row = db_execute(
+        "SELECT a1.id, a1.name, a2.id, a2.name, h.arm, "
+        "h.armwrestler1_rank, h.armwrestler2_rank, "
+        "h.armwrestler1_elo, h.armwrestler2_elo, "
+        "h.armwrestler1_score, h.armwrestler2_score, "
+        "h.armwrestler1_elo_diff, h.armwrestler2_elo_diff, "
+        "h.selected_format, h.date "
+        "FROM history h "
+        "JOIN armwrestlers a1 ON h.armwrestler1_id = a1.id "
+        "JOIN armwrestlers a2 ON h.armwrestler2_id = a2.id "
+        "WHERE h.id = (SELECT MAX(id) FROM history)"
+    )[0]
+    match = [row]
+    formatted_data = get_matches_formatted_data(match)
+    return render_template('confirm_undo_last_match.html', matches=match, formatted_data=formatted_data)
 
 
 @app.route("/supermatch", methods=["GET", "POST"])
