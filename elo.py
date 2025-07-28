@@ -1,4 +1,4 @@
-from config import math, binom, K, CONTRAST
+from config import math, binom, K, CONTRAST, I
 
 def expected_score(armwrestler_a_elo, armwrestler_b_elo, c=CONTRAST):
     expected_a = 1 / (1 + math.pow(10, ((armwrestler_b_elo - armwrestler_a_elo) / c)))
@@ -47,19 +47,26 @@ def add_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score):
     return with_bonus_score
 
 
-def diff_supermatch(armwrestler_a_elo, armwrestler_b_elo, actual_score, k=K):
+def elo_diff_from_match(armwrestler_a_elo, armwrestler_b_elo, actual_score, k=K, i=I):
     with_bonus_score = add_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score)
     updated_a_elo, updated_b_elo = calculate_elo(armwrestler_a_elo, armwrestler_b_elo, with_bonus_score, k)
 
     diff_a_elo = updated_a_elo - armwrestler_a_elo
     diff_b_elo = updated_b_elo - armwrestler_b_elo
 
+    if diff_a_elo < diff_b_elo:
+        diff_a_elo = round(diff_a_elo * (100 - i) / 100) 
+    else:
+        diff_b_elo = round(diff_b_elo * (100 - i) / 100) 
+
     return diff_a_elo, diff_b_elo
 
 
 def calculate_elo_with_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score, k=K):
-    with_bonus_score = add_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score)
-    updated_a_elo, updated_b_elo = calculate_elo(armwrestler_a_elo, armwrestler_b_elo, with_bonus_score, k)
+    diff_a_elo, diff_b_elo = elo_diff_from_match(armwrestler_a_elo, armwrestler_b_elo, actual_score)
+
+    updated_a_elo = armwrestler_a_elo + diff_a_elo
+    updated_b_elo = armwrestler_b_elo + diff_b_elo
 
     return updated_a_elo, updated_b_elo
 

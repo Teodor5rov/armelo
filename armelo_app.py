@@ -358,7 +358,7 @@ def add_new_member():
             try:
                 armwrestler_1_score = int(request.form.get('custom_score_1', (max_rounds // 2) + 1))
                 armwrestler_2_score = int(request.form.get('custom_score_2', (max_rounds - ((max_rounds // 2) + 1))))
-                if not (0 <= armwrestler_1_score <= max_rounds and 0 <= armwrestler_2_score <= max_rounds and (0 < (armwrestler_1_score + armwrestler_2_score) <= max_rounds)):
+                if not (0 <= armwrestler_1_score <= max_rounds and 0 <= armwrestler_2_score <= max_rounds):
                     raise ValueError
             except (ValueError, TypeError):
                 armwrestler_1_score = (max_rounds // 2) + 1
@@ -638,7 +638,7 @@ def supermatch():
     db_unconfirmed_matches = db_execute(query)
 
     unconfirmed_matches = [
-        match[:11] + diff_supermatch(match[7], match[8], (match[9], match[10]), SUPERMATCH_FORMATS[match[11]][1]) + match[11:]
+        match[:11] + elo_diff_from_match(match[7], match[8], (match[9], match[10]), SUPERMATCH_FORMATS[match[11]][1]) + match[11:]
         for match in db_unconfirmed_matches
     ]
 
@@ -667,7 +667,7 @@ def supermatch():
             try:
                 armwrestler_1_score = int(request.form.get('custom_score_1', (max_rounds // 2) + 1))
                 armwrestler_2_score = int(request.form.get('custom_score_2', (max_rounds - ((max_rounds // 2) + 1))))
-                if not (0 <= armwrestler_1_score <= max_rounds and 0 <= armwrestler_2_score <= max_rounds and (0 < (armwrestler_1_score + armwrestler_2_score) <= max_rounds)):
+                if not (0 <= armwrestler_1_score <= max_rounds and 0 <= armwrestler_2_score <= max_rounds):
                     raise ValueError
             except (ValueError, TypeError):
                 armwrestler_1_score = (max_rounds // 2) + 1
@@ -680,7 +680,7 @@ def supermatch():
             armwrestler_1_score, armwrestler_2_score = match_result(max_rounds, value_for_score, SUPERMATCH_FORMATS[selected_format][2])
 
         armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1_id, selected_armwrestler_2_id])
-        armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
+        armwrestler_1_diff, armwrestler_2_diff = elo_diff_from_match(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
         armwrestler_1_diff, armwrestler_1_color = (f"+{armwrestler_1_diff}", "text-success") if armwrestler_1_diff > 0 else ((str(armwrestler_1_diff),
                                                                                                                               "text-danger") if armwrestler_1_diff < 0 else ("0", "text-secondary"))
         armwrestler_2_diff, armwrestler_2_color = (f"+{armwrestler_2_diff}", "text-success") if armwrestler_2_diff > 0 else ((str(armwrestler_2_diff),
@@ -760,7 +760,7 @@ def confirm_match():
     db_match = db_execute(query, match_id)
 
     match = [
-        match[:11] + diff_supermatch(match[7], match[8], (match[9], match[10]), SUPERMATCH_FORMATS[match[11]][1]) + match[11:]
+        match[:11] + elo_diff_from_match(match[7], match[8], (match[9], match[10]), SUPERMATCH_FORMATS[match[11]][1]) + match[11:]
         for match in db_match
     ]
 
@@ -908,7 +908,7 @@ def elo_from_match():
             try:
                 armwrestler_1_score = int(request.args.get('custom_score_1', (max_rounds // 2) + 1))
                 armwrestler_2_score = int(request.args.get('custom_score_2', (max_rounds - ((max_rounds // 2) + 1))))
-                if not (0 <= armwrestler_1_score <= max_rounds and 0 <= armwrestler_2_score <= max_rounds and (0 < (armwrestler_1_score + armwrestler_2_score) <= max_rounds)):
+                if not (0 <= armwrestler_1_score <= max_rounds and 0 <= armwrestler_2_score <= max_rounds):
                     raise ValueError
             except (ValueError, TypeError):
                 armwrestler_1_score = (max_rounds // 2) + 1
@@ -922,7 +922,7 @@ def elo_from_match():
 
         if ranked == 'ranked':
             armwrestler_1_elo, armwrestler_2_elo = get_current_elo(arm, [selected_armwrestler_1_id, selected_armwrestler_2_id])
-            armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
+            armwrestler_1_diff, armwrestler_2_diff = elo_diff_from_match(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
             armwrestler_1_diff, armwrestler_1_color = (f"+{armwrestler_1_diff}", "text-success") if armwrestler_1_diff > 0 else ((str(armwrestler_1_diff),
                                                                                                                                   "text-danger") if armwrestler_1_diff < 0 else ("0", "text-secondary"))
             armwrestler_2_diff, armwrestler_2_color = (f"+{armwrestler_2_diff}", "text-success") if armwrestler_2_diff > 0 else ((str(armwrestler_2_diff),

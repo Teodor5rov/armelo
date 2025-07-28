@@ -30,7 +30,7 @@ def submit_supermatch(arm, armwrestler1_id, armwrestler2_id, armwrestler_1_score
     armwrestler_1_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, id FROM armwrestlers) AS RankedArmwrestlers WHERE id = ?'.format(dbarm), armwrestler1_id)[0][0]
     armwrestler_2_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, id FROM armwrestlers) AS RankedArmwrestlers WHERE id = ?'.format(dbarm), armwrestler2_id)[0][0]
 
-    armwrestler_1_diff, armwrestler_2_diff = diff_supermatch(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
+    armwrestler_1_diff, armwrestler_2_diff = elo_diff_from_match(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
 
     try:
         query = '''

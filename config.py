@@ -29,6 +29,7 @@ SUPERMATCH_FORMATS = {
 
 CONTRAST = 400
 K = 128
+I = 20
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', '%%8hF$7ALEy8Msw2')
@@ -87,7 +88,7 @@ csp = {
     ]
 }
 
-talisman = Talisman(app, content_security_policy=csp, content_security_policy_nonce_in=['script-src', 'script-src-elem'])
+# talisman = Talisman(app, content_security_policy=csp, content_security_policy_nonce_in=['script-src', 'script-src-elem'])
 
 
 def get_db():
