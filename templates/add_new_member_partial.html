@@ -8,7 +8,7 @@
             <!-- Right ELO Section -->
             <div class="row align-items-center">
                 <div class="col-5">
-                    <label for="right_elo" class="text-nowrap">Calculated Right ELO:</label>
+                    <label class="text-nowrap">Calculated Right ELO:</label>
                 </div>
                 <div class="col-7 d-flex justify-content-end">
                     <span class="fs-5"><strong>{{ right_elo }}</strong></span>
@@ -18,7 +18,7 @@
             <!-- Left ELO Section -->
             <div class="row align-items-center mt-2">
                 <div class="col-5">
-                    <label for="left_elo" class="text-nowrap">Calculated Left ELO:</label>
+                    <label class="text-nowrap">Calculated Left ELO:</label>
                 </div>
                 <div class="col-7 d-flex justify-content-end">
                     <span class="fs-5"><strong>{{ left_elo }}</strong></span>
@@ -125,7 +125,7 @@
             </div>
         </div>
         {% endif %}
-        <div class="row {{ 'mt-2' if calculation_ready else 'mt-4' }}">
+        <div class="row mt-4">
             {% if error %}
             <div class="col-auto text-danger">
                 {{ error }}
@@ -142,7 +142,7 @@
         </div>
     </div>
     
-    <div class="col-auto text-center my-4">
+    <div class="col-auto text-center mt-4 mb-4">
         <h2>Matches for initial ELO</h2>
     </div>
 

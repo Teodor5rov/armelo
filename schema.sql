@@ -66,12 +66,12 @@ INSERT INTO badges (name, color)
 VALUES ('Provisional', 'text-bg-success');
 
 
-
-
 CREATE TABLE IF NOT EXISTS "new_member" (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     new_member_name TEXT
 );
+
+INSERT INTO new_member (id, new_member_name) VALUES (1, NULL);
 
 CREATE TABLE IF NOT EXISTS "new_member_matches" (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
