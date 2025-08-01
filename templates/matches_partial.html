@@ -1,7 +1,7 @@
 {% for match in matches %}
 
 <div class="col-12 mb-3">
-    {% if unconfirmed %}
+    {% if can_confirm_matches %}
     <button type="button" class="btn btn-light p-0 w-100" 
     hx-post="{{ url_for('confirm_match', match_id=match[15]) }}" hx-target="#confirmMatch" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#confirmModal">
     {% endif %}
@@ -66,14 +66,14 @@
                 </div>
             </div>
         </div>
-    {% if unconfirmed %}
+    {% if can_confirm_matches %}
     </button>
     {% endif %}
 </div>
 
 {% endfor %}
 
-{% if unconfirmed %}
+{% if can_confirm_matches %}
 <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">

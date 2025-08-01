@@ -23,7 +23,33 @@ def submit_unconfirmed_supermatch(arm, armwrestler1_id, armwrestler2_id, armwres
         app.logger.error(f"Operation context: {request.path} - {request.method}")
 
 
-def submit_supermatch(arm, armwrestler1_id, armwrestler2_id, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format, current_user):
+def submit_new_member_match(arm, new_member_id, armwrestler2_id, armwrestler_1_score, armwrestler_2_score, selected_format):
+    armwrestler_2_elo = get_current_elo(arm, [armwrestler2_id])[0]
+    elo_from_match = expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
+    
+    try:
+        query = '''
+        INSERT INTO new_member_matches ( 
+        new_member_id, armwrestler2_id, 
+        arm, 
+        selected_format,
+        armwrestler1_score, armwrestler2_score,
+        elo_from_match ) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        '''
+        db_execute(query,
+                   new_member_id, armwrestler2_id,
+                   arm,
+                   selected_format,
+                   armwrestler_1_score, armwrestler_2_score,
+                   elo_from_match)
+
+    except sqlite3.DatabaseError as error:
+        app.logger.error(f"Database error occurred: {error}", exc_info=True)
+        app.logger.error(f"Operation context: {request.path} - {request.method}")
+
+
+def submit_match(arm, armwrestler1_id, armwrestler2_id, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format, current_user):
     dbarm = 'right_elo' if arm == 'right' else 'left_elo'
     updated_1, updated_2 = calculate_elo_with_bonus(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
 

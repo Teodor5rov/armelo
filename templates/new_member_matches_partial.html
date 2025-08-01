@@ -1,0 +1,68 @@
+{% for match in new_member_matches %}
+
+<div class="col-12 mb-3">
+    {% if can_remove_matches %}
+    <button type="button" class="btn btn-light p-0 w-100" hx-post="{{ url_for('remove_new_member_match', match_id=match[0]) }}" hx-target="#removeMatch" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#removeModal">
+    {% endif %}
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <div class="row mt-2">
+                    <div class="col-12 col-lg-auto mb-2 d-flex justify-content-center">
+                        <div class="d-flex align-items-center gap-0 align-middle">
+                            <span class="text-start px-2 py-1 m-0 text-nowrap">{{ match[1] }}</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-auto text-center mb-2 d-flex align-items-center justify-content-center">
+                        <span class="badge bg-dark">VS</span>
+                    </div>
+                    <div class="col-12 col-lg-auto mb-2 d-flex justify-content-center">
+                        <div class="d-flex align-items-center gap-0 align-middle">
+                            {% if match[10] %}
+                            <strong class="align-middle p-1">#{{ match[10] }}</strong>
+                            {% endif %}
+                            <a href="{{ url_for('view_member', id=match[2]) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
+                                {{ match[3] }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="card-text">
+                    <div class="row justify-content-start">
+                        <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
+                            Arm:<span class="fs-6 mx-0 badge text-dark">{{ match[4] }}</span>
+                        </div>
+                        <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
+                            Format:<span class="fs-6 mx-0 badge text-dark">{{ match[7] }}</span>
+                        </div>
+                        <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
+                            Score:
+                            <span class="fs-6 ms-2 me-1 badge {{ 'bg-success' if match[5] > match[6] else ('bg-secondary' if match[5] == match[6] else 'bg-danger') }}">{{ match[5] }}</span>:
+                            <span class="fs-6 ms-1 me-0 badge {{ 'bg-success' if match[6] > match[5] else ('bg-secondary' if match[5] == match[6] else 'bg-danger') }}">{{ match[6] }}</span>
+                        </div>
+                        <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
+                            Elo from match:<span class="fs-6 mx-0 badge text-dark">{{ match[8] }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </button>
+</div>
+
+{% endfor %}
+
+{% if can_remove_matches %}
+<div class="modal fade" id="removeModal" tabindex="-1" aria-labelledby="removeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="removeModalLabel">Remove Match</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div id="removeMatch"></div>
+        </div>
+    </div>
+</div>
+{% endif %}

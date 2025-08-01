@@ -64,3 +64,24 @@ CREATE TABLE IF NOT EXISTS "armwrestler_badges" (
 ); 
 INSERT INTO badges (name, color)
 VALUES ('Provisional', 'text-bg-success');
+
+
+
+
+CREATE TABLE IF NOT EXISTS "new_member" (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    new_member_name TEXT
+);
+
+CREATE TABLE IF NOT EXISTS "new_member_matches" (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    new_member_id INTEGER NOT NULL,
+    armwrestler2_id INTEGER NOT NULL,
+    arm TEXT NOT NULL CHECK (arm IN ('right', 'left')),
+    armwrestler1_score INTEGER NOT NULL,
+    armwrestler2_score INTEGER NOT NULL,
+    selected_format TEXT NOT NULL,
+    elo_from_match INTEGER NOT NULL,
+    FOREIGN KEY (new_member_id) REFERENCES new_member (id),
+    FOREIGN KEY (armwrestler2_id) REFERENCES armwrestlers(id)
+);

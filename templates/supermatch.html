@@ -20,12 +20,12 @@
             </div>
         </div>
     </div>
-
+    {% if not current_user %}
     <div class="alert alert-secondary" role="alert">
         You can add a supermatch to the system, without logging in.<br>
         Select the arm, armwrestlers, the supermatch format and the result in the form below, then submit it for confirmation.
     </div>
-
+    {% endif %}
     <form class="mb-4" method="POST" action="{{ url_for('supermatch') }}">
         <div id="form-content" hx-post="{{ url_for('supermatch') }}" hx-trigger="change" hx-target="#form-content" hx-swap="innerHTML">
             {% include 'supermatch_partial.html' %}

@@ -302,8 +302,15 @@ def add_new_member():
         return redirect(url_for('login'))
 
     current_user = session.get('username')
-
-    name = request.form.get('name', '').strip()
+    if request.method == "GET":
+        name = db_execute('SELECT new_member_name FROM new_member WHERE id = 1')[0][0]
+    else:
+        name = request.form.get('name', '').strip()
+        try:
+            db_execute("INSERT OR REPLACE INTO new_member (id, new_member_name) VALUES (?, ?)", 1, name)
+        except sqlite3.DatabaseError as error:
+            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+            app.logger.error(f"Operation context: {request.path} - {request.method}")
     arm = request.form.get('arm', 'right')
     armwrestlers = db_execute('SELECT id, name FROM armwrestlers ORDER BY LOWER(name)')
     try:
@@ -314,18 +321,15 @@ def add_new_member():
         selected_armwrestler_2_name = 'none'
     supermatch_formats = list(SUPERMATCH_FORMATS.keys())
     value_for_score = None
-    right_elo = request.form.get('right_elo', '0')
-    left_elo = request.form.get('left_elo', '0')
-    refs_right = request.form.get('refs_right', '0')
-    refs_left = request.form.get('refs_left', '0')
     custom_score = request.form.get('custom_score', False)
     armwrestler_1_score, armwrestler_2_score = None, None
     calculation_ready = False
     member_ready = False
     elo_from_match = None
+    can_remove_matches = True
     error = None
 
-    if not name and request.method == "POST":
+    if (not name or name == '') and request.method == "POST":
         error = "No name entered"
 
     armwrestler_names = [aw[1] for aw in armwrestlers]
@@ -338,20 +342,8 @@ def add_new_member():
 
     max_rounds = SUPERMATCH_FORMATS[selected_format][0]
 
-    if arm in ['left', 'right'] and \
-            name != selected_armwrestler_2_name and \
-            selected_armwrestler_2_name in armwrestler_names:
+    if arm in ['left', 'right'] and selected_armwrestler_2_name in armwrestler_names:
         calculation_ready = True
-
-    try:
-        if not right_elo.isdigit() or not left_elo.isdigit():
-            raise ValueError
-        right_elo, left_elo = int(right_elo), int(left_elo)
-        refs_right, refs_left = int(refs_right), int(refs_left)
-    except (ValueError):
-        error = "Invalid ELO data"
-        right_elo, left_elo = 0, 0
-        refs_right, refs_left = 0, 0
 
     if calculation_ready:
         if custom_score:
@@ -375,29 +367,57 @@ def add_new_member():
 
         add_to_avg_pressed = request.form.get('add_to_avg', False)
         if add_to_avg_pressed:
-            if arm == 'right' and elo_from_match:
-                if refs_right == 0:
-                    right_elo += expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
-                else:
-                    right_elo = ((right_elo * refs_right) + expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))) / (refs_right + 1)
-                refs_right += 1
-            elif arm == 'left' and elo_from_match:
-                if refs_left == 0:
-                    left_elo += expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
-                else:
-                    left_elo = ((left_elo * refs_left) + expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))) / (refs_left + 1)
-                refs_left += 1
+            submit_new_member_match(arm, 1, selected_armwrestler_2_id, armwrestler_1_score, armwrestler_2_score, selected_format)
 
-            right_elo, left_elo = round(right_elo), round(left_elo)
+    if 'reset' in request.form:
+        selected_armwrestler_2_id, selected_armwrestler_2_name = None, 'none'
+        right_elo, left_elo = 0, 0
+        name = None
+        try:
+            db_execute("INSERT OR REPLACE INTO new_member (id, new_member_name) VALUES (?, ?)", 1, None)
+            db_execute("DELETE FROM new_member_matches")
+        except sqlite3.DatabaseError as error:
+            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+            app.logger.error(f"Operation context: {request.path} - {request.method}")
+        calculation_ready = False
+    
+    matches_query = '''
+    SELECT
+        m.id,
+        nm.new_member_name       AS armwrestler1_name,
+        m.armwrestler2_id        AS armwrestler2_id,
+        aw2.name                 AS armwrestler2_name,
+        m.arm,
+        m.armwrestler1_score,
+        m.armwrestler2_score,
+        m.selected_format,
+        m.elo_from_match,
+    CASE
+        WHEN m.arm = 'right' THEN aw2.right_elo
+        ELSE aw2.left_elo
+    END                       AS armwrestler2_elo,
+    CASE
+        WHEN m.arm = 'right' THEN aw2.right_rank
+        ELSE aw2.left_rank
+    END                       AS armwrestler2_rank
+    FROM new_member_matches AS m
+    JOIN new_member         AS nm  ON m.new_member_id   = nm.id
+    JOIN armwrestlers       AS aw2 ON m.armwrestler2_id = aw2.id
+    WHERE arm = ?
+    ORDER BY m.id DESC;
+    '''
 
-        reset_pressed = request.form.get('reset', False)
-        if reset_pressed:
-            selected_armwrestler_2_id, selected_armwrestler_2_name = None, 'none'
-            right_elo, left_elo = 0, 0
-            refs_right, refs_left = 0, 0
-            calculation_ready = False
+    calculated_elo_query = """
+    SELECT
+        COALESCE(AVG(CASE WHEN arm = 'right' THEN elo_from_match END), 0) AS right_elo,
+        COALESCE(AVG(CASE WHEN arm = 'left'  THEN elo_from_match END), 0) AS left_elo
+    FROM new_member_matches;
+    """
 
-    if name and name not in armwrestler_names and \
+    new_member_matches = db_execute(matches_query, arm)
+    right_elo, left_elo = map(round, db_execute(calculated_elo_query)[0])
+
+    if name and name != '' and name not in armwrestler_names and \
             error == None and \
             right_elo > 0 and \
             left_elo > 0:
@@ -410,8 +430,10 @@ def add_new_member():
             active_until_str = active_until_date.strftime('%Y-%m-%d')
 
             db_execute("INSERT INTO armwrestlers (name, right_elo, left_elo, added_by, active_until) VALUES (?, ?, ?, ?, ?)", name, right_elo, left_elo, current_user, active_until_str)
+            db_execute("INSERT OR REPLACE INTO new_member (id, new_member_name) VALUES (?, ?)", 1, None)
+            db_execute("DELETE FROM new_member_matches")
 
-            update_badges()            
+            update_badges()
             update_ranks()
         except sqlite3.DatabaseError as error:
             app.logger.error(f"Database error occurred: {error}", exc_info=True)
@@ -428,10 +450,11 @@ def add_new_member():
         'armwrestler_1_score': armwrestler_1_score, 'armwrestler_2_score': armwrestler_2_score,
         'calculation_ready': calculation_ready,
         'right_elo': right_elo, 'left_elo': left_elo,
-        'refs_right': refs_right, 'refs_left': refs_left,
+        'new_member_matches': new_member_matches,
         'elo_from_match': elo_from_match,
         'member_ready': member_ready,
         'custom_score': custom_score, 'custom_score_1': armwrestler_1_score, 'custom_score_2': armwrestler_2_score,
+        'can_remove_matches': can_remove_matches,
         'error': error
     }
 
@@ -439,6 +462,51 @@ def add_new_member():
         return render_template('add_new_member_partial.html', **template_data)
     else:
         return render_template('add_new_member.html', **template_data)
+
+
+@app.route("/remove_new_member_match", methods=["POST"])
+def remove_new_member_match():
+    if not session.get('username'):
+        return redirect(url_for('login'))
+
+    match_id = request.form.get('match_id') or request.args.get('match_id')
+
+    match_query = '''
+    SELECT
+        m.id,
+        nm.new_member_name       AS armwrestler1_name,
+        m.armwrestler2_id        AS armwrestler2_id,
+        aw2.name                 AS armwrestler2_name,
+        m.arm,
+        m.armwrestler1_score,
+        m.armwrestler2_score,
+        m.selected_format,
+        m.elo_from_match,
+    CASE
+        WHEN m.arm = 'right' THEN aw2.right_elo
+        ELSE aw2.left_elo
+    END                       AS armwrestler2_elo,
+    CASE
+        WHEN m.arm = 'right' THEN aw2.right_rank
+        ELSE aw2.left_rank
+    END                       AS armwrestler2_rank
+    FROM new_member_matches AS m
+    JOIN new_member         AS nm  ON m.new_member_id   = nm.id
+    JOIN armwrestlers       AS aw2 ON m.armwrestler2_id = aw2.id
+    WHERE m.id = ?;
+    '''
+
+    match = db_execute(match_query, match_id)
+
+    if 'remove_match' in request.form:
+        try:
+            db_execute("DELETE FROM new_member_matches WHERE id = ?", match_id)
+        except sqlite3.DatabaseError as error:
+            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+            app.logger.error(f"Operation context: {request.path} - {request.method}")
+        return redirect(url_for('add_new_member'))
+
+    return render_template('remove_new_member_match.html', match_id=match_id, new_member_matches=match)
 
 
 @app.route("/confirm_remove", methods=["POST"])
@@ -595,7 +663,7 @@ def undo_last_match():
 @app.route("/supermatch", methods=["GET", "POST"])
 def supermatch():
     current_user = session.get('username', None)
-    unconfirmed = True if current_user else None
+    can_confirm_matches = True if current_user else None
 
     arm = request.form.get('arm', 'right')
     try:
@@ -690,7 +758,7 @@ def supermatch():
     submit_pressed = 'submit_match' in request.form
     if submit_pressed and supermatch_ready:
         if current_user:
-            submit_supermatch(arm, selected_armwrestler_1_id, selected_armwrestler_2_id, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format, current_user)
+            submit_match(arm, selected_armwrestler_1_id, selected_armwrestler_2_id, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format, current_user)
             return render_template('confirmation_screen.html', message="Supermatch added", redirect="supermatch")
         else:
             token = request.form.get("cf-turnstile-response")
@@ -720,7 +788,7 @@ def supermatch():
         'armwrestler_1_color': armwrestler_1_color, 'armwrestler_2_color': armwrestler_2_color,
         'armwrestler_1_elo': armwrestler_1_elo, 'armwrestler_2_elo': armwrestler_2_elo,
         'custom_score': custom_score, 'custom_score_1': armwrestler_1_score, 'custom_score_2': armwrestler_2_score,
-        'matches': unconfirmed_matches, 'formatted_data': formatted_data, 'unconfirmed': unconfirmed
+        'matches': unconfirmed_matches, 'formatted_data': formatted_data, 'can_confirm_matches': can_confirm_matches
     }
 
     if request.headers.get('HX-Request'):
@@ -770,7 +838,7 @@ def confirm_match():
         try:
             match = match[0]
             armwrestler_1_elo, armwrestler_2_elo = get_current_elo(match[4], (match[0], match[2]))
-            submit_supermatch(match[4], match[0], match[2], match[9], match[10], armwrestler_1_elo, armwrestler_2_elo, match[13], current_user)
+            submit_match(match[4], match[0], match[2], match[9], match[10], armwrestler_1_elo, armwrestler_2_elo, match[13], current_user)
             db_execute("DELETE FROM unconfirmed_matches WHERE id = ?", match_id)
             update_ranks()
         except sqlite3.DatabaseError as error:
