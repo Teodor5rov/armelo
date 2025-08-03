@@ -38,8 +38,11 @@
                         </div>
                         <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
                             Score:
-                            <span class="fs-6 ms-2 me-1 badge {{ 'bg-success' if match[5] > match[6] else ('bg-secondary' if match[5] == match[6] else 'bg-danger') }}">{{ match[5] }}</span>:
-                            <span class="fs-6 ms-1 me-0 badge {{ 'bg-success' if match[6] > match[5] else ('bg-secondary' if match[5] == match[6] else 'bg-danger') }}">{{ match[6] }}</span>
+                            <span class="fs-6 ms-2 me-1 badge {{ 'bg-success' if match[5] > match[6] else ('bg-secondary' if match[5] == match[6] else 'bg-danger') }}">
+                                {{ match[5] }}
+                            </span>:<span class="fs-6 ms-1 me-0 badge {{ 'bg-success' if match[6] > match[5] else ('bg-secondary' if match[5] == match[6] else 'bg-danger') }}">
+                                {{ match[6] }}
+                            </span>
                         </div>
                         <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
                             Elo from match:<span class="fs-6 mx-0 badge text-dark">{{ match[8] }}</span>

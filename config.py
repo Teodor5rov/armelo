@@ -88,7 +88,7 @@ csp = {
     ]
 }
 
-# talisman = Talisman(app, content_security_policy=csp, content_security_policy_nonce_in=['script-src', 'script-src-elem'])
+talisman = Talisman(app, content_security_policy=csp, content_security_policy_nonce_in=['script-src', 'script-src-elem'])
 
 
 def get_db():
