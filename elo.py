@@ -63,7 +63,7 @@ def elo_diff_from_match(armwrestler_a_elo, armwrestler_b_elo, actual_score, k=K,
 
 
 def calculate_elo_with_bonus(armwrestler_a_elo, armwrestler_b_elo, actual_score, k=K):
-    diff_a_elo, diff_b_elo = elo_diff_from_match(armwrestler_a_elo, armwrestler_b_elo, actual_score)
+    diff_a_elo, diff_b_elo = elo_diff_from_match(armwrestler_a_elo, armwrestler_b_elo, actual_score, k)
 
     updated_a_elo = armwrestler_a_elo + diff_a_elo
     updated_b_elo = armwrestler_b_elo + diff_b_elo
