@@ -577,22 +577,35 @@ def closest_matches():
 
 @app.route("/history")
 def history():
-    month = request.args.get('month', '')
-    selected_month = int(month) if month else None
-    selected_year = int(request.args.get('year', datetime.now().year))
+    selected_year = request.args.get('year', 'last_12_months')
+    selected_month = m if (m := request.args.get('month', type=int)) in range(1, 13) else None
+    today = datetime.now()
+    current_year = today.year
 
-    if selected_month is None:
-        start_date = datetime(selected_year, 1, 1)
-        end_date = datetime(selected_year + 1, 1, 1)
+    if selected_year == "last_12_months":
+        selected_month = None
+        start_date = today - timedelta(days=365)
+        end_date = today + timedelta(days=1)
     else:
-        start_date = datetime(selected_year, selected_month, 1)
-        if selected_month == 12:
-            end_date = datetime(selected_year + 1, 1, 1)
+        try:
+            selected_year = int(selected_year)
+        except ValueError:
+            selected_year = current_year
+
+        if selected_month:
+            start_date = datetime(selected_year, selected_month, 1)
+            if selected_month == 12:
+                end_date = datetime(selected_year + 1, 1, 1)
+            else:
+                end_date = datetime(selected_year, selected_month + 1, 1)
         else:
-            end_date = datetime(selected_year, selected_month + 1, 1)
+            start_date = datetime(selected_year, 1, 1)
+            end_date = datetime(selected_year + 1, 1, 1)
 
     year_rows = db_execute("SELECT DISTINCT STRFTIME('%Y', date) FROM history ORDER BY 1 DESC")
     years = [int(r[0]) for r in year_rows]
+    if current_year not in years:
+        years.insert(0, current_year)
     months = list(enumerate(month_name))[1:]
 
     query = '''

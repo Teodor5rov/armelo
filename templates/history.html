@@ -30,13 +30,14 @@
 
   <div class="d-flex gap-2 mt-3 mt-lg-0 ms-lg-auto flex-wrap">
     <form hx-get="{{ url_for('history') }}" hx-trigger="change" hx-target="body" hx-swap="outerHTML" class="d-flex gap-2">
-        <select name="month" class="form-select w-auto">
+        <select name="month" class="form-select w-auto" {% if selected_year == 'last_12_months' %}disabled{% endif %}>
           <option value="" {% if selected_month is none %}selected{% endif %}>All months</option>
           {% for num, name in months %}
           <option value="{{ num }}" {% if num == selected_month %}selected{% endif %}>{{ name }}</option>
           {% endfor %}
         </select>
         <select name="year" class="form-select w-auto">
+          <option value="last_12_months" {% if selected_year == 'last_12_months' %}selected{% endif %}>Last 12 months</option>
           {% for y in years %}
           <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
           {% endfor %}
