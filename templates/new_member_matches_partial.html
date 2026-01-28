@@ -20,7 +20,7 @@
                             {% if match[10] %}
                             <strong class="align-middle p-1">#{{ match[10] }}</strong>
                             {% endif %}
-                            <a href="{{ url_for('view_member', id=match[2]) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
+                            <a href="{{ url_for('view_member', id=match[2], arm=match[4]) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
                                 {{ match[3] }}
                             </a>
                         </div>

@@ -5,6 +5,7 @@
        hx-get="{{ url_for('closest_matches', arm='right') }}"
        hx-target="#closest_matches"
        hx-swap="innerHTML"
+       hx-push-url="true"
        aria-pressed="{{ 'true' if arm == 'right' else 'false' }}">Right arm</a>
     <a href="{{ url_for('closest_matches', arm='left') }}"
        class="btn btn-primary w-50 {{ 'active' if arm == 'left' else '' }}"
@@ -12,6 +13,7 @@
        hx-get="{{ url_for('closest_matches', arm='left') }}"
        hx-target="#closest_matches"
        hx-swap="innerHTML"
+       hx-push-url="true"
        aria-pressed="{{ 'true' if arm == 'left' else 'false' }}">Left arm</a>
 </div>
 
@@ -33,7 +35,7 @@
                             {% if match[0] %}
                             <strong class="align-middle p-1">#{{ match[0] }}</strong>
                             {% endif %}
-                            <a href="{{ url_for('view_member', id=match[1]) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
+                            <a href="{{ url_for('view_member', id=match[1], arm=arm) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
                                 {{ match[2] }}
                             </a>
                             <strong class="text-nowrap align-middle">({{ match[3] }})</strong>
@@ -47,7 +49,7 @@
                             {% if match[4] %}
                             <strong class="align-middle p-1">#{{ match[4] }}</strong>
                             {% endif %}
-                            <a href="{{ url_for('view_member', id=match[5]) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
+                            <a href="{{ url_for('view_member', id=match[5], arm=arm) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
                                 {{ match[6] }}
                             </a>
                             <strong class="text-nowrap align-middle">({{ match[7] }})</strong>

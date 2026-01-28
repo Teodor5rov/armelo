@@ -23,8 +23,8 @@
                             {% if match[5] %}
                             <strong class="align-middle p-1">#{{ match[5] }}</strong>
                             {% endif %}
-                            <a href="{{ url_for('view_member', id=match[0]) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
-                            {{ match[1] }}
+                            <a href="{{ url_for('view_member', id=match[0], arm=match[4]) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
+                                {{ match[1] }}
                             </a>
                             <strong class="text-nowrap align-middle">({{ match[7] }} <span class="{{ formatted_data[loop.index - 1][2] }}">{{ formatted_data[loop.index - 1][4] }}</span>)</strong>
                         </div>
@@ -39,7 +39,7 @@
                             <strong class="align-middle p-1">#{{ match[6] }}</strong>
                             {% endif %}
 
-                            <a href="{{ url_for('view_member', id=match[2]) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
+                            <a href="{{ url_for('view_member', id=match[2], arm=match[4]) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
                                 {{ match[3] }}
                             </a>
                             <strong class="text-nowrap align-middle">({{ match[8] }} <span class="{{ formatted_data[loop.index - 1][3] }}">{{ formatted_data[loop.index - 1][5] }}</span>)</strong>

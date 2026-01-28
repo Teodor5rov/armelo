@@ -183,6 +183,10 @@ def view_member():
         id = int(request.args.get('id'))
     except (ValueError, IndexError):
         raise NotFound()
+    
+    if 'arm' not in request.args:
+        return redirect(url_for('view_member', id=id, arm='right'))
+    
     arm = request.args.get('arm', 'right')
 
     name_result = db_execute('SELECT name FROM armwrestlers WHERE id = ?', id)

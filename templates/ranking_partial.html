@@ -32,7 +32,7 @@
             <tr>
                 <td class="align-middle text-center"><strong>#{{ armwrestler[0] }}</strong></td>
                 <td class="align-middle w-100">
-                    <a href="{{ url_for('view_member', id=armwrestler[1]) }}" class="btn btn-generic text-start px-2 py-1 m-0">
+                    <a href="{{ url_for('view_member', id=armwrestler[1], arm=arm) }}" class="btn btn-generic text-start px-2 py-1 m-0">
                         {{ armwrestler[2] }}
                     </a>
                     {% if armwrestler[1] in armwrestler_badges_dict %}
@@ -75,7 +75,7 @@
             {% for armwrestler in inactive_armwrestlers %}
             <tr>
                 <td class="align-middle w-100">
-                    <a href="{{ url_for('view_member', id=armwrestler[0]) }}" class="btn btn-generic text-start px-2 py-1 m-0">
+                    <a href="{{ url_for('view_member', id=armwrestler[0], arm=arm) }}" class="btn btn-generic text-start px-2 py-1 m-0">
                         {{ armwrestler[1] }}
                     </a>
                     {% if armwrestler[0] in armwrestler_badges_dict %}
