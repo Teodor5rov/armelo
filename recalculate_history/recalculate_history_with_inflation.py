@@ -1,30 +1,26 @@
 from config import *
 from elo import *
 
-import argparse
 import shutil
 import sqlite3
 import math
 import sys
 
-def main():
-    p = argparse.ArgumentParser(description="Replay armwrestler match history with ELO inflation.")
-    p.add_argument("input_db",  help="Path to existing SQLite .db")
-    p.add_argument("output_db", help="Path to write the new .db")
-    p.add_argument("I", type=float, help="Inflation percent (e.g. 5 for 5%)")
-    args = p.parse_args()
+INPUT_DB = "input.db"
+OUTPUT_DB = "database.db"
 
-    # 1) Copy the file wholesale (indexes, triggers, PRAGMAs remain intact)
+def main():
+    # 1) Copy the file wholesale
     try:
-        shutil.copy2(args.input_db, args.output_db)
+        shutil.copy2(INPUT_DB, OUTPUT_DB)
     except Exception as e:
         print(f"Error copying database: {e}", file=sys.stderr)
         sys.exit(1)
 
     # 2) Open both DBs
-    src = sqlite3.connect(args.input_db)
+    src = sqlite3.connect(INPUT_DB)
     src.row_factory = sqlite3.Row
-    dst = sqlite3.connect(args.output_db)
+    dst = sqlite3.connect(OUTPUT_DB)
 
     # 3) Wipe the two tables we will fully re-populate
     dst.execute("PRAGMA foreign_keys = OFF;")
@@ -33,7 +29,7 @@ def main():
     dst.execute("DELETE FROM sqlite_sequence WHERE name IN ('history','armwrestlers');")
     dst.commit()
 
-    # 4) Load static armwrestler data (all fields *except* Elo we’ll overwrite)
+    # 4) Load static armwrestler data
     arm_q = """
       SELECT id, name, right_elo, left_elo,
              right_rank, left_rank,
@@ -43,7 +39,7 @@ def main():
     static_rows = src.execute(arm_q).fetchall()
     static = {r["id"]: r for r in static_rows}
 
-    # 5) Load full history in chronological order
+    # 5) Load full history in chronological order (Rearranged IDs handled here)
     hist_rows = src.execute("SELECT * FROM history ORDER BY id").fetchall()
 
     # 6) Determine each armwrestler’s initial Elo (per arm)
@@ -66,7 +62,7 @@ def main():
             fld = "right_elo" if arm == "right" else "left_elo"
             current_elo[(aw_id, arm)] = static[aw_id][fld]
 
-    # 7) Re-play every match under the new formula & INSERT into dst.history
+    # 7) Re-play every match using I from config.py
     for r in hist_rows:
         arm = r["arm"]
         a1, a2 = r["armwrestler1_id"], r["armwrestler2_id"]
@@ -78,7 +74,7 @@ def main():
             raise ValueError(f"Unknown format: {fmt!r}")
         k = SUPERMATCH_FORMATS[fmt][1]
 
-        diff_a, diff_b = elo_diff_from_match(old_a, old_b, (sc1, sc2), k, args.I)
+        diff_a, diff_b = elo_diff_from_match(old_a, old_b, (sc1, sc2), k, I)
         
         new_a = old_a + diff_a
         new_b = old_b + diff_b
@@ -138,8 +134,7 @@ def main():
     dst.commit()
     src.close()
     dst.close()
-    print(f"Done! New DB written to {args.output_db!r} with inflation={args.I}%.")
-
+    print(f"Done! Created {OUTPUT_DB} using {INPUT_DB} with inflation={I}%.")
 
 if __name__ == "__main__":
     main()
