@@ -134,19 +134,20 @@ def update_ranks():
     query_update_ranks = '''
     WITH
         ranked_right AS (
-            SELECT id, DENSE_RANK() OVER (ORDER BY right_elo DESC) AS right_rank
+            SELECT id, RANK() OVER (ORDER BY right_elo DESC) AS new_right_rank
             FROM armwrestlers
             WHERE active_until >= DATE('now')
         ),
         ranked_left AS (
-            SELECT id, DENSE_RANK() OVER (ORDER BY left_elo DESC) AS left_rank
+            SELECT id, RANK() OVER (ORDER BY left_elo DESC) AS new_left_rank
             FROM armwrestlers
             WHERE active_until >= DATE('now')
         )
     UPDATE armwrestlers
     SET
-        right_rank = (SELECT right_rank FROM ranked_right WHERE ranked_right.id = armwrestlers.id),
-        left_rank = (SELECT left_rank FROM ranked_left WHERE ranked_left.id = armwrestlers.id);
+        right_rank = (SELECT new_right_rank FROM ranked_right WHERE ranked_right.id = armwrestlers.id),
+        left_rank = (SELECT new_left_rank FROM ranked_left WHERE ranked_left.id = armwrestlers.id)
+    WHERE active_until >= DATE('now');
     '''
 
     query_nullify_ranks = '''
