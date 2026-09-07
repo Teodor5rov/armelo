@@ -1,13 +1,6 @@
-<!-- Arm selection buttons -->
+{% from 'macros.html' import radio_toggle %}
 <label class="form-label">Choose arm for the supermatch:</label>
-<div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
-    <label class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}">
-        <input type="radio" name="arm" id="armRight" value="right" autocomplete="off" {{ 'checked' if arm == 'right' else '' }} class="visually-hidden">Right arm
-    </label>
-    <label class="btn btn-primary w-50 {{ 'active' if arm == 'left' else '' }}">
-        <input type="radio" name="arm" id="armLeft" value="left" autocomplete="off" {{ 'checked' if arm == 'left' else '' }} class="visually-hidden">Left arm
-    </label>
-</div>
+{{ radio_toggle('arm', 'right', 'Right arm', 'left', 'Left arm', arm) }}
 
 <!-- Armwrestler selection dropdowns -->
 <div class="row mb-2">
@@ -16,7 +9,7 @@
         <select class="form-select text-truncate" id="armwrestler1" name="armwrestler1" required>
             <option disabled selected value="none">Choose...</option>
             {% for armwrestler in armwrestlers %}
-            <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_1_id == armwrestler[0] %}selected{% endif %}>{{ armwrestler[1] }}</option>
+            <option value="{{ armwrestler['id'] }}" {% if selected_armwrestler_1_id == armwrestler['id'] %}selected{% endif %}>{{ armwrestler['name'] }}</option>
             {% endfor %}
         </select>
     </div>
@@ -33,7 +26,7 @@
             <select class="form-select text-truncate" id="armwrestler2" name="armwrestler2" required>
                 <option disabled selected value="none">Choose...</option>
                 {% for armwrestler in armwrestlers_2 %}
-                <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_2_id == armwrestler[0] %}selected{% endif %}>{{ armwrestler[1] }}</option>
+                <option value="{{ armwrestler['id'] }}" {% if selected_armwrestler_2_id == armwrestler['id'] %}selected{% endif %}>{{ armwrestler['name'] }}</option>
                 {% endfor %}
             </select>
         {% else %}

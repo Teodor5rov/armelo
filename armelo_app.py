@@ -23,7 +23,7 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         user = db_execute("SELECT * FROM users WHERE username = ?", username)
-        if user and check_password_hash(user[0][1], password):
+        if user and check_password_hash(user[0]['password_hash'], password):
             session['username'] = username
             return redirect(url_for('ranking'))
         else:
@@ -51,16 +51,15 @@ def ranking(arm='right'):
     rank_column = 'right_rank' if arm == 'right' else 'left_rank'
     elo_column = 'right_elo' if arm == 'right' else 'left_elo'
     current_user = session.get('username', None)
-    update_ranks()
     active_armwrestlers = db_execute('''
-        SELECT {0}, id, name, {1} FROM armwrestlers
-        WHERE active_until >= DATE('now') AND NOT hidden ORDER BY {0} ASC
+        SELECT {0} AS rank, id, name, {1} AS elo FROM armwrestlers
+        WHERE active_until >= DATE('now') AND NOT hidden ORDER BY rank ASC
     '''.format(rank_column, elo_column))
 
     inactive_armwrestlers = db_execute('''
-        SELECT id, name, {0} FROM armwrestlers
-        WHERE active_until < DATE('now') AND NOT hidden ORDER BY {1} DESC
-    '''.format(elo_column, elo_column))
+        SELECT id, name, {0} AS elo FROM armwrestlers
+        WHERE active_until < DATE('now') AND NOT hidden ORDER BY elo DESC
+    '''.format(elo_column))
 
     badge_data = db_execute('''
         SELECT armwrestler_badges.armwrestler_id, badges.name, badges.color
@@ -70,10 +69,8 @@ def ranking(arm='right'):
     ''', arm)
 
     armwrestler_badges_dict = {}
-    for aw_id, bname, bcolor in badge_data:
-        if aw_id not in armwrestler_badges_dict:
-            armwrestler_badges_dict[aw_id] = []
-        armwrestler_badges_dict[aw_id].append((bname, bcolor))
+    for badge in badge_data:
+        armwrestler_badges_dict.setdefault(badge['armwrestler_id'], []).append((badge['name'], badge['color']))
 
     template_data = {
         'active_armwrestlers': active_armwrestlers,
@@ -104,9 +101,9 @@ def edit_member():
     name_result = db_execute('SELECT name FROM armwrestlers WHERE id = ?', id)
     if not name_result:
         raise NotFound()
-    current_name = name_result[0][0]
+    current_name = name_result[0]['name']
     name = request.form.get('name', current_name)
-    current_status = db_execute('''SELECT CASE WHEN active_until >= DATE('now') THEN 'active' ELSE 'inactive' END AS current_status FROM armwrestlers WHERE id = ?''', id)[0][0]
+    current_status = db_execute('''SELECT CASE WHEN active_until >= DATE('now') THEN 'active' ELSE 'inactive' END AS current_status FROM armwrestlers WHERE id = ?''', id)[0]['current_status']
     armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
     right_elo = request.form.get('right_elo', str(get_current_elo("right", [id])[0]))
     left_elo = request.form.get('left_elo', str(get_current_elo("left", [id])[0]))
@@ -117,7 +114,7 @@ def edit_member():
     if not name and request.method == "POST":
         error = "No name entered"
 
-    armwrestler_names = [aw[0] for aw in armwrestlers]
+    armwrestler_names = [aw['name'] for aw in armwrestlers]
     if name in armwrestler_names and name != current_name:
         error = "Name already taken"
 
@@ -192,7 +189,7 @@ def view_member():
     name_result = db_execute('SELECT name FROM armwrestlers WHERE id = ?', id)
     if not name_result:
         raise NotFound()
-    name = name_result[0][0]
+    name = name_result[0]['name']
 
     query = '''
         SELECT 
@@ -231,23 +228,23 @@ def view_member():
         best_left_rank = current_left_rank
         wins_losses = []
         for record in history:
-            is_armwrestler1 = record[0] == id
+            is_armwrestler1 = record['armwrestler1_id'] == id
 
-            match_arm = record[4]
-            elo = record[7] if is_armwrestler1 else record[8]
-            rank = record[5] if is_armwrestler1 else record[6]
+            match_arm = record['arm']
+            elo = record['armwrestler1_elo'] if is_armwrestler1 else record['armwrestler2_elo']
+            rank = record['armwrestler1_rank'] if is_armwrestler1 else record['armwrestler2_rank']
+            my_score, opponent_score = (record['armwrestler1_score'], record['armwrestler2_score']) if is_armwrestler1 else (record['armwrestler2_score'], record['armwrestler1_score'])
 
-            if (is_armwrestler1 and record[9] > record[10]) or (not is_armwrestler1 and record[9] < record[10]):
+            if my_score > opponent_score:
                 wins += 1
                 if match_arm == arm:
                     wins_losses.append("win")
-            elif (is_armwrestler1 and record[9] < record[10]) or (not is_armwrestler1 and record[9] > record[10]):
+            elif my_score < opponent_score:
                 losses += 1
                 if match_arm == arm:
                     wins_losses.append("loss")
-            else:
-                if match_arm == arm:
-                    wins_losses.append("draw")
+            elif match_arm == arm:
+                wins_losses.append("draw")
 
             if match_arm == 'right':
                 best_right_elo = max(best_right_elo, elo)
@@ -330,13 +327,12 @@ def add_new_member():
     calculation_ready = False
     member_ready = False
     elo_from_match = None
-    can_remove_matches = True
     error = None
 
     if (not name or name == '') and request.method == "POST":
         error = "No name entered"
 
-    armwrestler_names = [aw[1] for aw in armwrestlers]
+    armwrestler_names = [aw['name'] for aw in armwrestlers]
     if name in armwrestler_names:
         error = "Name already taken"
 
@@ -375,7 +371,6 @@ def add_new_member():
 
     if 'reset' in request.form:
         selected_armwrestler_2_id, selected_armwrestler_2_name = None, 'none'
-        right_elo, left_elo = 0, 0
         name = None
         try:
             db_execute("INSERT OR REPLACE INTO new_member (id, new_member_name) VALUES (?, ?)", 1, None)
@@ -458,7 +453,6 @@ def add_new_member():
         'elo_from_match': elo_from_match,
         'member_ready': member_ready,
         'custom_score': custom_score, 'custom_score_1': armwrestler_1_score, 'custom_score_2': armwrestler_2_score,
-        'can_remove_matches': can_remove_matches,
         'error': error
     }
 
@@ -557,9 +551,9 @@ def closest_matches():
         supermatch_add = True
 
     query = """
-        SELECT 
-            a.{0} AS rank1, a.id AS armwrestler1_id, a.name AS armwrestler1, a.{1} AS elo1, 
-            b.{0} AS rank2, b.id AS armwrestler2_id, b.name AS armwrestler2, b.{1} AS elo2, 
+        SELECT
+            a.{0} AS rank1, a.id AS armwrestler1_id, a.name AS armwrestler1_name, a.{1} AS elo1,
+            b.{0} AS rank2, b.id AS armwrestler2_id, b.name AS armwrestler2_name, b.{1} AS elo2,
             ABS(a.{1} - b.{1}) AS elo_difference
         FROM armwrestlers a, armwrestlers b
         WHERE a.name < b.name
@@ -570,11 +564,9 @@ def closest_matches():
     closest_matches = db_execute(query)
     closest_matches_with_predictions = []
     for match in closest_matches:
-        binom_predicted_1, binom_predicted_2 = binom_prediction(match[3], match[7])
-        binom_predicted_1, binom_predicted_2 = round(binom_predicted_1 * 100, 1), round(binom_predicted_2 * 100, 1)
-        color_1, color_2 = (f"success", "danger") if binom_predicted_1 > binom_predicted_2 else ((f"danger", "success") if binom_predicted_1 < binom_predicted_2 else ("secondary", "secondary"))
-        match_with_prediction = match + (binom_predicted_1, binom_predicted_2, color_1, color_2)
-        closest_matches_with_predictions.append(match_with_prediction)
+        win1, win2 = binom_prediction(match['elo1'], match['elo2'])
+        color1, color2 = ('success', 'danger') if win1 > win2 else (('danger', 'success') if win1 < win2 else ('secondary', 'secondary'))
+        closest_matches_with_predictions.append({**match, 'win1': round(win1 * 100, 1), 'win2': round(win2 * 100, 1), 'color1': color1, 'color2': color2})
 
     template_data = {
         'closest_matches_with_predictions': closest_matches_with_predictions,
@@ -671,19 +663,19 @@ def undo_last_match():
             app.logger.error(f"Operation context: {request.path} - {request.method}")
         return render_template('confirmation_screen.html', message="Last match deleted", redirect="history")
 
-    row = db_execute(
-        "SELECT a1.id, a1.name, a2.id, a2.name, h.arm, "
-        "h.armwrestler1_rank, h.armwrestler2_rank, "
-        "h.armwrestler1_elo, h.armwrestler2_elo, "
-        "h.armwrestler1_score, h.armwrestler2_score, "
-        "h.armwrestler1_elo_diff, h.armwrestler2_elo_diff, "
-        "h.selected_format, h.date "
-        "FROM history h "
-        "JOIN armwrestlers a1 ON h.armwrestler1_id = a1.id "
-        "JOIN armwrestlers a2 ON h.armwrestler2_id = a2.id "
-        "WHERE h.id = (SELECT MAX(id) FROM history)"
-    )[0]
-    match = [row]
+    match = db_execute('''
+        SELECT a1.id AS armwrestler1_id, a1.name AS armwrestler1_name,
+               a2.id AS armwrestler2_id, a2.name AS armwrestler2_name,
+               h.arm, h.armwrestler1_rank, h.armwrestler2_rank,
+               h.armwrestler1_elo, h.armwrestler2_elo,
+               h.armwrestler1_score, h.armwrestler2_score,
+               h.armwrestler1_elo_diff, h.armwrestler2_elo_diff,
+               h.selected_format, h.date
+        FROM history h
+        JOIN armwrestlers a1 ON h.armwrestler1_id = a1.id
+        JOIN armwrestlers a2 ON h.armwrestler2_id = a2.id
+        WHERE h.id = (SELECT MAX(id) FROM history)
+    ''')
     formatted_data = get_matches_formatted_data(match)
     return render_template('confirm_undo_last_match.html', matches=match, formatted_data=formatted_data)
 
@@ -733,10 +725,10 @@ def supermatch():
 
     db_unconfirmed_matches = db_execute(query)
 
-    unconfirmed_matches = [
-        match[:11] + elo_diff_from_match(match[7], match[8], (match[9], match[10]), SUPERMATCH_FORMATS[match[11]][1]) + match[11:]
-        for match in db_unconfirmed_matches
-    ]
+    unconfirmed_matches = []
+    for match in db_unconfirmed_matches:
+        diff1, diff2 = elo_diff_from_match(match['armwrestler1_elo'], match['armwrestler2_elo'], (match['armwrestler1_score'], match['armwrestler2_score']), SUPERMATCH_FORMATS[match['selected_format']][1])
+        unconfirmed_matches.append({**match, 'armwrestler1_elo_diff': diff1, 'armwrestler2_elo_diff': diff2})
 
     formatted_data = get_matches_formatted_data(unconfirmed_matches)
 
@@ -747,13 +739,13 @@ def supermatch():
     max_rounds = SUPERMATCH_FORMATS[selected_format][0]
 
     if selected_armwrestler_1_id:
-        armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1_id]
+        armwrestlers_2 = [aw for aw in armwrestlers if aw['id'] != selected_armwrestler_1_id]
 
     if selected_armwrestler_1_id == selected_armwrestler_2_id:
         selected_armwrestler_2_id = None
 
     # Checks if all conditions are met for supermatch ready
-    armwrestler_ids = [aw[0] for aw in armwrestlers]
+    armwrestler_ids = [aw['id'] for aw in armwrestlers]
     if arm in ['left', 'right'] and \
             selected_armwrestler_1_id != selected_armwrestler_2_id and \
             selected_armwrestler_1_id in armwrestler_ids and \
@@ -855,19 +847,19 @@ def confirm_match():
 
     db_match = db_execute(query, match_id)
 
-    match = [
-        match[:11] + elo_diff_from_match(match[7], match[8], (match[9], match[10]), SUPERMATCH_FORMATS[match[11]][1]) + match[11:]
-        for match in db_match
-    ]
+    match = []
+    for db_match_row in db_match:
+        diff1, diff2 = elo_diff_from_match(db_match_row['armwrestler1_elo'], db_match_row['armwrestler2_elo'], (db_match_row['armwrestler1_score'], db_match_row['armwrestler2_score']), SUPERMATCH_FORMATS[db_match_row['selected_format']][1])
+        match.append({**db_match_row, 'armwrestler1_elo_diff': diff1, 'armwrestler2_elo_diff': diff2})
 
     formatted_data = get_matches_formatted_data(match)
 
     if 'confirm_match' in request.form:
         try:
             match = match[0]
-            armwrestler_1_elo, armwrestler_2_elo = get_current_elo(match[4], (match[0], match[2]))
-            submit_match(match[4], match[0], match[2], match[9], match[10], armwrestler_1_elo, armwrestler_2_elo, match[13], current_user)
-            db_execute("DELETE FROM unconfirmed_matches WHERE id = ?", match_id)
+            armwrestler_1_elo, armwrestler_2_elo = get_current_elo(match['arm'], (match['armwrestler1_id'], match['armwrestler2_id']))
+            submit_match(match['arm'], match['armwrestler1_id'], match['armwrestler2_id'], match['armwrestler1_score'], match['armwrestler2_score'], armwrestler_1_elo, armwrestler_2_elo, match['selected_format'], current_user)
+            db_execute("DELETE FROM unconfirmed_matches WHERE id = ?", match['id'])
             update_ranks()
         except sqlite3.DatabaseError as db_error:
             app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
@@ -909,12 +901,12 @@ def prediction():
     max_rounds = SUPERMATCH_FORMATS[selected_format][0]
 
     if selected_armwrestler_1_id:
-        armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1_id]
+        armwrestlers_2 = [aw for aw in armwrestlers if aw['id'] != selected_armwrestler_1_id]
 
     if selected_armwrestler_1_id == selected_armwrestler_2_id:
         selected_armwrestler_2_id = None
 
-    armwrestler_ids = [aw[0] for aw in armwrestlers]
+    armwrestler_ids = [aw['id'] for aw in armwrestlers]
     if arm in ['left', 'right'] and \
             selected_armwrestler_1_id != selected_armwrestler_2_id and \
             selected_armwrestler_1_id in armwrestler_ids and \
@@ -979,12 +971,12 @@ def elo_from_match():
 
     if ranked == 'ranked':
         if selected_armwrestler_1_id:
-            armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1_id]
+            armwrestlers_2 = [aw for aw in armwrestlers if aw['id'] != selected_armwrestler_1_id]
 
         if selected_armwrestler_1_id == selected_armwrestler_2_id:
             selected_armwrestler_2_id = None
 
-    armwrestler_ids = [aw[0] for aw in armwrestlers]
+    armwrestler_ids = [aw['id'] for aw in armwrestlers]
     if arm in ['left', 'right'] and \
             ranked == 'ranked' and \
             selected_armwrestler_1_id != selected_armwrestler_2_id and \

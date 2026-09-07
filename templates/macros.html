@@ -1,0 +1,50 @@
+{% macro back_header(title) %}
+<div class="mb-4">
+    <div class="row m-auto">
+        <div class="col-auto p-0 d-flex align-items-center">
+            <form action="{{ url_for('ranking') }}" method="GET">
+                <button type="submit" class="btn btn-generic px-1 py-1 d-flex align-items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
+                    </svg>
+                </button>
+            </form>
+        </div>
+        <div class="col d-flex align-items-center px-2">
+            <h2 class="mb-0">{{ title }}</h2>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro arm_toggle(endpoint, target, push=false, url_kwargs={}) %}
+<div class="btn-group btn-group-toggle mb-2 w-100">
+    <a href="{{ url_for(endpoint, arm='right', **url_kwargs) }}"
+       class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}"
+       role="button"
+       hx-get="{{ url_for(endpoint, arm='right', **url_kwargs) }}"
+       hx-target="{{ target }}"
+       hx-swap="innerMorph"
+       {% if push %}hx-push-url="true"{% endif %}
+       aria-pressed="{{ 'true' if arm == 'right' else 'false' }}">Right arm</a>
+    <a href="{{ url_for(endpoint, arm='left', **url_kwargs) }}"
+       class="btn btn-primary w-50 {{ 'active' if arm == 'left' else '' }}"
+       role="button"
+       hx-get="{{ url_for(endpoint, arm='left', **url_kwargs) }}"
+       hx-target="{{ target }}"
+       hx-swap="innerMorph"
+       {% if push %}hx-push-url="true"{% endif %}
+       aria-pressed="{{ 'true' if arm == 'left' else 'false' }}">Left arm</a>
+</div>
+{% endmacro %}
+
+{% macro radio_toggle(name, left_value, left_label, right_value, right_label, selected) %}
+<div class="btn-group btn-group-toggle mb-2 w-100">
+    <label class="btn btn-primary w-50 {{ 'active' if selected == left_value else '' }}">
+        <input type="radio" name="{{ name }}" id="{{ left_value }}" value="{{ left_value }}" autocomplete="off" {{ 'checked' if selected == left_value else '' }} class="visually-hidden">{{ left_label }}
+    </label>
+    <label class="btn btn-primary w-50 {{ 'active' if selected == right_value else '' }}">
+        <input type="radio" name="{{ name }}" id="{{ right_value }}" value="{{ right_value }}" autocomplete="off" {{ 'checked' if selected == right_value else '' }} class="visually-hidden">{{ right_label }}
+    </label>
+</div>
+{% endmacro %}

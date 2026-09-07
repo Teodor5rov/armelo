@@ -1,22 +1,6 @@
 <div class="mx-auto" style="max-width: 800px;">
-    <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
-        <a href="{{ url_for('view_member', arm='right', id=id) }}" 
-            class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}"
-            role="button"
-            hx-get="{{ url_for('view_member', id=id, arm='right') }}"
-            hx-target="#arm_info"
-            hx-swap="innerMorph"
-            hx-push-url="true"
-            aria-pressed="{{ 'true' if arm == 'right' else 'false' }}">Right arm</a>
-        <a href="{{ url_for('view_member', arm='left', id=id) }}"
-            class="btn btn-primary w-50 {{ 'active' if arm == 'left' else '' }}"
-            role="button"
-            hx-get="{{ url_for('view_member', id=id, arm='left') }}"
-            hx-target="#arm_info"
-            hx-swap="innerMorph"
-            hx-push-url="true"
-            aria-pressed="{{ 'true' if arm == 'left' else 'false' }}">Left arm</a>
-    </div>
+{% from 'macros.html' import arm_toggle with context %}
+{{ arm_toggle('view_member', '#arm_info', push=true, url_kwargs={'id': id}) }}
 
     <div class="table-responsive rounded">
         <table class="table">
@@ -63,8 +47,8 @@
                 <tr>
                     <td class="text-center align-middle" colspan="3">
                         <div class="d-flex justify-content-center align-items-center flex-wrap gap-2">
-                        {% for bname, bcolor in badges_for_arm %}
-                            <span class="badge {{ bcolor }}">{{ bname }}</span>
+                        {% for badge in badges_for_arm %}
+                            <span class="badge {{ badge['color'] }}">{{ badge['name'] }}</span>
                         {% endfor %}
                         </div>
                     </td>

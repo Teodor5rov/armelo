@@ -1,23 +1,9 @@
+{% from 'macros.html' import radio_toggle %}
 <form class="mb-4" hx-get="{{ url_for('elo_from_match') }}" hx-trigger="change" hx-swap="outerMorph" hx-push-url="true">
     <label for="ranked" class="form-label">Choose ranked or unranked:</label>
-    <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
-        <label class="btn btn-primary w-50 {{ 'active' if ranked == 'ranked' else '' }}">
-            <input type="radio" name="ranked" id="ranked" value="ranked" autocomplete="off" {{ 'checked' if ranked == 'ranked' else '' }} class="visually-hidden">Ranked
-        </label>
-        <label class="btn btn-primary w-50 {{ 'active' if ranked == 'unranked' else '' }}">
-            <input type="radio" name="ranked" id="unranked" value="unranked" autocomplete="off" {{ 'checked' if ranked == 'unranked' else '' }} class="visually-hidden">Unranked
-        </label>
-    </div>
-    <!-- Arm selection buttons -->
+    {{ radio_toggle('ranked', 'ranked', 'Ranked', 'unranked', 'Unranked', ranked) }}
     <label class="form-label">Choose arm for the match:</label>
-    <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
-        <label class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}">
-            <input type="radio" name="arm" id="armRight" value="right" autocomplete="off" {{ 'checked' if arm == 'right' else '' }} class="visually-hidden">Right arm
-        </label>
-        <label class="btn btn-primary w-50 {{ 'active' if arm == 'left' else '' }}">
-            <input type="radio" name="arm" id="armLeft" value="left" autocomplete="off" {{ 'checked' if arm == 'left' else '' }} class="visually-hidden">Left arm
-        </label>
-    </div>
+    {{ radio_toggle('arm', 'right', 'Right arm', 'left', 'Left arm', arm) }}
     {% if ranked == 'ranked' %}
     <div class="row mb-2">
         <div class="col">
@@ -25,7 +11,7 @@
             <select class="form-select text-truncate" id="armwrestler1" name="armwrestler1" required>
                 <option disabled selected value="none">Choose...</option>
                 {% for armwrestler in armwrestlers %}
-                <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_1_id == armwrestler[0] %}selected{% endif %}>{{ armwrestler[1] }}</option>
+                <option value="{{ armwrestler['id'] }}" {% if selected_armwrestler_1_id == armwrestler['id'] %}selected{% endif %}>{{ armwrestler['name'] }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -42,7 +28,7 @@
                 <select class="form-select text-truncate" id="armwrestler2" name="armwrestler2" required>
                     <option disabled selected value="none">Choose...</option>
                     {% for armwrestler in armwrestlers_2 %}
-                    <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_2_id == armwrestler[0] %}selected{% endif %}>{{ armwrestler[1] }}</option>
+                    <option value="{{ armwrestler['id'] }}" {% if selected_armwrestler_2_id == armwrestler['id'] %}selected{% endif %}>{{ armwrestler['name'] }}</option>
                     {% endfor %}
                 </select>
             {% else %}
@@ -66,7 +52,7 @@
             <select class="form-select text-truncate" id="armwrestler1" name="armwrestler1" required>
                 <option disabled selected value="none">Choose...</option>
                 {% for armwrestler in armwrestlers %}
-                <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_1_id == armwrestler[0] %}selected{% endif %}>{{ armwrestler[1] }}</option>
+                <option value="{{ armwrestler['id'] }}" {% if selected_armwrestler_1_id == armwrestler['id'] %}selected{% endif %}>{{ armwrestler['name'] }}</option>
                 {% endfor %}
             </select>
         </div>

@@ -1,15 +1,13 @@
 {% for match in new_member_matches %}
 
 <div class="col-12 mb-3">
-    {% if can_remove_matches %}
-    <button type="button" class="btn btn-light p-0 w-100" hx-post="{{ url_for('remove_new_member_match', match_id=match[0]) }}" hx-target="#removeMatch" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#removeModal">
-    {% endif %}
+    <button type="button" class="btn btn-light p-0 w-100" hx-post="{{ url_for('remove_new_member_match', match_id=match['id']) }}" hx-target="#removeMatch" data-bs-toggle="modal" data-bs-target="#removeModal">
         <div class="card">
             <div class="card-header bg-transparent">
                 <div class="row mt-2">
                     <div class="col-12 col-lg-auto mb-2 d-flex justify-content-center">
                         <div class="d-flex align-items-center gap-0 align-middle">
-                            <span class="text-start px-2 py-1 m-0 text-nowrap">{{ match[1] }}</span>
+                            <span class="text-start px-2 py-1 m-0 text-nowrap">{{ match['armwrestler1_name'] }}</span>
                         </div>
                     </div>
                     <div class="col-12 col-lg-auto text-center mb-2 d-flex align-items-center justify-content-center">
@@ -17,11 +15,11 @@
                     </div>
                     <div class="col-12 col-lg-auto mb-2 d-flex justify-content-center">
                         <div class="d-flex align-items-center gap-0 align-middle">
-                            {% if match[10] %}
-                            <strong class="align-middle p-1">#{{ match[10] }}</strong>
+                            {% if match['armwrestler2_rank'] %}
+                            <strong class="align-middle p-1">#{{ match['armwrestler2_rank'] }}</strong>
                             {% endif %}
-                            <a href="{{ url_for('view_member', id=match[2], arm=match[4]) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
-                                {{ match[3] }}
+                            <a href="{{ url_for('view_member', id=match['armwrestler2_id'], arm=match['arm']) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
+                                {{ match['armwrestler2_name'] }}
                             </a>
                         </div>
                     </div>
@@ -31,21 +29,21 @@
                 <div class="card-text">
                     <div class="row justify-content-start">
                         <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
-                            Arm:<span class="fs-6 mx-0 badge text-dark">{{ match[4] }}</span>
+                            Arm:<span class="fs-6 mx-0 badge text-dark">{{ match['arm'] }}</span>
                         </div>
                         <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
-                            Format:<span class="fs-6 mx-0 badge text-dark">{{ match[7] }}</span>
+                            Format:<span class="fs-6 mx-0 badge text-dark">{{ match['selected_format'] }}</span>
                         </div>
                         <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
                             Score:
-                            <span class="fs-6 ms-2 me-1 badge {{ 'bg-success' if match[5] > match[6] else ('bg-secondary' if match[5] == match[6] else 'bg-danger') }}">
-                                {{ match[5] }}
-                            </span>:<span class="fs-6 ms-1 me-0 badge {{ 'bg-success' if match[6] > match[5] else ('bg-secondary' if match[5] == match[6] else 'bg-danger') }}">
-                                {{ match[6] }}
+                            <span class="fs-6 ms-2 me-1 badge {{ 'bg-success' if match['armwrestler1_score'] > match['armwrestler2_score'] else ('bg-secondary' if match['armwrestler1_score'] == match['armwrestler2_score'] else 'bg-danger') }}">
+                                {{ match['armwrestler1_score'] }}
+                            </span>:<span class="fs-6 ms-1 me-0 badge {{ 'bg-success' if match['armwrestler2_score'] > match['armwrestler1_score'] else ('bg-secondary' if match['armwrestler1_score'] == match['armwrestler2_score'] else 'bg-danger') }}">
+                                {{ match['armwrestler2_score'] }}
                             </span>
                         </div>
                         <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
-                            Elo from match:<span class="fs-6 mx-0 badge text-dark">{{ match[8] }}</span>
+                            Elo from match:<span class="fs-6 mx-0 badge text-dark">{{ match['elo_from_match'] }}</span>
                         </div>
                     </div>
                 </div>
@@ -56,7 +54,6 @@
 
 {% endfor %}
 
-{% if can_remove_matches %}
 <div class="modal fade" id="removeModal" tabindex="-1" aria-labelledby="removeModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
@@ -68,4 +65,3 @@
         </div>
     </div>
 </div>
-{% endif %}

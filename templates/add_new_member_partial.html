@@ -1,3 +1,4 @@
+{% from 'macros.html' import radio_toggle %}
 <form class="mb-4" method="POST" action="{{ url_for('add_new_member') }}" hx-post="{{ url_for('add_new_member') }}" hx-trigger="change" hx-swap="outerMorph">
     <div class="mx-auto" style="max-width: 800px;">
         <div class="mx-auto" style="max-width: 400px;">
@@ -26,16 +27,8 @@
             </div>
         </div>
 
-        <!-- Arm selection buttons -->
         <label class="form-label mt-4">Choose arm for the calculation:</label>
-        <div class="btn-group btn-group-toggle mb-2 w-100" data-toggle="buttons">
-            <label class="btn btn-primary w-50 {{ 'active' if arm == 'right' else '' }}">
-                <input type="radio" name="arm" id="armRight" value="right" autocomplete="off" {{ 'checked' if arm=='right' else '' }} class="visually-hidden">Right arm
-            </label>
-            <label class="btn btn-primary w-50 {{ 'active' if arm == 'left' else '' }}">
-                <input type="radio" name="arm" id="armLeft" value="left" autocomplete="off" {{ 'checked' if arm=='left' else '' }} class="visually-hidden">Left arm
-            </label>
-        </div>
+        {{ radio_toggle('arm', 'right', 'Right arm', 'left', 'Left arm', arm) }}
 
         <div class="row mb-2 flex-nowrap">
             <div class="col" style="width: 30%;">
@@ -56,7 +49,7 @@
                 <select class="form-select text-truncate" id="armwrestler2" name="armwrestler2" required>
                     <option disabled selected value="none">Choose...</option>
                     {% for armwrestler in armwrestlers %}
-                    <option value="{{ armwrestler[0] }}" {% if selected_armwrestler_2_id==armwrestler[0] %}selected{% endif %}>{{ armwrestler[1] }}</option>
+                    <option value="{{ armwrestler['id'] }}" {% if selected_armwrestler_2_id==armwrestler['id'] %}selected{% endif %}>{{ armwrestler['name'] }}</option>
                     {% endfor %}
                 </select>
             </div>

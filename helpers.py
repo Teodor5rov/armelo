@@ -62,8 +62,8 @@ def submit_match(arm, armwrestler1_id, armwrestler2_id, armwrestler_1_score, arm
     dbarm = 'right_elo' if arm == 'right' else 'left_elo'
     updated_1, updated_2 = calculate_elo_with_bonus(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
 
-    armwrestler_1_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, id FROM armwrestlers) AS RankedArmwrestlers WHERE id = ?'.format(dbarm), armwrestler1_id)[0][0]
-    armwrestler_2_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, id FROM armwrestlers) AS RankedArmwrestlers WHERE id = ?'.format(dbarm), armwrestler2_id)[0][0]
+    armwrestler_1_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, id FROM armwrestlers) AS RankedArmwrestlers WHERE id = ?'.format(dbarm), armwrestler1_id)[0]['rank']
+    armwrestler_2_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, id FROM armwrestlers) AS RankedArmwrestlers WHERE id = ?'.format(dbarm), armwrestler2_id)[0]['rank']
 
     armwrestler_1_diff, armwrestler_2_diff = elo_diff_from_match(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
 
@@ -109,32 +109,26 @@ def get_current_elo(arm, armwrestler_ids):
         raise ValueError("Invalid arm. Must be 'right' or 'left'.")
 
     dbarm = 'right_elo' if arm == 'right' else 'left_elo'
-    elos = []
-
-    for id in armwrestler_ids:
-        result = db_execute('SELECT {} FROM armwrestlers WHERE id = ?'.format(dbarm), id)
-        elo = result[0][0]
-        elos.append(elo)
-
-    return elos
+    return [db_execute('SELECT {} FROM armwrestlers WHERE id = ?'.format(dbarm), id)[0][dbarm] for id in armwrestler_ids]
 
 
 def get_matches_formatted_data(matches):
     formatted_data = []
     for match in matches:
-        armwrestler_1_diff_format, armwrestler_2_diff_format = match[11], match[12]
-        armwrestler_1_score_color, armwrestler_2_score_color = match[9], match[10]
-
-        armwrestler_1_diff_format, armwrestler_1_diff_color = (f"+{armwrestler_1_diff_format}", "text-success") if armwrestler_1_diff_format > 0 else (
-            (str(armwrestler_1_diff_format), "text-danger") if armwrestler_1_diff_format < 0 else ("0", "text-secondary"))
-        armwrestler_2_diff_format, armwrestler_2_diff_color = (f"+{armwrestler_2_diff_format}", "text-success") if armwrestler_2_diff_format > 0 else (
-            (str(armwrestler_2_diff_format), "text-danger") if armwrestler_2_diff_format < 0 else ("0", "text-secondary"))
-        armwrestler_1_score_color, armwrestler_2_score_color = ("bg-success", "bg-danger") if armwrestler_1_score_color > armwrestler_2_score_color else (
-            ("bg-danger", "bg-success") if armwrestler_1_score_color < armwrestler_2_score_color else ("bg-secondary", "bg-secondary"))
-
-        date = datetime.strptime(match[14], "%Y-%m-%d %H:%M:%S").strftime("%d %B %Y")
-
-        formatted_data.append((armwrestler_1_score_color, armwrestler_2_score_color, armwrestler_1_diff_color, armwrestler_2_diff_color, armwrestler_1_diff_format, armwrestler_2_diff_format, date))
+        score1, score2 = match['armwrestler1_score'], match['armwrestler2_score']
+        diff1, diff2 = match['armwrestler1_elo_diff'], match['armwrestler2_elo_diff']
+        score1_color, score2_color = ('bg-success', 'bg-danger') if score1 > score2 else (
+            ('bg-danger', 'bg-success') if score1 < score2 else ('bg-secondary', 'bg-secondary'))
+        diff1_text, diff1_color = (f"+{diff1}", 'text-success') if diff1 > 0 else (
+            (str(diff1), 'text-danger') if diff1 < 0 else ('0', 'text-secondary'))
+        diff2_text, diff2_color = (f"+{diff2}", 'text-success') if diff2 > 0 else (
+            (str(diff2), 'text-danger') if diff2 < 0 else ('0', 'text-secondary'))
+        formatted_data.append({
+            'score1_color': score1_color, 'score2_color': score2_color,
+            'diff1_color': diff1_color, 'diff2_color': diff2_color,
+            'diff1_text': diff1_text, 'diff2_text': diff2_text,
+            'date': datetime.strptime(match['date'], '%Y-%m-%d %H:%M:%S').strftime('%d %B %Y')
+        })
 
     return formatted_data
 
@@ -173,7 +167,7 @@ def update_badges():
     if not result:
         return
 
-    provisional_badge_id = result[0][0]
+    provisional_badge_id = result[0]['id']
 
     db_execute('DELETE FROM armwrestler_badges WHERE badge_id = ?;', provisional_badge_id)
 
@@ -215,10 +209,6 @@ def match_result(max_rounds, value, format_type):
         else:
             armwrestler1_score = wins_required
             armwrestler2_score = max_rounds - value
-
-        if max_rounds % 2 == 0 and value == max_rounds // 2:
-            armwrestler1_score = value
-            armwrestler2_score = value
 
     elif format_type == "All rounds":
         armwrestler1_score = value

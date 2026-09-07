@@ -4,9 +4,7 @@ from werkzeug.security import check_password_hash
 from werkzeug.exceptions import NotFound
 from datetime import datetime, timedelta
 from calendar import month_name
-import logging
 import requests
-from logging.handlers import RotatingFileHandler
 import sqlite3
 import os
 import math
@@ -34,13 +32,6 @@ I = 20
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', '%%8hF$7ALEy8Msw2')
 CLOUDFLARE_SECRET_KEY = os.getenv('CLOUDFLARE_SECRET_KEY', '1x0000000000000000000000000000000AA')
-
-handler = RotatingFileHandler('armelo_app.log', maxBytes=100000, backupCount=3)
-handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
-handler.setFormatter(formatter)
-app.logger.addHandler(handler)
-app.logger.setLevel(logging.DEBUG)
 
 csp = {
     'default-src': [
@@ -95,7 +86,15 @@ def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(DATABASE)
+        db.row_factory = sqlite3.Row
     return db
+
+
+@app.teardown_appcontext
+def close_db(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
 
 
 def db_execute(query, *args):

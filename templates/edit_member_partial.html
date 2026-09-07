@@ -49,7 +49,7 @@
                 {% endif %}
             </div>
             <div class="col text-end">
-                <button type="button" class="btn btn-danger" hx-post="{{ url_for('confirm_remove', id=id, current_name=current_name) }}" hx-target="#confirmModalRemove" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#confirmModal">Remove</button>
+                <button type="button" class="btn btn-danger" hx-post="{{ url_for('confirm_remove', id=id, current_name=current_name) }}" hx-target="#confirmModalRemove" data-bs-toggle="modal" data-bs-target="#confirmModal">Remove</button>
             </div>
         </div>
 
