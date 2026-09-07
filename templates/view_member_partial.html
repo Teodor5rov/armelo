@@ -5,7 +5,7 @@
             role="button"
             hx-get="{{ url_for('view_member', id=id, arm='right') }}"
             hx-target="#arm_info"
-            hx-swap="innerHTML"
+            hx-swap="innerMorph"
             hx-push-url="true"
             aria-pressed="{{ 'true' if arm == 'right' else 'false' }}">Right arm</a>
         <a href="{{ url_for('view_member', arm='left', id=id) }}"
@@ -13,7 +13,7 @@
             role="button"
             hx-get="{{ url_for('view_member', id=id, arm='left') }}"
             hx-target="#arm_info"
-            hx-swap="innerHTML"
+            hx-swap="innerMorph"
             hx-push-url="true"
             aria-pressed="{{ 'true' if arm == 'left' else 'false' }}">Left arm</a>
     </div>

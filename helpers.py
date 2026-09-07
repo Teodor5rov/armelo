@@ -2,6 +2,15 @@ from config import *
 from elo import *
 
 
+def is_htmx():
+    return bool(request.headers.get('HX-Request')) and not request.headers.get('HX-History-Restore-Request')
+
+
+def get_arm():
+    arm = request.values.get('arm', 'right')
+    return arm if arm in ('right', 'left') else 'right'
+
+
 def submit_unconfirmed_supermatch(arm, armwrestler1_id, armwrestler2_id, armwrestler_1_score, armwrestler_2_score, selected_format):
     try:
         query = '''
@@ -18,8 +27,8 @@ def submit_unconfirmed_supermatch(arm, armwrestler1_id, armwrestler2_id, armwres
                    selected_format,
                    armwrestler_1_score, armwrestler_2_score)
 
-    except sqlite3.DatabaseError as error:
-        app.logger.error(f"Database error occurred: {error}", exc_info=True)
+    except sqlite3.DatabaseError as db_error:
+        app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
         app.logger.error(f"Operation context: {request.path} - {request.method}")
 
 
@@ -44,8 +53,8 @@ def submit_new_member_match(arm, new_member_id, armwrestler2_id, armwrestler_1_s
                    armwrestler_1_score, armwrestler_2_score,
                    elo_from_match)
 
-    except sqlite3.DatabaseError as error:
-        app.logger.error(f"Database error occurred: {error}", exc_info=True)
+    except sqlite3.DatabaseError as db_error:
+        app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
         app.logger.error(f"Operation context: {request.path} - {request.method}")
 
 
@@ -90,8 +99,8 @@ def submit_match(arm, armwrestler1_id, armwrestler2_id, armwrestler_1_score, arm
 
         update_badges()   
         update_ranks()
-    except sqlite3.DatabaseError as error:
-        app.logger.error(f"Database error occurred: {error}", exc_info=True)
+    except sqlite3.DatabaseError as db_error:
+        app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
         app.logger.error(f"Operation context: {request.path} - {request.method}")
 
 
@@ -136,23 +145,23 @@ def update_ranks():
         ranked_right AS (
             SELECT id, RANK() OVER (ORDER BY right_elo DESC) AS new_right_rank
             FROM armwrestlers
-            WHERE active_until >= DATE('now')
+            WHERE active_until >= DATE('now') AND NOT hidden
         ),
         ranked_left AS (
             SELECT id, RANK() OVER (ORDER BY left_elo DESC) AS new_left_rank
             FROM armwrestlers
-            WHERE active_until >= DATE('now')
+            WHERE active_until >= DATE('now') AND NOT hidden
         )
     UPDATE armwrestlers
     SET
         right_rank = (SELECT new_right_rank FROM ranked_right WHERE ranked_right.id = armwrestlers.id),
         left_rank = (SELECT new_left_rank FROM ranked_left WHERE ranked_left.id = armwrestlers.id)
-    WHERE active_until >= DATE('now');
+    WHERE active_until >= DATE('now') AND NOT hidden;
     '''
 
     query_nullify_ranks = '''
     UPDATE armwrestlers SET right_rank = NULL, left_rank = NULL
-    WHERE active_until < DATE('now');
+    WHERE active_until < DATE('now') OR hidden;
     '''
 
     db_execute(query_update_ranks)

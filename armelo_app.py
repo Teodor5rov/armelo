@@ -54,12 +54,12 @@ def ranking(arm='right'):
     update_ranks()
     active_armwrestlers = db_execute('''
         SELECT {0}, id, name, {1} FROM armwrestlers
-        WHERE active_until >= DATE('now') ORDER BY {0} ASC
+        WHERE active_until >= DATE('now') AND NOT hidden ORDER BY {0} ASC
     '''.format(rank_column, elo_column))
 
     inactive_armwrestlers = db_execute('''
         SELECT id, name, {0} FROM armwrestlers
-        WHERE active_until < DATE('now') ORDER BY {1} DESC
+        WHERE active_until < DATE('now') AND NOT hidden ORDER BY {1} DESC
     '''.format(elo_column, elo_column))
 
     badge_data = db_execute('''
@@ -83,7 +83,7 @@ def ranking(arm='right'):
         'armwrestler_badges_dict': armwrestler_badges_dict
     }
 
-    if request.headers.get('HX-Request'):
+    if is_htmx():
         return render_template('ranking_partial.html', **template_data)
 
     return render_template('ranking.html', **template_data)
@@ -154,8 +154,8 @@ def edit_member():
             else:
                 db_execute("UPDATE armwrestlers SET name = ?, right_elo = ?, left_elo = ? WHERE id = ?", name, right_elo, left_elo, id)
             update_ranks()
-        except sqlite3.DatabaseError as error:
-            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+        except sqlite3.DatabaseError as db_error:
+            app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
             app.logger.error(f"Operation context: {request.path} - {request.method}")
         return render_template('confirmation_screen.html', message="Member saved", redirect="ranking")
 
@@ -170,7 +170,7 @@ def edit_member():
         'error': error
     }
 
-    if request.headers.get('HX-Request'):
+    if is_htmx():
         return render_template('edit_member_partial.html', **template_data)
     else:
         return render_template('edit_member.html', **template_data)
@@ -187,7 +187,7 @@ def view_member():
     if 'arm' not in request.args:
         return redirect(url_for('view_member', id=id, arm='right'))
     
-    arm = request.args.get('arm', 'right')
+    arm = get_arm()
 
     name_result = db_execute('SELECT name FROM armwrestlers WHERE id = ?', id)
     if not name_result:
@@ -196,7 +196,7 @@ def view_member():
 
     query = '''
         SELECT 
-            CASE WHEN a.active_until >= DATE('now') THEN 'active' ELSE 'inactive' END AS current_status,
+            CASE WHEN a.hidden THEN 'hidden' WHEN a.active_until >= DATE('now') THEN 'active' ELSE 'inactive' END AS current_status,
             a.right_elo, a.left_elo, a.right_rank, a.left_rank,
             a.active_until
         FROM armwrestlers a
@@ -294,7 +294,7 @@ def view_member():
         'badges_for_arm': badges_for_arm
     }
 
-    if request.headers.get('HX-Request'):
+    if is_htmx():
         return render_template('view_member_partial.html', **template_data)
 
     return render_template('view_member.html', **template_data)
@@ -312,10 +312,10 @@ def add_new_member():
         name = request.form.get('name', '').strip()
         try:
             db_execute("INSERT OR REPLACE INTO new_member (id, new_member_name) VALUES (?, ?)", 1, name)
-        except sqlite3.DatabaseError as error:
-            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+        except sqlite3.DatabaseError as db_error:
+            app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
             app.logger.error(f"Operation context: {request.path} - {request.method}")
-    arm = request.form.get('arm', 'right')
+    arm = get_arm()
     armwrestlers = db_execute('SELECT id, name FROM armwrestlers ORDER BY LOWER(name)')
     try:
         selected_armwrestler_2_id = int(request.form.get('armwrestler2')) if request.form.get('armwrestler2') else None
@@ -380,8 +380,8 @@ def add_new_member():
         try:
             db_execute("INSERT OR REPLACE INTO new_member (id, new_member_name) VALUES (?, ?)", 1, None)
             db_execute("DELETE FROM new_member_matches")
-        except sqlite3.DatabaseError as error:
-            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+        except sqlite3.DatabaseError as db_error:
+            app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
             app.logger.error(f"Operation context: {request.path} - {request.method}")
         calculation_ready = False
     
@@ -439,8 +439,8 @@ def add_new_member():
 
             update_badges()
             update_ranks()
-        except sqlite3.DatabaseError as error:
-            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+        except sqlite3.DatabaseError as db_error:
+            app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
             app.logger.error(f"Operation context: {request.path} - {request.method}")
         return render_template('confirmation_screen.html', message="New member added", redirect="ranking")
 
@@ -462,7 +462,7 @@ def add_new_member():
         'error': error
     }
 
-    if request.headers.get('HX-Request'):
+    if is_htmx():
         return render_template('add_new_member_partial.html', **template_data)
     else:
         return render_template('add_new_member.html', **template_data)
@@ -505,8 +505,8 @@ def remove_new_member_match():
     if 'remove_match' in request.form:
         try:
             db_execute("DELETE FROM new_member_matches WHERE id = ?", match_id)
-        except sqlite3.DatabaseError as error:
-            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+        except sqlite3.DatabaseError as db_error:
+            app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
             app.logger.error(f"Operation context: {request.path} - {request.method}")
         return redirect(url_for('add_new_member'))
 
@@ -524,22 +524,31 @@ def confirm_remove():
         raise NotFound()
     current_name = request.form.get('current_name') or request.args.get('current_name')
 
+    has_history = bool(db_execute('SELECT 1 FROM history WHERE armwrestler1_id = ? OR armwrestler2_id = ? LIMIT 1', id, id))
+
     if 'confirm_remove' in request.form:
         try:
-            db_execute("DELETE FROM armwrestlers WHERE id = ?", id)
-
+            if has_history:
+                db_execute("UPDATE armwrestlers SET hidden = 1 WHERE id = ?", id)
+                message = "Member hidden from rankings"
+            else:
+                db_execute("DELETE FROM unconfirmed_matches WHERE armwrestler1_id = ? OR armwrestler2_id = ?", id, id)
+                db_execute("DELETE FROM new_member_matches WHERE armwrestler2_id = ?", id)
+                db_execute("DELETE FROM armwrestler_badges WHERE armwrestler_id = ?", id)
+                db_execute("DELETE FROM armwrestlers WHERE id = ?", id)
+                message = "Member deleted"
             update_ranks()
-        except sqlite3.DatabaseError as error:
-            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+        except sqlite3.DatabaseError as db_error:
+            app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
             app.logger.error(f"Operation context: {request.path} - {request.method}")
-        return render_template('confirmation_screen.html', message="Member deleted", redirect="ranking")
+        return render_template('confirmation_screen.html', message=message, redirect="ranking")
 
-    return render_template('confirm_remove.html', id=id, current_name=current_name)
+    return render_template('confirm_remove.html', id=id, current_name=current_name, has_history=has_history)
 
 
 @app.route("/closest_matches")
 def closest_matches():
-    arm = request.args.get('arm', 'right')
+    arm = get_arm()
     rank_column = 'right_rank' if arm == 'right' else 'left_rank'
     elo_column = 'right_elo' if arm == 'right' else 'left_elo'
 
@@ -573,7 +582,7 @@ def closest_matches():
         'supermatch_add': supermatch_add
     }
 
-    if request.headers.get('HX-Request'):
+    if is_htmx():
         return render_template('closest_matches_partial.html', **template_data)
 
     return render_template('closest_matches.html', **template_data)
@@ -647,16 +656,18 @@ def undo_last_match():
 
     if 'undo_match' in request.form:
         try:
-            armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo = db_execute(
-                'SELECT armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo FROM history ORDER BY id DESC LIMIT 1')[0]
+            match_id, armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo, match_date = db_execute(
+                'SELECT id, armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo, date FROM history ORDER BY id DESC LIMIT 1')[0]
             dbarm = 'right_elo' if arm == 'right' else 'left_elo'
-            db_execute(f"UPDATE armwrestlers SET {dbarm} = ? WHERE id = ?", armwrestler1_elo, armwrestler1_id)
-            db_execute(f"UPDATE armwrestlers SET {dbarm} = ? WHERE id = ?", armwrestler2_elo, armwrestler2_id)
+            for armwrestler_id, elo in ((armwrestler1_id, armwrestler1_elo), (armwrestler2_id, armwrestler2_elo)):
+                previous = db_execute('SELECT MAX(date) FROM history WHERE id < ? AND (armwrestler1_id = ? OR armwrestler2_id = ?)', match_id, armwrestler_id, armwrestler_id)[0][0]
+                active_until = (datetime.strptime(previous or match_date, '%Y-%m-%d %H:%M:%S') + timedelta(days=180)).strftime('%Y-%m-%d')
+                db_execute(f"UPDATE armwrestlers SET {dbarm} = ?, active_until = ? WHERE id = ?", elo, active_until, armwrestler_id)
             db_execute('DELETE FROM history WHERE id = (SELECT MAX(id) FROM history)')
             update_badges()
             update_ranks()
-        except (sqlite3.DatabaseError, IndexError) as error:
-            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+        except (sqlite3.DatabaseError, IndexError) as db_error:
+            app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
             app.logger.error(f"Operation context: {request.path} - {request.method}")
         return render_template('confirmation_screen.html', message="Last match deleted", redirect="history")
 
@@ -682,7 +693,7 @@ def supermatch():
     current_user = session.get('username', None)
     can_confirm_matches = True if current_user else None
 
-    arm = request.form.get('arm', 'right')
+    arm = get_arm()
     try:
         selected_armwrestler_1_id = int(request.form.get('armwrestler1')) if request.form.get('armwrestler1') else None
         selected_armwrestler_2_id = int(request.form.get('armwrestler2')) if request.form.get('armwrestler2') else None
@@ -738,7 +749,7 @@ def supermatch():
     if selected_armwrestler_1_id:
         armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1_id]
 
-    if selected_armwrestler_1_id is selected_armwrestler_2_id:
+    if selected_armwrestler_1_id == selected_armwrestler_2_id:
         selected_armwrestler_2_id = None
 
     # Checks if all conditions are met for supermatch ready
@@ -808,7 +819,7 @@ def supermatch():
         'matches': unconfirmed_matches, 'formatted_data': formatted_data, 'can_confirm_matches': can_confirm_matches
     }
 
-    if request.headers.get('HX-Request'):
+    if is_htmx():
         return render_template('supermatch_partial.html', **template_data)
     else:
         return render_template('supermatch.html', **template_data)
@@ -858,15 +869,15 @@ def confirm_match():
             submit_match(match[4], match[0], match[2], match[9], match[10], armwrestler_1_elo, armwrestler_2_elo, match[13], current_user)
             db_execute("DELETE FROM unconfirmed_matches WHERE id = ?", match_id)
             update_ranks()
-        except sqlite3.DatabaseError as error:
-            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+        except sqlite3.DatabaseError as db_error:
+            app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
             app.logger.error(f"Operation context: {request.path} - {request.method}")
         return render_template('confirmation_screen.html', message="Match confirmed", redirect="supermatch")
     elif 'remove_match' in request.form:
         try:
             db_execute("DELETE FROM unconfirmed_matches WHERE id = ?", match_id)
-        except sqlite3.DatabaseError as error:
-            app.logger.error(f"Database error occurred: {error}", exc_info=True)
+        except sqlite3.DatabaseError as db_error:
+            app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
             app.logger.error(f"Operation context: {request.path} - {request.method}")
         return render_template('confirmation_screen.html', message="Match removed", redirect="supermatch")
 
@@ -876,7 +887,7 @@ def confirm_match():
 @app.route("/prediction")
 def prediction():
 
-    arm = request.args.get('arm', 'right')
+    arm = get_arm()
     try:
         selected_armwrestler_1_id = int(request.args.get('armwrestler1')) if request.args.get('armwrestler1') else None
         selected_armwrestler_2_id = int(request.args.get('armwrestler2')) if request.args.get('armwrestler2') else None
@@ -900,7 +911,7 @@ def prediction():
     if selected_armwrestler_1_id:
         armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1_id]
 
-    if selected_armwrestler_1_id is selected_armwrestler_2_id:
+    if selected_armwrestler_1_id == selected_armwrestler_2_id:
         selected_armwrestler_2_id = None
 
     armwrestler_ids = [aw[0] for aw in armwrestlers]
@@ -932,7 +943,7 @@ def prediction():
         'win_chance_color': win_chance_color, 'score_color': score_color
     }
 
-    if request.headers.get('HX-Request'):
+    if is_htmx():
         return render_template('prediction_partial.html', **template_data)
     else:
         return render_template('prediction.html', **template_data)
@@ -942,7 +953,7 @@ def prediction():
 def elo_from_match():
 
     ranked = request.args.get('ranked', 'ranked')
-    arm = request.args.get('arm', 'right')
+    arm = get_arm()
     try:
         selected_armwrestler_1_id = int(request.args.get('armwrestler1')) if request.args.get('armwrestler1') else None
         selected_armwrestler_2_id = int(request.args.get('armwrestler2')) if request.args.get('armwrestler2') else None
@@ -970,7 +981,7 @@ def elo_from_match():
         if selected_armwrestler_1_id:
             armwrestlers_2 = [aw for aw in armwrestlers if aw[0] != selected_armwrestler_1_id]
 
-        if selected_armwrestler_1_id is selected_armwrestler_2_id:
+        if selected_armwrestler_1_id == selected_armwrestler_2_id:
             selected_armwrestler_2_id = None
 
     armwrestler_ids = [aw[0] for aw in armwrestlers]
@@ -1015,7 +1026,7 @@ def elo_from_match():
 
         elif ranked == 'unranked':
             armwrestler_1_elo = get_current_elo(arm, [selected_armwrestler_1_id])[0]
-            elo_from_match = expected_elo_from_score(armwrestler_1_elo, (armwrestler_1_score, armwrestler_2_score))
+            elo_from_match = expected_elo_from_score(armwrestler_1_elo, (armwrestler_2_score, armwrestler_1_score))
 
     template_data = {
         'ranked': ranked, 'arm': arm,
@@ -1031,7 +1042,7 @@ def elo_from_match():
         'custom_score': custom_score, 'custom_score_1': armwrestler_1_score, 'custom_score_2': armwrestler_2_score
     }
 
-    if request.headers.get('HX-Request'):
+    if is_htmx():
         return render_template('elo_from_match_partial.html', **template_data)
     else:
         return render_template('elo_from_match.html', **template_data)

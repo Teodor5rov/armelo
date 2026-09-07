@@ -27,7 +27,7 @@
     </div>
     {% endif %}
     <form class="mb-4" method="POST" action="{{ url_for('supermatch') }}">
-        <div id="form-content" hx-post="{{ url_for('supermatch') }}" hx-trigger="change" hx-target="#form-content" hx-swap="innerHTML">
+        <div id="form-content" hx-post="{{ url_for('supermatch') }}" hx-trigger="change" hx-target="#form-content" hx-swap="innerMorph">
             {% include 'supermatch_partial.html' %}
         </div>
         {% if not current_user %}

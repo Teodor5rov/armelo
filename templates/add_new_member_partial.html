@@ -1,4 +1,4 @@
-<form class="mb-4" method="POST" action="{{ url_for('add_new_member') }}" hx-post="{{ url_for('add_new_member') }}" hx-trigger="change" hx-swap="outerHTML">
+<form class="mb-4" method="POST" action="{{ url_for('add_new_member') }}" hx-post="{{ url_for('add_new_member') }}" hx-trigger="change" hx-swap="outerMorph">
     <div class="mx-auto" style="max-width: 800px;">
         <div class="mx-auto" style="max-width: 400px;">
             <div class="mb-2">
@@ -112,8 +112,8 @@
             <div class="col-12 col-md-auto mt-2 mt-md-0 justify-content-between">
                 <div class="row justify-content-between">
                     <div class="col-auto pe-0">
-                        <label class="btn btn-primary text-nowrap">
-                            <input type="radio" name="add_to_avg" id="add_to_avg" value="true" autocomplete="off" class="visually-hidden">Add to average
+                        <label class="btn btn-primary text-nowrap {{ 'disabled' if elo_from_match is none }}">
+                            <input type="radio" name="add_to_avg" id="add_to_avg" value="true" autocomplete="off" {{ 'disabled' if elo_from_match is none }} class="visually-hidden">Add to average
                         </label>
                     </div>
                     <div class="col-auto">

@@ -4,14 +4,14 @@
        role="button"
        hx-get="{{ url_for('ranking', arm='right') }}"
        hx-target="#rankings"
-       hx-swap="innerHTML"
+       hx-swap="innerMorph"
        aria-pressed="{{ 'true' if arm == 'right' else 'false' }}">Right arm</a>
     <a href="{{ url_for('ranking', arm='left') }}"
        class="btn btn-primary w-50 {{ 'active' if arm == 'left' else '' }}"
        role="button"
        hx-get="{{ url_for('ranking', arm='left') }}"
        hx-target="#rankings"
-       hx-swap="innerHTML"
+       hx-swap="innerMorph"
        aria-pressed="{{ 'true' if arm == 'left' else 'false' }}">Left arm</a>
 </div>
 

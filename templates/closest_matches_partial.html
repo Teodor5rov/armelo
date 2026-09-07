@@ -4,7 +4,7 @@
        role="button"
        hx-get="{{ url_for('closest_matches', arm='right') }}"
        hx-target="#closest_matches"
-       hx-swap="innerHTML"
+       hx-swap="innerMorph"
        hx-push-url="true"
        aria-pressed="{{ 'true' if arm == 'right' else 'false' }}">Right arm</a>
     <a href="{{ url_for('closest_matches', arm='left') }}"
@@ -12,7 +12,7 @@
        role="button"
        hx-get="{{ url_for('closest_matches', arm='left') }}"
        hx-target="#closest_matches"
-       hx-swap="innerHTML"
+       hx-swap="innerMorph"
        hx-push-url="true"
        aria-pressed="{{ 'true' if arm == 'left' else 'false' }}">Left arm</a>
 </div>

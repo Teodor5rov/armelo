@@ -29,7 +29,7 @@
   </span>
 
   <div class="d-flex gap-2 mt-3 mt-lg-0 ms-lg-auto flex-wrap">
-    <form hx-get="{{ url_for('history') }}" hx-trigger="change" hx-target="body" hx-swap="outerHTML" class="d-flex gap-2">
+    <form hx-get="{{ url_for('history') }}" hx-trigger="change" hx-target="body" hx-swap="outerMorph" class="d-flex gap-2">
         <select name="month" class="form-select w-auto" {% if selected_year == 'last_12_months' %}disabled{% endif %}>
           <option value="" {% if selected_month is none %}selected{% endif %}>All months</option>
           {% for num, name in months %}

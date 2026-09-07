@@ -101,11 +101,13 @@ def get_db():
 def db_execute(query, *args):
     db = get_db()
     cur = db.cursor()
-    cur.execute(query, args)
-    if query.strip().upper().startswith(("SELECT", "WITH")):
-        rv = cur.fetchall()
-        cur.close()
-        return rv
-    else:
+    try:
+        cur.execute(query, args)
+        if query.strip().upper().startswith(("SELECT", "WITH")):
+            return cur.fetchall()
         db.commit()
+    except sqlite3.Error:
+        db.rollback()
+        raise
+    finally:
         cur.close()
