@@ -51,6 +51,7 @@ def ranking(arm='right'):
     rank_column = 'right_rank' if arm == 'right' else 'left_rank'
     elo_column = 'right_elo' if arm == 'right' else 'left_elo'
     current_user = session.get('username', None)
+    update_ranks()
     active_armwrestlers = db_execute('''
         SELECT {0} AS rank, id, name, {1} AS elo FROM armwrestlers
         WHERE active_until >= DATE('now') AND NOT hidden ORDER BY rank ASC
@@ -95,8 +96,8 @@ def edit_member():
 
     current_user = session.get('username')
     try:
-        id = int(request.form.get('id'))
-    except (ValueError, IndexError):
+        id = int(request.form.get('id') or request.args.get('id'))
+    except (ValueError, TypeError):
         raise NotFound()
     name_result = db_execute('SELECT name FROM armwrestlers WHERE id = ?', id)
     if not name_result:
@@ -104,7 +105,7 @@ def edit_member():
     current_name = name_result[0]['name']
     name = request.form.get('name', current_name)
     current_status = db_execute('''SELECT CASE WHEN active_until >= DATE('now') THEN 'active' ELSE 'inactive' END AS current_status FROM armwrestlers WHERE id = ?''', id)[0]['current_status']
-    armwrestlers = db_execute('SELECT name FROM armwrestlers ORDER BY LOWER(name)')
+    armwrestlers = db_execute('SELECT name FROM armwrestlers WHERE NOT hidden ORDER BY LOWER(name)')
     right_elo = request.form.get('right_elo', str(get_current_elo("right", [id])[0]))
     left_elo = request.form.get('left_elo', str(get_current_elo("left", [id])[0]))
     selected_status = request.form.get('selected_status', current_status)
@@ -149,7 +150,7 @@ def edit_member():
                     active_until_str = active_until_date.strftime('%Y-%m-%d')
                 db_execute("UPDATE armwrestlers SET name = ?, right_elo = ?, left_elo = ?, active_until = ?, last_edited_by = ? WHERE id = ?", name, right_elo, left_elo, active_until_str, current_user, id)
             else:
-                db_execute("UPDATE armwrestlers SET name = ?, right_elo = ?, left_elo = ? WHERE id = ?", name, right_elo, left_elo, id)
+                db_execute("UPDATE armwrestlers SET name = ?, right_elo = ?, left_elo = ?, last_edited_by = ? WHERE id = ?", name, right_elo, left_elo, current_user, id)
             update_ranks()
         except sqlite3.DatabaseError as db_error:
             app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
@@ -178,10 +179,10 @@ def view_member():
 
     try:
         id = int(request.args.get('id'))
-    except (ValueError, IndexError):
+    except (ValueError, TypeError):
         raise NotFound()
     
-    if 'arm' not in request.args:
+    if request.args.get('arm') not in ('right', 'left'):
         return redirect(url_for('view_member', id=id, arm='right'))
     
     arm = get_arm()
@@ -313,7 +314,7 @@ def add_new_member():
             app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
             app.logger.error(f"Operation context: {request.path} - {request.method}")
     arm = get_arm()
-    armwrestlers = db_execute('SELECT id, name FROM armwrestlers ORDER BY LOWER(name)')
+    armwrestlers = db_execute('SELECT id, name FROM armwrestlers WHERE NOT hidden ORDER BY LOWER(name)')
     try:
         selected_armwrestler_2_id = int(request.form.get('armwrestler2')) if request.form.get('armwrestler2') else None
         selected_armwrestler_2_name = db_execute('SELECT name FROM armwrestlers WHERE id = ?', selected_armwrestler_2_id)[0][0] if selected_armwrestler_2_id else 'none'
@@ -367,7 +368,11 @@ def add_new_member():
 
         add_to_avg_pressed = request.form.get('add_to_avg', False)
         if add_to_avg_pressed:
-            submit_new_member_match(arm, 1, selected_armwrestler_2_id, armwrestler_1_score, armwrestler_2_score, selected_format)
+            try:
+                submit_new_member_match(arm, 1, selected_armwrestler_2_id, armwrestler_1_score, armwrestler_2_score, selected_format)
+            except sqlite3.DatabaseError as db_error:
+                app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
+                app.logger.error(f"Operation context: {request.path} - {request.method}")
 
     if 'reset' in request.form:
         selected_armwrestler_2_id, selected_armwrestler_2_name = None, 'none'
@@ -513,8 +518,8 @@ def confirm_remove():
         return redirect(url_for('login'))
 
     try:
-        id = int(request.form.get('id')) or int(request.args.get('id'))
-    except (ValueError, IndexError):
+        id = int(request.form.get('id') or request.args.get('id'))
+    except (ValueError, TypeError):
         raise NotFound()
     current_name = request.form.get('current_name') or request.args.get('current_name')
 
@@ -524,6 +529,8 @@ def confirm_remove():
         try:
             if has_history:
                 db_execute("UPDATE armwrestlers SET hidden = 1 WHERE id = ?", id)
+                db_execute("DELETE FROM unconfirmed_matches WHERE armwrestler1_id = ? OR armwrestler2_id = ?", id, id)
+                db_execute("DELETE FROM new_member_matches WHERE armwrestler2_id = ?", id)
                 message = "Member hidden from rankings"
             else:
                 db_execute("DELETE FROM unconfirmed_matches WHERE armwrestler1_id = ? OR armwrestler2_id = ?", id, id)
@@ -556,7 +563,7 @@ def closest_matches():
             b.{0} AS rank2, b.id AS armwrestler2_id, b.name AS armwrestler2_name, b.{1} AS elo2,
             ABS(a.{1} - b.{1}) AS elo_difference
         FROM armwrestlers a, armwrestlers b
-        WHERE a.name < b.name
+        WHERE a.name < b.name AND NOT a.hidden AND NOT b.hidden
         ORDER BY elo_difference ASC
         LIMIT 15;
     """.format(rank_column, elo_column)
@@ -648,8 +655,8 @@ def undo_last_match():
 
     if 'undo_match' in request.form:
         try:
-            match_id, armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo, match_date = db_execute(
-                'SELECT id, armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo, date FROM history ORDER BY id DESC LIMIT 1')[0]
+            last_match = db_execute('SELECT id, armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo, date FROM history ORDER BY id DESC LIMIT 1')
+            match_id, armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo, match_date = last_match[0]
             dbarm = 'right_elo' if arm == 'right' else 'left_elo'
             for armwrestler_id, elo in ((armwrestler1_id, armwrestler1_elo), (armwrestler2_id, armwrestler2_elo)):
                 previous = db_execute('SELECT MAX(date) FROM history WHERE id < ? AND (armwrestler1_id = ? OR armwrestler2_id = ?)', match_id, armwrestler_id, armwrestler_id)[0][0]
@@ -658,7 +665,7 @@ def undo_last_match():
             db_execute('DELETE FROM history WHERE id = (SELECT MAX(id) FROM history)')
             update_badges()
             update_ranks()
-        except (sqlite3.DatabaseError, IndexError) as db_error:
+        except sqlite3.DatabaseError as db_error:
             app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
             app.logger.error(f"Operation context: {request.path} - {request.method}")
         return render_template('confirmation_screen.html', message="Last match deleted", redirect="history")
@@ -699,7 +706,7 @@ def supermatch():
     armwrestler_1_color, armwrestler_2_color = None, None
     custom_score = request.form.get('custom_score', False)
     armwrestler_1_elo, armwrestler_2_elo = None, None
-    armwrestlers = db_execute('SELECT id, name FROM armwrestlers ORDER BY LOWER(name)')
+    armwrestlers = db_execute('SELECT id, name FROM armwrestlers WHERE NOT hidden ORDER BY LOWER(name)')
     armwrestlers_2 = None
     error = None
 
@@ -778,7 +785,11 @@ def supermatch():
     submit_pressed = 'submit_match' in request.form
     if submit_pressed and supermatch_ready:
         if current_user:
-            submit_match(arm, selected_armwrestler_1_id, selected_armwrestler_2_id, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format, current_user)
+            try:
+                submit_match(arm, selected_armwrestler_1_id, selected_armwrestler_2_id, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format, current_user)
+            except sqlite3.DatabaseError as db_error:
+                app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
+                app.logger.error(f"Operation context: {request.path} - {request.method}")
             return render_template('confirmation_screen.html', message="Supermatch added", redirect="supermatch")
         else:
             token = request.form.get("cf-turnstile-response")
@@ -792,7 +803,11 @@ def supermatch():
             result = response.json()
 
             if result.get("success"):
-                submit_unconfirmed_supermatch(arm, selected_armwrestler_1_id, selected_armwrestler_2_id, armwrestler_1_score, armwrestler_2_score, selected_format)
+                try:
+                    submit_unconfirmed_supermatch(arm, selected_armwrestler_1_id, selected_armwrestler_2_id, armwrestler_1_score, armwrestler_2_score, selected_format)
+                except sqlite3.DatabaseError as db_error:
+                    app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
+                    app.logger.error(f"Operation context: {request.path} - {request.method}")
                 return render_template('confirmation_screen.html', message="Supermatch added", redirect="supermatch")
             else:
                 error = "CAPTCHA verification failed"
@@ -854,6 +869,9 @@ def confirm_match():
 
     formatted_data = get_matches_formatted_data(match)
 
+    if not match:
+        raise NotFound()
+
     if 'confirm_match' in request.form:
         try:
             match = match[0]
@@ -886,7 +904,7 @@ def prediction():
     except (ValueError, IndexError):
         selected_armwrestler_1_id, selected_armwrestler_2_id = None, None
     supermatch_formats = list(SUPERMATCH_FORMATS.keys())
-    armwrestlers = db_execute('SELECT id, name FROM armwrestlers ORDER BY LOWER(name)')
+    armwrestlers = db_execute('SELECT id, name FROM armwrestlers WHERE NOT hidden ORDER BY LOWER(name)')
     armwrestlers_2 = None
     prediction_ready = False
     armwrestler_1_elo, armwrestler_2_elo = None, None
@@ -953,7 +971,7 @@ def elo_from_match():
         selected_armwrestler_1_id, selected_armwrestler_2_id = None, None
     supermatch_formats = list(SUPERMATCH_FORMATS.keys())
     value_for_score = None
-    armwrestlers = db_execute('SELECT id, name FROM armwrestlers ORDER BY LOWER(name)')
+    armwrestlers = db_execute('SELECT id, name FROM armwrestlers WHERE NOT hidden ORDER BY LOWER(name)')
     armwrestlers_2 = None
     armwrestler_1_score, armwrestler_2_score = None, None
     armwrestler_1_diff, armwrestler_2_diff = None, None

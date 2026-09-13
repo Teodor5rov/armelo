@@ -12,96 +12,83 @@ def get_arm():
 
 
 def submit_unconfirmed_supermatch(arm, armwrestler1_id, armwrestler2_id, armwrestler_1_score, armwrestler_2_score, selected_format):
-    try:
-        query = '''
-        INSERT INTO unconfirmed_matches ( 
-        armwrestler1_id, armwrestler2_id, 
-        arm, 
-        selected_format,
-        armwrestler1_score, armwrestler2_score ) 
-        VALUES (?, ?, ?, ?, ?, ?)
-        '''
-        db_execute(query,
-                   armwrestler1_id, armwrestler2_id,
-                   arm,
-                   selected_format,
-                   armwrestler_1_score, armwrestler_2_score)
-
-    except sqlite3.DatabaseError as db_error:
-        app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
-        app.logger.error(f"Operation context: {request.path} - {request.method}")
+    query = '''
+    INSERT INTO unconfirmed_matches (
+    armwrestler1_id, armwrestler2_id,
+    arm,
+    selected_format,
+    armwrestler1_score, armwrestler2_score )
+    VALUES (?, ?, ?, ?, ?, ?)
+    '''
+    db_execute(query,
+               armwrestler1_id, armwrestler2_id,
+               arm,
+               selected_format,
+               armwrestler_1_score, armwrestler_2_score)
 
 
 def submit_new_member_match(arm, new_member_id, armwrestler2_id, armwrestler_1_score, armwrestler_2_score, selected_format):
     armwrestler_2_elo = get_current_elo(arm, [armwrestler2_id])[0]
     elo_from_match = expected_elo_from_score(armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score))
-    
-    try:
-        query = '''
-        INSERT INTO new_member_matches ( 
-        new_member_id, armwrestler2_id, 
-        arm, 
-        selected_format,
-        armwrestler1_score, armwrestler2_score,
-        elo_from_match ) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        '''
-        db_execute(query,
-                   new_member_id, armwrestler2_id,
-                   arm,
-                   selected_format,
-                   armwrestler_1_score, armwrestler_2_score,
-                   elo_from_match)
 
-    except sqlite3.DatabaseError as db_error:
-        app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
-        app.logger.error(f"Operation context: {request.path} - {request.method}")
+    query = '''
+    INSERT INTO new_member_matches (
+    new_member_id, armwrestler2_id,
+    arm,
+    selected_format,
+    armwrestler1_score, armwrestler2_score,
+    elo_from_match )
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    '''
+    db_execute(query,
+               new_member_id, armwrestler2_id,
+               arm,
+               selected_format,
+               armwrestler_1_score, armwrestler_2_score,
+               elo_from_match)
 
 
 def submit_match(arm, armwrestler1_id, armwrestler2_id, armwrestler_1_score, armwrestler_2_score, armwrestler_1_elo, armwrestler_2_elo, selected_format, current_user):
     dbarm = 'right_elo' if arm == 'right' else 'left_elo'
     updated_1, updated_2 = calculate_elo_with_bonus(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
 
-    armwrestler_1_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, id FROM armwrestlers) AS RankedArmwrestlers WHERE id = ?'.format(dbarm), armwrestler1_id)[0]['rank']
-    armwrestler_2_rank = db_execute('SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, id FROM armwrestlers) AS RankedArmwrestlers WHERE id = ?'.format(dbarm), armwrestler2_id)[0]['rank']
+    rank_query = "SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, id FROM armwrestlers WHERE (active_until >= DATE('now') AND NOT hidden) OR id = ?) AS RankedArmwrestlers WHERE id = ?"
+    armwrestler_1_rank = db_execute(rank_query.format(dbarm), armwrestler1_id, armwrestler1_id)[0]['rank']
+    armwrestler_2_rank = db_execute(rank_query.format(dbarm), armwrestler2_id, armwrestler2_id)[0]['rank']
 
     armwrestler_1_diff, armwrestler_2_diff = elo_diff_from_match(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
 
-    try:
-        query = '''
-        INSERT INTO history ( 
-        armwrestler1_id, armwrestler2_id, 
-        arm, 
-        selected_format,
-        armwrestler1_rank, armwrestler2_rank, 
-        armwrestler1_elo, armwrestler2_elo, 
-        armwrestler1_score, armwrestler2_score, 
-        armwrestler1_elo_diff, armwrestler2_elo_diff,
-        added_by ) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        '''
-        db_execute(query,
-                   armwrestler1_id, armwrestler2_id,
-                   arm,
-                   selected_format,
-                   armwrestler_1_rank, armwrestler_2_rank,
-                   armwrestler_1_elo, armwrestler_2_elo,
-                   armwrestler_1_score, armwrestler_2_score,
-                   armwrestler_1_diff, armwrestler_2_diff,
-                   current_user)
+    query = '''
+    INSERT INTO history (
+    armwrestler1_id, armwrestler2_id,
+    arm,
+    selected_format,
+    armwrestler1_rank, armwrestler2_rank,
+    armwrestler1_elo, armwrestler2_elo,
+    armwrestler1_score, armwrestler2_score,
+    armwrestler1_elo_diff, armwrestler2_elo_diff,
+    added_by )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    '''
+    db_execute(query,
+               armwrestler1_id, armwrestler2_id,
+               arm,
+               selected_format,
+               armwrestler_1_rank, armwrestler_2_rank,
+               armwrestler_1_elo, armwrestler_2_elo,
+               armwrestler_1_score, armwrestler_2_score,
+               armwrestler_1_diff, armwrestler_2_diff,
+               current_user)
 
-        today = datetime.today()
-        active_until_date = today + timedelta(days=180)
-        active_until_str = active_until_date.strftime('%Y-%m-%d')
+    today = datetime.today()
+    active_until_date = today + timedelta(days=180)
+    active_until_str = active_until_date.strftime('%Y-%m-%d')
 
-        db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE id = ?".format(dbarm), updated_1, active_until_str, armwrestler1_id)
-        db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE id = ?".format(dbarm), updated_2, active_until_str, armwrestler2_id)
+    db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE id = ?".format(dbarm), updated_1, active_until_str, armwrestler1_id)
+    db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE id = ?".format(dbarm), updated_2, active_until_str, armwrestler2_id)
 
-        update_badges()   
-        update_ranks()
-    except sqlite3.DatabaseError as db_error:
-        app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
-        app.logger.error(f"Operation context: {request.path} - {request.method}")
+    update_badges()
+    update_ranks()
 
 
 def get_current_elo(arm, armwrestler_ids):
@@ -209,6 +196,10 @@ def match_result(max_rounds, value, format_type):
         else:
             armwrestler1_score = wins_required
             armwrestler2_score = max_rounds - value
+
+        if max_rounds % 2 == 0 and value == max_rounds // 2:
+            armwrestler1_score = value
+            armwrestler2_score = value
 
     elif format_type == "All rounds":
         armwrestler1_score = value
