@@ -52,7 +52,7 @@ def submit_match(arm, armwrestler1_id, armwrestler2_id, armwrestler_1_score, arm
     dbarm = 'right_elo' if arm == 'right' else 'left_elo'
     updated_1, updated_2 = calculate_elo_with_bonus(armwrestler_1_elo, armwrestler_2_elo, (armwrestler_1_score, armwrestler_2_score), SUPERMATCH_FORMATS[selected_format][1])
 
-    rank_query = "SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, id FROM armwrestlers WHERE (active_until >= DATE('now') AND NOT hidden) OR id = ?) AS RankedArmwrestlers WHERE id = ?"
+    rank_query = "SELECT rank FROM (SELECT RANK() OVER (ORDER BY {} DESC) AS rank, id FROM armwrestlers WHERE (active AND NOT hidden) OR id = ?) AS RankedArmwrestlers WHERE id = ?"
     armwrestler_1_rank = db_execute(rank_query.format(dbarm), armwrestler1_id, armwrestler1_id)[0]['rank']
     armwrestler_2_rank = db_execute(rank_query.format(dbarm), armwrestler2_id, armwrestler2_id)[0]['rank']
 
@@ -80,12 +80,8 @@ def submit_match(arm, armwrestler1_id, armwrestler2_id, armwrestler_1_score, arm
                armwrestler_1_diff, armwrestler_2_diff,
                current_user)
 
-    today = datetime.today()
-    active_until_date = today + timedelta(days=180)
-    active_until_str = active_until_date.strftime('%Y-%m-%d')
-
-    db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE id = ?".format(dbarm), updated_1, active_until_str, armwrestler1_id)
-    db_execute("UPDATE armwrestlers SET {} = ?, active_until = ? WHERE id = ?".format(dbarm), updated_2, active_until_str, armwrestler2_id)
+    db_execute("UPDATE armwrestlers SET {} = ? WHERE id = ?".format(dbarm), updated_1, armwrestler1_id)
+    db_execute("UPDATE armwrestlers SET {} = ? WHERE id = ?".format(dbarm), updated_2, armwrestler2_id)
 
     update_badges()
     update_ranks()
@@ -126,23 +122,23 @@ def update_ranks():
         ranked_right AS (
             SELECT id, RANK() OVER (ORDER BY right_elo DESC) AS new_right_rank
             FROM armwrestlers
-            WHERE active_until >= DATE('now') AND NOT hidden
+            WHERE active AND NOT hidden
         ),
         ranked_left AS (
             SELECT id, RANK() OVER (ORDER BY left_elo DESC) AS new_left_rank
             FROM armwrestlers
-            WHERE active_until >= DATE('now') AND NOT hidden
+            WHERE active AND NOT hidden
         )
     UPDATE armwrestlers
     SET
         right_rank = (SELECT new_right_rank FROM ranked_right WHERE ranked_right.id = armwrestlers.id),
         left_rank = (SELECT new_left_rank FROM ranked_left WHERE ranked_left.id = armwrestlers.id)
-    WHERE active_until >= DATE('now') AND NOT hidden;
+    WHERE active AND NOT hidden;
     '''
 
     query_nullify_ranks = '''
     UPDATE armwrestlers SET right_rank = NULL, left_rank = NULL
-    WHERE active_until < DATE('now') OR hidden;
+    WHERE NOT active OR hidden;
     '''
 
     db_execute(query_update_ranks)

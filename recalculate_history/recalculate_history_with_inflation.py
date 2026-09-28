@@ -33,7 +33,7 @@ def main():
     arm_q = """
       SELECT id, name, right_elo, left_elo,
              right_rank, left_rank,
-             added_by, active_until, last_edited_by
+             added_by, active, last_edited_by
       FROM armwrestlers
     """
     static_rows = src.execute(arm_q).fetchall()
@@ -114,14 +114,14 @@ def main():
             INSERT INTO armwrestlers (
               id, name, right_elo, left_elo,
               right_rank, left_rank,
-              added_by, active_until, last_edited_by
+              added_by, active, last_edited_by
             ) VALUES (?,?,?,?,?,?,?,?,?)
             """,
             (
                 aw_id, r["name"],
                 new_r, new_l,
                 r["right_rank"], r["left_rank"],
-                r["added_by"], r["active_until"], r["last_edited_by"]
+                r["added_by"], r["active"], r["last_edited_by"]
             )
         )
 

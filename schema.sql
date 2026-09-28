@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS "armwrestlers" (
     right_rank INTEGER,
     left_rank INTEGER,
     added_by TEXT NOT NULL,
-    active_until DATE NOT NULL,
+    active INTEGER NOT NULL DEFAULT 1,
     hidden INTEGER NOT NULL DEFAULT 0,
     last_edited_by TEXT,
     FOREIGN KEY (added_by) REFERENCES users(username)

@@ -54,12 +54,12 @@ def ranking(arm='right'):
     update_ranks()
     active_armwrestlers = db_execute('''
         SELECT {0} AS rank, id, name, {1} AS elo FROM armwrestlers
-        WHERE active_until >= DATE('now') AND NOT hidden ORDER BY rank ASC
+        WHERE active AND NOT hidden ORDER BY rank ASC
     '''.format(rank_column, elo_column))
 
     inactive_armwrestlers = db_execute('''
         SELECT id, name, {0} AS elo FROM armwrestlers
-        WHERE active_until < DATE('now') AND NOT hidden ORDER BY elo DESC
+        WHERE NOT active AND NOT hidden ORDER BY elo DESC
     '''.format(elo_column))
 
     badge_data = db_execute('''
@@ -104,7 +104,7 @@ def edit_member():
         raise NotFound()
     current_name = name_result[0]['name']
     name = request.form.get('name', current_name)
-    current_status = db_execute('''SELECT CASE WHEN active_until >= DATE('now') THEN 'active' ELSE 'inactive' END AS current_status FROM armwrestlers WHERE id = ?''', id)[0]['current_status']
+    current_status = db_execute('''SELECT CASE WHEN active THEN 'active' ELSE 'inactive' END AS current_status FROM armwrestlers WHERE id = ?''', id)[0]['current_status']
     armwrestlers = db_execute('SELECT name FROM armwrestlers WHERE NOT hidden ORDER BY LOWER(name)')
     right_elo = request.form.get('right_elo', str(get_current_elo("right", [id])[0]))
     left_elo = request.form.get('left_elo', str(get_current_elo("left", [id])[0]))
@@ -139,18 +139,8 @@ def edit_member():
 
     if 'edit_member' in request.form and member_ready:
         try:
-            if selected_status != current_status:
-                if selected_status == status_options[0]:
-                    today = datetime.today()
-                    active_until_date = today + timedelta(days=30)
-                    active_until_str = active_until_date.strftime('%Y-%m-%d')
-                elif selected_status == status_options[1]:
-                    today = datetime.today()
-                    active_until_date = today - timedelta(days=1)
-                    active_until_str = active_until_date.strftime('%Y-%m-%d')
-                db_execute("UPDATE armwrestlers SET name = ?, right_elo = ?, left_elo = ?, active_until = ?, last_edited_by = ? WHERE id = ?", name, right_elo, left_elo, active_until_str, current_user, id)
-            else:
-                db_execute("UPDATE armwrestlers SET name = ?, right_elo = ?, left_elo = ?, last_edited_by = ? WHERE id = ?", name, right_elo, left_elo, current_user, id)
+            active = selected_status == 'active'
+            db_execute("UPDATE armwrestlers SET name = ?, right_elo = ?, left_elo = ?, active = ?, last_edited_by = ? WHERE id = ?", name, right_elo, left_elo, active, current_user, id)
             update_ranks()
         except sqlite3.DatabaseError as db_error:
             app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
@@ -194,19 +184,14 @@ def view_member():
 
     query = '''
         SELECT 
-            CASE WHEN a.hidden THEN 'hidden' WHEN a.active_until >= DATE('now') THEN 'active' ELSE 'inactive' END AS current_status,
-            a.right_elo, a.left_elo, a.right_rank, a.left_rank,
-            a.active_until
+            CASE WHEN a.hidden THEN 'hidden' WHEN a.active THEN 'active' ELSE 'inactive' END AS current_status,
+            a.right_elo, a.left_elo, a.right_rank, a.left_rank
         FROM armwrestlers a
         WHERE a.id = ?
     '''
 
-    current_status, current_right_elo, current_left_elo, current_right_rank, current_left_rank, active_until = db_execute(query, id)[0]
+    current_status, current_right_elo, current_left_elo, current_right_rank, current_left_rank = db_execute(query, id)[0]
     wins, losses = 0, 0
-
-    active_until_date = datetime.strptime(active_until, '%Y-%m-%d')
-    days_left = (active_until_date - datetime.today()).days + 1
-    days_left = days_left if days_left >= 0 else "inactive"
 
     history = db_execute('''
         SELECT a1.id AS armwrestler1_id, a1.name AS armwrestler1_name, a2.id AS armwrestler2_id, a2.name AS armwrestler2_name, h.arm, 
@@ -287,7 +272,7 @@ def view_member():
         'current_status': current_status,
         'matches': selected_arm_history, 'formatted_data': formatted_data,
         'wins': wins, 'losses': losses, 'total_matches': total_matches,
-        'days_left': days_left, 'wins_losses': wins_losses,
+        'wins_losses': wins_losses,
         'arm': arm,
         'badges_for_arm': badges_for_arm
     }
@@ -429,11 +414,7 @@ def add_new_member():
 
     if 'add_member' in request.form and member_ready:
         try:
-            today = datetime.today()
-            active_until_date = today + timedelta(days=180)
-            active_until_str = active_until_date.strftime('%Y-%m-%d')
-
-            db_execute("INSERT INTO armwrestlers (name, right_elo, left_elo, added_by, active_until) VALUES (?, ?, ?, ?, ?)", name, right_elo, left_elo, current_user, active_until_str)
+            db_execute("INSERT INTO armwrestlers (name, right_elo, left_elo, added_by) VALUES (?, ?, ?, ?)", name, right_elo, left_elo, current_user)
             db_execute("INSERT OR REPLACE INTO new_member (id, new_member_name) VALUES (?, ?)", 1, None)
             db_execute("DELETE FROM new_member_matches")
 
@@ -655,13 +636,11 @@ def undo_last_match():
 
     if 'undo_match' in request.form:
         try:
-            last_match = db_execute('SELECT id, armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo, date FROM history ORDER BY id DESC LIMIT 1')
-            match_id, armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo, match_date = last_match[0]
+            last_match = db_execute('SELECT armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo FROM history ORDER BY id DESC LIMIT 1')
+            armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo = last_match[0]
             dbarm = 'right_elo' if arm == 'right' else 'left_elo'
             for armwrestler_id, elo in ((armwrestler1_id, armwrestler1_elo), (armwrestler2_id, armwrestler2_elo)):
-                previous = db_execute('SELECT MAX(date) FROM history WHERE id < ? AND (armwrestler1_id = ? OR armwrestler2_id = ?)', match_id, armwrestler_id, armwrestler_id)[0][0]
-                active_until = (datetime.strptime(previous or match_date, '%Y-%m-%d %H:%M:%S') + timedelta(days=180)).strftime('%Y-%m-%d')
-                db_execute(f"UPDATE armwrestlers SET {dbarm} = ?, active_until = ? WHERE id = ?", elo, active_until, armwrestler_id)
+                db_execute(f"UPDATE armwrestlers SET {dbarm} = ? WHERE id = ?", elo, armwrestler_id)
             db_execute('DELETE FROM history WHERE id = (SELECT MAX(id) FROM history)')
             update_badges()
             update_ranks()
