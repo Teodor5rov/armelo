@@ -1,12 +1,14 @@
 <div class="modal-body">
-    {% if has_history %}
-    <strong>{{ current_name }}</strong> has match history and will be hidden from the rankings instead of deleted.
-    {% else %}
-    Are you sure you want to remove <strong>{{ current_name }}</strong>?
-    {% endif %}
+    <p>
+        {% if has_history %}
+        <strong>{{ current_name }}</strong> has match history and will be hidden from the rankings instead of deleted.
+        {% else %}
+        Are you sure you want to remove <strong>{{ current_name }}</strong>?
+        {% endif %}
+    </p>
 </div>
 <div class="modal-footer">
-    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+    <button type="button" class="btn btn-secondary" popovertarget="confirmModal" popovertargetaction="hide">No</button>
     <form action="{{ url_for('confirm_remove') }}" method="POST">
         <input type="hidden" name="id" value="{{ id }}">
         <input type="hidden" name="current_name" value="{{ current_name }}">

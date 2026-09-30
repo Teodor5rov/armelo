@@ -4,12 +4,12 @@
 {% block title %}ELO From Match{% endblock %}
 
 {% block content %}
-<div class="mx-auto" style="max-width: 800px;">
+<div class="narrow stack">
     {{ back_header('ELO from match') }}
-    <div class="alert alert-secondary" role="alert">
-        <strong>Ranked example: </strong>If there was a match between two [Ranked] armwrestlers, the ELO points gained or lost are determined by the outcome of this match.<br>                           
+    <div class="note" role="note">
+        <strong>Ranked example: </strong>If there was a match between two [Ranked] armwrestlers, the ELO points gained or lost are determined by the outcome of this match.<br>
         <strong>Unranked example: </strong>If an [Unranked person] beats a [Ranked person] in a match, they would receive an estimated ELO rating based on the score of that specific single match.
-    </div>    
+    </div>
     {% include 'elo_from_match_partial.html' %}
 </div>
 {% endblock %}

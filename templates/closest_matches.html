@@ -6,9 +6,9 @@
 {% block content %}
 {{ back_header('Closest matches') }}
 
-<p>The top 15 closest matches between ranked armwrestlers based on the ELO scores.</p>
+<p class="lead">The top 15 closest matches between ranked armwrestlers based on the ELO scores.</p>
 
-<div id="closest_matches">
+<div id="closest_matches" class="stack">
     {% include 'closest_matches_partial.html' %}
 </div>
 

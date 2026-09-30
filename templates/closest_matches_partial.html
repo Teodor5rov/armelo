@@ -1,59 +1,47 @@
 {% from 'macros.html' import arm_toggle with context %}
 {{ arm_toggle('closest_matches', '#closest_matches', push=true) }}
 
+<div class="match-list">
 {% for match in closest_matches_with_predictions %}
 {% if supermatch_add %}
-<form action="{{ url_for('supermatch') }}" method="POST" class="col-12 mb-3">
+<form action="{{ url_for('supermatch') }}" method="POST">
 {% else %}
-<form action="{{ url_for('prediction') }}" method="GET" class="col-12 mb-3">
+<form action="{{ url_for('prediction') }}" method="GET">
 {% endif %}
     <input type="hidden" name="arm" value="{{ arm }}">
     <input type="hidden" name="armwrestler1" value="{{ match['armwrestler1_id'] }}">
     <input type="hidden" name="armwrestler2" value="{{ match['armwrestler2_id'] }}">
-    <button type="submit" class="btn btn-light p-0 w-100">
-        <div class="card">
-            <div class="card-header bg-transparent">
-                <div class="row mt-2">
-                    <div class="col-12 col-lg-auto mb-2 d-flex justify-content-center">
-                        <div class="d-flex align-items-center gap-0 align-middle">
-                            {% if match['rank1'] %}
-                            <strong class="align-middle p-1">#{{ match['rank1'] }}</strong>
-                            {% endif %}
-                            <a href="{{ url_for('view_member', id=match['armwrestler1_id'], arm=arm) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
-                                {{ match['armwrestler1_name'] }}
-                            </a>
-                            <strong class="text-nowrap align-middle">({{ match['elo1'] }})</strong>
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-auto text-center mb-2 d-flex align-items-center justify-content-center">
-                        <span class="badge bg-dark">VS</span>
-                    </div>
-                    <div class="col-12 col-lg-auto mb-2 d-flex justify-content-center">
-                        <div class="d-flex align-items-center gap-0 align-middle">
-                            {% if match['rank2'] %}
-                            <strong class="align-middle p-1">#{{ match['rank2'] }}</strong>
-                            {% endif %}
-                            <a href="{{ url_for('view_member', id=match['armwrestler2_id'], arm=arm) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
-                                {{ match['armwrestler2_name'] }}
-                            </a>
-                            <strong class="text-nowrap align-middle">({{ match['elo2'] }})</strong>
-                        </div>
-                    </div>
+    <button type="submit" class="card-button">
+        <div class="card match">
+            <div class="match-players">
+                <div class="player">
+                    {% if match['rank1'] %}
+                    <span class="rank">#{{ match['rank1'] }}</span>
+                    {% endif %}
+                    <a href="{{ url_for('view_member', id=match['armwrestler1_id'], arm=arm) }}" class="name-link">{{ match['armwrestler1_name'] }}</a>
+                    <span class="elo">{{ match['elo1'] }}</span>
+                </div>
+                <span class="vs">VS</span>
+                <div class="player">
+                    {% if match['rank2'] %}
+                    <span class="rank">#{{ match['rank2'] }}</span>
+                    {% endif %}
+                    <a href="{{ url_for('view_member', id=match['armwrestler2_id'], arm=arm) }}" class="name-link">{{ match['armwrestler2_name'] }}</a>
+                    <span class="elo">{{ match['elo2'] }}</span>
                 </div>
             </div>
-            <div class="card-body">
-                <div class="card-text">
-                    <div class="row justify-content-md-center justify-content-lg-start">
-                        <div class="col-12 col-md-auto mb-2 mb-md-0 text-start">
-                            Win chance:<span class="fs-6 badge text-{{ match['color1'] }}">{{ match['win1'] }}%</span>|<span class="fs-6 badge text-{{ match['color2'] }}">{{ match['win2'] }}%</span>
-                        </div>
-                        <div class="col-12 col-md-auto mb-2 mb-md-0 text-start">
-                            ELO difference:<span class="fs-6 badge text-dark">{{ match['elo_difference'] }}</span>
-                        </div>
-                    </div>
+            <dl class="match-meta">
+                <div>
+                    <dt>Win chance</dt>
+                    <dd><span class="text-{{ match['color1'] }}">{{ match['win1'] }}%</span><span class="muted">|</span><span class="text-{{ match['color2'] }}">{{ match['win2'] }}%</span></dd>
                 </div>
-            </div>
+                <div>
+                    <dt>ELO difference</dt>
+                    <dd>{{ match['elo_difference'] }}</dd>
+                </div>
+            </dl>
         </div>
     </button>
 </form>
 {% endfor %}
+</div>

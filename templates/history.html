@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% from 'macros.html' import back_header %}
+{% from 'macros.html' import back_header, modal_header %}
 
 {% block title %}Match History{% endblock %}
 
@@ -7,54 +7,45 @@
 
 {{ back_header('History') }}
 
-<p>The history of matches between ranked armwrestlers from the <strong>Armwrestling Zurich</strong> club.</p>
+<p class="lead">The history of matches between ranked armwrestlers from the <strong>Armwrestling Zurich</strong> club.</p>
 
-<div class="d-flex flex-column flex-lg-row flex-wrap align-items-start align-items-lg-center mb-3">
-  <span class="text-nowrap me-2">
-    Total matches: <strong>{{ total_matches }}</strong>
-  </span>
+<div class="actions">
+    <span class="muted">Total matches: <strong>{{ total_matches }}</strong></span>
 
-  <div class="d-flex gap-2 mt-3 mt-lg-0 ms-lg-auto flex-wrap">
-    <form hx-get="{{ url_for('history') }}" hx-trigger="change" hx-target="body" hx-swap="outerMorph" class="d-flex gap-2">
-        <select name="month" class="form-select w-auto" {% if selected_year == 'last_12_months' %}disabled{% endif %}>
-          <option value="" {% if selected_month is none %}selected{% endif %}>All months</option>
-          {% for num, name in months %}
-          <option value="{{ num }}" {% if num == selected_month %}selected{% endif %}>{{ name }}</option>
-          {% endfor %}
-        </select>
-        <select name="year" class="form-select w-auto">
-          <option value="last_12_months" {% if selected_year == 'last_12_months' %}selected{% endif %}>Last 12 months</option>
-          {% for y in years %}
-          <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
-          {% endfor %}
-        </select>
-    </form>
-    {% if username %}
-    <button type="button" class="btn btn-danger text-nowrap" 
-    hx-post="{{ url_for('undo_last_match') }}" hx-target="#undoMatch" data-bs-toggle="modal" data-bs-target="#undoModal">
-      Undo last match
-    </button>
-    {% endif %}
-  </div>
+    <div class="filters">
+        <form hx-get="{{ url_for('history') }}" hx-trigger="change" hx-target="body" hx-swap="outerMorph">
+            <select name="month" class="select" aria-label="Month" {% if selected_year == 'last_12_months' %}disabled{% endif %}>
+                <option value="" {% if selected_month is none %}selected{% endif %}>All months</option>
+                {% for num, name in months %}
+                <option value="{{ num }}" {% if num == selected_month %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+            <select name="year" class="select" aria-label="Year">
+                <option value="last_12_months" {% if selected_year == 'last_12_months' %}selected{% endif %}>Last 12 months</option>
+                {% for y in years %}
+                <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        {% if username %}
+        <button type="button" class="btn btn-danger" hx-post="{{ url_for('undo_last_match') }}" hx-target="#undoMatch" popovertarget="undoModal" popovertargetaction="show">
+            Undo last match
+        </button>
+        {% endif %}
+    </div>
 </div>
 
 {% if matches %}
-  {% include 'matches_partial.html' %}
+{% include 'matches_partial.html' %}
 {% else %}
-<div class="alert alert-secondary">
+<div class="note">
     There are no matches in the selected time period.
 </div>
 {% endif %}
-<div class="modal fade" id="undoModal" tabindex="-1" aria-labelledby="undoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="undoModalLabel">Undo last match</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div id="undoMatch"></div>
-      </div>
-    </div>
+
+<div class="modal modal-xl" id="undoModal" popover role="dialog" aria-labelledby="undoModalLabel">
+    {{ modal_header('undoModal', 'Undo last match') }}
+    <div id="undoMatch"></div>
 </div>
 
 {% endblock %}

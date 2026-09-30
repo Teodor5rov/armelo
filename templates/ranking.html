@@ -1,23 +1,24 @@
 {% extends "layout.html" %}
+{% from 'macros.html' import wordmark %}
 
 {% block title %}Rankings{% endblock %}
 
 {% block content %}
 
-<div class="d-flex justify-content-between">
-    <h2 class="mb-4">Rankings</h2>
+<div class="actions">
+    <h2 class="page-title">{{ wordmark('rankings', 'Rankings', 13650, 1584) }}</h2>
     <form action="{{ url_for('supermatch') }}" method="POST">
-        <button type="submit" class="btn btn-success">New supermatch</button>
+        <button type="submit" class="btn btn-primary">New supermatch</button>
     </form>
 </div>
-<p>Official rankings for armwrestlers at the <strong>Armwrestling Zurich</strong> club. Scores are based on the ELO rating system.</p>
+<p class="lead">Official rankings for armwrestlers at the <strong>Armwrestling Zurich</strong> club. Scores are based on the ELO rating system.</p>
 
-<div id="rankings">
+<div id="rankings" class="stack">
     {% include 'ranking_partial.html' %}
 </div>
 
-<div class="alert alert-secondary" role="alert">
-    The ELO rating system is used to calculate the relative skill levels of players in competitor vs competitor games/sports. 
+<div class="note" role="note">
+    The ELO rating system is used to calculate the relative skill levels of players in competitor vs competitor games/sports.
     The number of points won/lost after a match depends on the expected outcome of the match.
     If a lower-rated armwrestler wins against a higher-rated armwrestler, they gain more points than if they won against someone of equal or lower rating.
 </div>

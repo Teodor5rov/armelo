@@ -1,14 +1,18 @@
 {% from 'macros.html' import radio_toggle %}
-<form class="mb-4" hx-get="{{ url_for('elo_from_match') }}" hx-trigger="change" hx-swap="outerMorph" hx-push-url="true">
-    <label for="ranked" class="form-label">Choose ranked or unranked:</label>
-    {{ radio_toggle('ranked', 'ranked', 'Ranked', 'unranked', 'Unranked', ranked) }}
-    <label class="form-label">Choose arm for the match:</label>
-    {{ radio_toggle('arm', 'right', 'Right arm', 'left', 'Left arm', arm) }}
+<form class="form" hx-get="{{ url_for('elo_from_match') }}" hx-trigger="change" hx-swap="outerMorph" hx-push-url="true">
+    <div class="field">
+        <label class="label">Choose ranked or unranked:</label>
+        {{ radio_toggle('ranked', 'ranked', 'Ranked', 'unranked', 'Unranked', ranked) }}
+    </div>
+    <div class="field">
+        <label class="label">Choose arm for the match:</label>
+        {{ radio_toggle('arm', 'right', 'Right arm', 'left', 'Left arm', arm) }}
+    </div>
     {% if ranked == 'ranked' %}
-    <div class="row mb-2">
-        <div class="col">
-            <label for="armwrestler1" class="form-label">Armwrestler 1:</label>
-            <select class="form-select text-truncate" id="armwrestler1" name="armwrestler1" required>
+    <div class="versus">
+        <div class="field">
+            <label for="armwrestler1" class="label">Armwrestler 1:</label>
+            <select class="select" id="armwrestler1" name="armwrestler1" required>
                 <option disabled selected value="none">Choose...</option>
                 {% for armwrestler in armwrestlers %}
                 <option value="{{ armwrestler['id'] }}" {% if selected_armwrestler_1_id == armwrestler['id'] %}selected{% endif %}>{{ armwrestler['name'] }}</option>
@@ -16,23 +20,19 @@
             </select>
         </div>
 
-        <div class="col-1 d-flex justify-content-center align-items-center pt-4">
-            <div class="text-center fs-5">
-                <span class="badge bg-dark">VS</span>
-            </div>
-        </div>
+        <span class="vs">VS</span>
 
-        <div class="col">
-            <label for="armwrestler2" class="form-label">Armwrestler 2:</label>
+        <div class="field">
+            <label for="armwrestler2" class="label">Armwrestler 2:</label>
             {% if selected_armwrestler_1_id %}
-                <select class="form-select text-truncate" id="armwrestler2" name="armwrestler2" required>
+                <select class="select" id="armwrestler2" name="armwrestler2" required>
                     <option disabled selected value="none">Choose...</option>
                     {% for armwrestler in armwrestlers_2 %}
                     <option value="{{ armwrestler['id'] }}" {% if selected_armwrestler_2_id == armwrestler['id'] %}selected{% endif %}>{{ armwrestler['name'] }}</option>
                     {% endfor %}
                 </select>
             {% else %}
-                <select class="form-select text-truncate" id="armwrestler2" name="armwrestler2" required disabled>
+                <select class="select" id="armwrestler2" name="armwrestler2" required disabled>
                     <option value="none">Choose Armwrestler 1</option>
                 </select>
             {% endif %}
@@ -41,15 +41,11 @@
 
     {% else %}
     <!-- Armwrestler selection dropdowns -->
-    <div class="row mb-2">
-        <label for="armwrestler1" class="form-label">Select ranked armwrestler:</label>
-        <div class="col-2">
-            <div class="text-center fs-5">
-                <span class="badge bg-dark">VS</span>
-            </div>
-        </div>
-        <div class="col">
-            <select class="form-select text-truncate" id="armwrestler1" name="armwrestler1" required>
+    <div class="field">
+        <label for="armwrestler1" class="label">Select ranked armwrestler:</label>
+        <div class="vs-row">
+            <span class="vs">VS</span>
+            <select class="select" id="armwrestler1" name="armwrestler1" required>
                 <option disabled selected value="none">Choose...</option>
                 {% for armwrestler in armwrestlers %}
                 <option value="{{ armwrestler['id'] }}" {% if selected_armwrestler_1_id == armwrestler['id'] %}selected{% endif %}>{{ armwrestler['name'] }}</option>
@@ -59,81 +55,52 @@
     </div>
     {% endif %}
 
-    <div class="row">
-        <div class="col">
-            <label for="supermatch_format" class="form-label">Choose supermatch format:</label>
-            <select class="form-select text-truncate" id="supermatch_format" name="supermatch_format" required>
-            {% for format in supermatch_formats %}
-            <option value="{{ format }}" {% if selected_format == format %}selected{% endif %}>{{ format }}</option>
-            {% endfor %}
-            </select>
-        </div>
+    <div class="field">
+        <label for="supermatch_format" class="label">Choose supermatch format:</label>
+        <select class="select" id="supermatch_format" name="supermatch_format" required>
+        {% for format in supermatch_formats %}
+        <option value="{{ format }}" {% if selected_format == format %}selected{% endif %}>{{ format }}</option>
+        {% endfor %}
+        </select>
     </div>
 
     {% if calculation_ready %}
-    <label class="form-label my-2">Enter score:</label>
-
-    <div class="row mb-2">
-        {% if ranked == 'ranked' %}
-        <div class="col d-flex justify-content-center align-items-center">
-            <div class="text-center fs-5">
-                <span class="{{ armwrestler_1_color }}">{{armwrestler_1_elo}} {{ armwrestler_1_diff }}</span>
-            </div>
+    <div class="field">
+        <label class="label">Enter score:</label>
+        <div class="score-grid">
+            {% if ranked == 'ranked' %}
+            <span class="score-elo {{ armwrestler_1_color }}">{{armwrestler_1_elo}} {{ armwrestler_1_diff }}</span>
+            {% else %}
+            <span></span>
+            {% endif %}
+            <span class="score">{{ armwrestler_1_score }}</span>
+            <span class="score-sep">:</span>
+            <span class="score">{{ armwrestler_2_score }}</span>
+            {% if ranked == 'ranked' %}
+            <span class="score-elo {{ armwrestler_2_color }}">{{armwrestler_2_elo}} {{ armwrestler_2_diff }}</span>
+            {% else %}
+            <span></span>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="col d-flex justify-content-center align-items-center"></div>
-        {% endif %}
-        
-        <div class="col d-flex justify-content-center align-items-center">
-            <div class="text-center fs-3">
-                <span class="badge bg-dark">{{ armwrestler_1_score }}</span>
-            </div>
-        </div>
-        
-        <div class="col-1 d-flex justify-content-center align-items-center text-center fs-2">:</div>
-
-        <div class="col d-flex justify-content-center align-items-center">
-            <div class="text-center fs-3">
-                <span class="badge bg-dark">{{ armwrestler_2_score }}</span>
-            </div>
-        </div>
-        {% if ranked == 'ranked' %}
-        <div class="col d-flex justify-content-center align-items-center">
-            <div class="text-center fs-5">
-                <span class="{{ armwrestler_2_color }}">{{armwrestler_2_elo}} {{ armwrestler_2_diff }}</span>
-            </div>
-        </div>
-        {% else %}
-        <div class="col d-flex justify-content-center align-items-center"></div>
-        {% endif %}
     </div>
     {% if custom_score %}
-    <div class="row justify-content-center align-items-center mb-2">
-        <div class="col-3">
-            <input type="number" class="form-control" id="custom_score_1" name="custom_score_1" value="{{ custom_score_1 }}">
-        </div>
-        <div class="col-1 text-center fs-2"></div>
-        <div class="col-3">
-            <input type="number" class="form-control" id="custom_score_2" name="custom_score_2" value="{{ custom_score_2 }}">
-        </div>
+    <div class="score-grid score-inputs">
+        <input type="number" class="input" id="custom_score_1" name="custom_score_1" value="{{ custom_score_1 }}" aria-label="Armwrestler 1 score">
+        <input type="number" class="input" id="custom_score_2" name="custom_score_2" value="{{ custom_score_2 }}" aria-label="Armwrestler 2 score">
     </div>
     {% else %}
-    <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="{{ max_rounds }}" value="{{ value_for_score }}">
+    <input type="range" class="range" id="score" name="score" min="0" max="{{ max_rounds }}" value="{{ value_for_score }}" aria-label="Score">
     {% endif %}
-    <div class="row mb-2">
-        <div class="col text-end">
-            <div class="mt-2">
-                <label class="btn btn-primary {{ 'active' if custom_score == 'true' else '' }}">
-                    <input type="checkbox" name="custom_score" id="custom_score" value="true" autocomplete="off" {{ 'checked' if custom_score == 'true' else '' }} class="visually-hidden">Custom score
-                </label>
-            </div>
-        </div>
+    <div class="actions">
+        <label class="btn btn-secondary btn-toggle push">
+            <input type="checkbox" name="custom_score" id="custom_score" value="true" autocomplete="off" {{ 'checked' if custom_score == 'true' else '' }} class="visually-hidden">Custom score
+        </label>
     </div>
     {% if ranked == 'unranked' %}
-    <label class="form-label my-2">Estimated ELO:</label>
-    <div class="text-center fs-2">
-        <span><strong>{{ elo_from_match }}</strong></span>
+    <div class="field">
+        <label class="label">Estimated ELO:</label>
+        <p class="estimate">{{ elo_from_match }}</p>
     </div>
     {% endif %}
     {% endif %}
-</form>    
+</form>

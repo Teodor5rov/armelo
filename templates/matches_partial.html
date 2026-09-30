@@ -1,88 +1,56 @@
+{% from 'macros.html' import modal_header %}
+<div class="match-list">
 {% for match in matches %}
-
-<div class="col-12 mb-3">
-    {% if can_confirm_matches %}
-    <button type="button" class="btn btn-light p-0 w-100"
-    hx-post="{{ url_for('confirm_match', match_id=match['id']) }}" hx-target="#confirmMatch" data-bs-toggle="modal" data-bs-target="#confirmModal">
-    {% endif %}
-    {% if wins_losses %}
-        {% if wins_losses[loop.index - 1] == 'win' %}
-            <div class="card border-success card-wider-border">
-        {% elif wins_losses[loop.index - 1] == 'loss' %}
-            <div class="card border-danger card-wider-border">
-        {% else %}
-            <div class="card card-wider-border">
-        {% endif %}
-    {% else %}
-        <div class="card">
-    {% endif %}
-            <div class="card-header bg-transparent">
-                <div class="row mt-2">
-                    <div class="col-12 col-lg-auto mb-2 d-flex justify-content-center">
-                        <div class="d-flex align-items-center gap-0 align-middle">
-                            {% if match['armwrestler1_rank'] %}
-                            <strong class="align-middle p-1">#{{ match['armwrestler1_rank'] }}</strong>
-                            {% endif %}
-                            <a href="{{ url_for('view_member', id=match['armwrestler1_id'], arm=match['arm']) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
-                                {{ match['armwrestler1_name'] }}
-                            </a>
-                            <strong class="text-nowrap align-middle">({{ match['armwrestler1_elo'] }} <span class="{{ formatted_data[loop.index - 1].diff1_color }}">{{ formatted_data[loop.index - 1].diff1_text }}</span>)</strong>
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-auto text-center mb-2 d-flex align-items-center justify-content-center">
-                        <span class="badge bg-dark">VS</span>
-                    </div>
-                    <div class="col-12 col-lg-auto mb-2 d-flex justify-content-center">
-                        <div class="d-flex align-items-center gap-0 align-middle">
-
-                            {% if match['armwrestler2_rank'] %}
-                            <strong class="align-middle p-1">#{{ match['armwrestler2_rank'] }}</strong>
-                            {% endif %}
-
-                            <a href="{{ url_for('view_member', id=match['armwrestler2_id'], arm=match['arm']) }}" class="btn btn-generic text-start px-2 py-1 m-0 text-nowrap">
-                                {{ match['armwrestler2_name'] }}
-                            </a>
-                            <strong class="text-nowrap align-middle">({{ match['armwrestler2_elo'] }} <span class="{{ formatted_data[loop.index - 1].diff2_color }}">{{ formatted_data[loop.index - 1].diff2_text }}</span>)</strong>
-                        </div>
-                    </div>
-                </div>
+{% set data = formatted_data[loop.index0] %}
+{% if can_confirm_matches %}
+<button type="button" class="card-button" hx-post="{{ url_for('confirm_match', match_id=match['id']) }}" hx-target="#confirmMatch" popovertarget="confirmModal" popovertargetaction="show">
+{% endif %}
+    <div class="card match {{ wins_losses[loop.index0] if wins_losses else '' }}">
+        <div class="match-players">
+            <div class="player">
+                {% if match['armwrestler1_rank'] %}
+                <span class="rank">#{{ match['armwrestler1_rank'] }}</span>
+                {% endif %}
+                <a href="{{ url_for('view_member', id=match['armwrestler1_id'], arm=match['arm']) }}" class="name-link">{{ match['armwrestler1_name'] }}</a>
+                <span class="elo">{{ match['armwrestler1_elo'] }} <span class="{{ data.diff1_color }}">{{ data.diff1_text }}</span></span>
             </div>
-            <div class="card-body">
-                <div class="card-text">
-                    <div class="row justify-content-start">
-                        <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
-                            Arm:<span class="fs-6 mx-0 badge text-dark">{{ match['arm'] }}</span>
-                        </div>
-                        <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
-                            Format:<span class="fs-6 mx-0 badge text-dark">{{ match['selected_format'] }}</span>
-                        </div>
-                        <div class="col-12 col-lg-auto mb-2 mb-lg-0 text-start">
-                            Result:<span class="fs-6 ms-2 me-1 badge {{ formatted_data[loop.index - 1].score1_color }}">{{ match['armwrestler1_score'] }}</span>:<span class="fs-6 ms-1 me-0 badge {{ formatted_data[loop.index - 1].score2_color }}">{{ match['armwrestler2_score'] }}</span>
-                        </div>
-                        <div class="col-12 col-lg-auto mb-0 mb-lg-0 text-start">
-                            Date:<span class="fs-6 mx-0 badge text-dark">{{ formatted_data[loop.index - 1].date }}</span>
-                        </div>
-                    </div>
-                </div>
+            <span class="vs">VS</span>
+            <div class="player">
+                {% if match['armwrestler2_rank'] %}
+                <span class="rank">#{{ match['armwrestler2_rank'] }}</span>
+                {% endif %}
+                <a href="{{ url_for('view_member', id=match['armwrestler2_id'], arm=match['arm']) }}" class="name-link">{{ match['armwrestler2_name'] }}</a>
+                <span class="elo">{{ match['armwrestler2_elo'] }} <span class="{{ data.diff2_color }}">{{ data.diff2_text }}</span></span>
             </div>
         </div>
-    {% if can_confirm_matches %}
-    </button>
-    {% endif %}
+        <dl class="match-meta">
+            <div>
+                <dt>Arm</dt>
+                <dd>{{ match['arm'] }}</dd>
+            </div>
+            <div>
+                <dt>Format</dt>
+                <dd>{{ match['selected_format'] }}</dd>
+            </div>
+            <div>
+                <dt>Result</dt>
+                <dd><span class="badge badge-score {{ data.score1_color }}">{{ match['armwrestler1_score'] }}</span>:<span class="badge badge-score {{ data.score2_color }}">{{ match['armwrestler2_score'] }}</span></dd>
+            </div>
+            <div>
+                <dt>Date</dt>
+                <dd>{{ data.date }}</dd>
+            </div>
+        </dl>
+    </div>
+{% if can_confirm_matches %}
+</button>
+{% endif %}
+{% endfor %}
 </div>
 
-{% endfor %}
-
 {% if can_confirm_matches %}
-<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmModalLabel">Confirm Match</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div id="confirmMatch"></div>
-        </div>
-    </div>
+<div class="modal modal-xl" id="confirmModal" popover role="dialog" aria-labelledby="confirmModalLabel">
+    {{ modal_header('confirmModal', 'Confirm Match') }}
+    <div id="confirmMatch"></div>
 </div>
 {% endif %}

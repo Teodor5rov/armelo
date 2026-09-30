@@ -1,52 +1,39 @@
-{% from 'macros.html' import radio_toggle %}
-<form class="mb-4" method="POST" action="{{ url_for('add_new_member') }}" hx-post="{{ url_for('add_new_member') }}" hx-trigger="change" hx-swap="outerMorph">
-    <div class="mx-auto" style="max-width: 800px;">
-        <div class="mx-auto" style="max-width: 400px;">
-            <div class="mb-2">
-                <label for="name" class="form-label">New member name</label>
-                <input type="text" class="form-control" id="name" name="name" value="{{ name if name else '' }}" autocomplete="name">
+{% from 'macros.html' import radio_toggle, modal_header %}
+<form class="stack" method="POST" action="{{ url_for('add_new_member') }}" hx-post="{{ url_for('add_new_member') }}" hx-trigger="change" hx-swap="outerMorph">
+    <div class="narrow form">
+        <div class="narrow-sm form">
+            <div class="field">
+                <label for="name" class="label">New member name</label>
+                <input type="text" class="input" id="name" name="name" value="{{ name if name else '' }}" autocomplete="name">
             </div>
-            <!-- Right ELO Section -->
-            <div class="row align-items-center">
-                <div class="col-5">
-                    <label class="text-nowrap">Calculated Right ELO:</label>
-                </div>
-                <div class="col-7 d-flex justify-content-end">
-                    <span class="fs-5"><strong>{{ right_elo }}</strong></span>
-                </div>
+            <div class="kv">
+                <span class="muted">Calculated Right ELO:</span>
+                <strong class="kv-value">{{ right_elo }}</strong>
             </div>
-
-            <!-- Left ELO Section -->
-            <div class="row align-items-center mt-2">
-                <div class="col-5">
-                    <label class="text-nowrap">Calculated Left ELO:</label>
-                </div>
-                <div class="col-7 d-flex justify-content-end">
-                    <span class="fs-5"><strong>{{ left_elo }}</strong></span>
-                </div>
+            <div class="kv">
+                <span class="muted">Calculated Left ELO:</span>
+                <strong class="kv-value">{{ left_elo }}</strong>
             </div>
         </div>
 
-        <label class="form-label mt-4">Choose arm for the calculation:</label>
-        {{ radio_toggle('arm', 'right', 'Right arm', 'left', 'Left arm', arm) }}
+        <div class="field">
+            <label class="label">Choose arm for the calculation:</label>
+            {{ radio_toggle('arm', 'right', 'Right arm', 'left', 'Left arm', arm) }}
+        </div>
 
-        <div class="row mb-2 flex-nowrap">
-            <div class="col" style="width: 30%;">
-                <label for="new_member" class="form-label">New member:</label>
-                <select class="form-control text-secondary text-nowrap text-truncate bg-white" id="new_member" name="new_member" disabled>
+        <div class="versus">
+            <div class="field">
+                <label for="new_member" class="label">New member:</label>
+                <select class="select" id="new_member" name="new_member" disabled>
                     <option value="{{ name }}">{{ name or 'Enter a name...' }}</option>
                 </select>
             </div>
 
-            <div class="col-1 d-flex justify-content-center align-items-center pt-4">
-                <div class="text-center fs-5">
-                    <span class="badge bg-dark">VS</span>
-                </div>
-            </div>
+            <span class="vs">VS</span>
 
-            <div class="col" style="width: 30%;">
-                <label for="armwrestler2" class="form-label text-nowrap">Ranked member:</label>
-                <select class="form-select text-truncate" id="armwrestler2" name="armwrestler2" required>
+            <div class="field">
+                <label for="armwrestler2" class="label">Ranked member:</label>
+                <select class="select" id="armwrestler2" name="armwrestler2" required>
                     <option disabled selected value="none">Choose...</option>
                     {% for armwrestler in armwrestlers %}
                     <option value="{{ armwrestler['id'] }}" {% if selected_armwrestler_2_id==armwrestler['id'] %}selected{% endif %}>{{ armwrestler['name'] }}</option>
@@ -55,133 +42,89 @@
             </div>
         </div>
 
-        <div class="row">
-            <div class="col">
-                <label for="supermatch_format" class="form-label">Choose supermatch format:</label>
-                <select class="form-select text-truncate" id="supermatch_format" name="supermatch_format" required>
-                    {% for format in supermatch_formats %}
-                    <option value="{{ format }}" {% if selected_format==format %}selected{% endif %}>{{ format }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+        <div class="field">
+            <label for="supermatch_format" class="label">Choose supermatch format:</label>
+            <select class="select" id="supermatch_format" name="supermatch_format" required>
+                {% for format in supermatch_formats %}
+                <option value="{{ format }}" {% if selected_format==format %}selected{% endif %}>{{ format }}</option>
+                {% endfor %}
+            </select>
         </div>
 
         {% if calculation_ready %}
-        <label for="arm" class="form-label my-2">Enter score:</label>
-        <div class="row mb-3">
-            <div class="col d-flex justify-content-center align-items-center"></div>
-            <div class="col d-flex justify-content-center align-items-center">
-                <div class="text-center fs-3">
-                    <span class="badge bg-dark">{{ armwrestler_1_score }}</span>
-                </div>
+        <div class="field">
+            <label class="label">Enter score:</label>
+            <div class="score-grid">
+                <span></span>
+                <span class="score">{{ armwrestler_1_score }}</span>
+                <span class="score-sep">:</span>
+                <span class="score">{{ armwrestler_2_score }}</span>
+                <span></span>
             </div>
-
-            <div class="col-1 d-flex justify-content-center align-items-center text-center fs-2">:</div>
-
-            <div class="col d-flex justify-content-center align-items-center">
-                <div class="text-center fs-3">
-                    <span class="badge bg-dark">{{ armwrestler_2_score }}</span>
-                </div>
-            </div>
-            <div class="col d-flex justify-content-center align-items-center"></div>
         </div>
         {% if custom_score %}
-        <div class="row justify-content-center align-items-center mb-2">
-            <div class="col-3">
-                <input type="number" class="form-control" id="custom_score_1" name="custom_score_1" value="{{ custom_score_1 }}">
-            </div>
-            <div class="col-1 text-center fs-2"></div>
-            <div class="col-3">
-                <input type="number" class="form-control" id="custom_score_2" name="custom_score_2" value="{{ custom_score_2 }}">
-            </div>
+        <div class="score-grid score-inputs">
+            <input type="number" class="input" id="custom_score_1" name="custom_score_1" value="{{ custom_score_1 }}" aria-label="New member score">
+            <input type="number" class="input" id="custom_score_2" name="custom_score_2" value="{{ custom_score_2 }}" aria-label="Ranked member score">
         </div>
         {% else %}
-        <input type="range" class="form-range mt-2" id="score" name="score" min="0" max="{{ max_rounds }}" value="{{ value_for_score }}">
+        <input type="range" class="range" id="score" name="score" min="0" max="{{ max_rounds }}" value="{{ value_for_score }}" aria-label="Score">
         {% endif %}
-        <div class="row mt-2">
-            <label for="arm" class="col-auto form-label me-auto">
-                ELO from match: <span class="fs-5"><strong>{{ elo_from_match }}</strong></span>
-            </label>
-            <div class="col-12 col-md-auto mt-2 mt-md-0 justify-content-between">
-                <div class="row justify-content-between">
-                    <div class="col-auto pe-0">
-                        <label class="btn btn-primary text-nowrap {{ 'disabled' if elo_from_match is none }}">
-                            <input type="radio" name="add_to_avg" id="add_to_avg" value="true" autocomplete="off" {{ 'disabled' if elo_from_match is none }} class="visually-hidden">Add to average
-                        </label>
-                    </div>
-                    <div class="col-auto">
-                        <label class="btn btn-primary text-nowrap {{ 'active' if custom_score == 'true' else '' }}">
-                            <input type="checkbox" name="custom_score" id="custom_score" value="true" autocomplete="off" {{ 'checked' if custom_score=='true' else '' }} class="visually-hidden">Custom score
-                        </label>
-                    </div>
-                </div>
+        <div class="actions">
+            <span class="muted">ELO from match: <strong class="kv-value">{{ elo_from_match }}</strong></span>
+            <div class="btn-group">
+                <label class="btn btn-secondary">
+                    <input type="radio" name="add_to_avg" id="add_to_avg" value="true" autocomplete="off" {{ 'disabled' if elo_from_match is none }} class="visually-hidden">Add to average
+                </label>
+                <label class="btn btn-secondary btn-toggle">
+                    <input type="checkbox" name="custom_score" id="custom_score" value="true" autocomplete="off" {{ 'checked' if custom_score=='true' else '' }} class="visually-hidden">Custom score
+                </label>
             </div>
         </div>
         {% endif %}
-        <div class="row mt-4">
+
+        <div class="actions">
             {% if error %}
-            <div class="col-auto text-danger">
-                {{ error }}
-            </div>
+            <p class="text-danger">{{ error }}</p>
             {% endif %}
             {% if member_ready %}
-            <div class="col-auto">
-                <button type="button" class="btn btn-success" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#addNewMemberModal">Add member</button>
-            </div> 
+            <button type="button" class="btn btn-primary" hx-trigger="click" popovertarget="addNewMemberModal">Add member</button>
             {% endif %}
-            <div class="col-auto ms-auto">
-                <button type="button" class="btn btn-danger" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#resetModal">Reset</button>
-            </div>
+            <button type="button" class="btn btn-danger push" hx-trigger="click" popovertarget="resetModal">Reset</button>
         </div>
     </div>
-    
-    <div class="col-auto text-center mt-4 mb-4">
-        <h2>Matches for initial ELO</h2>
-    </div>
+
+    <h2 class="section-title">Matches for initial ELO</h2>
 
     {% if new_member_matches %}
 
     {% include 'new_member_matches_partial.html' %}
 
     {% else %}
-    <div class="alert alert-secondary">
+    <div class="note">
         No matches for initial ELO calculation are recorded on the <strong>{{ arm }}</strong> arm.
     </div>
     {% endif %}
 
-    <div class="modal fade" id="addNewMemberModal" tabindex="-1" aria-labelledby="addNewMemberModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addNewMemberModalLabel">Confirm Adding Member</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    Are you sure you want to add the new member?
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
-                    <button type="submit" name="add_member" class="btn btn-success">Add member</button>
-                </div>
-            </div>
+    <div class="modal" id="addNewMemberModal" popover role="dialog" aria-labelledby="addNewMemberModalLabel">
+        {{ modal_header('addNewMemberModal', 'Confirm Adding Member') }}
+        <div class="modal-body">
+            <p>Are you sure you want to add the new member?</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" popovertarget="addNewMemberModal" popovertargetaction="hide">No</button>
+            <button type="submit" name="add_member" class="btn btn-primary">Add member</button>
         </div>
     </div>
 
-    <div class="modal fade" id="resetModal" tabindex="-1" aria-labelledby="resetModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="confirmModalLabel">Confirm Reset</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    Are you sure you want to reset? All current new member information will be lost.
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
-                    <button type="submit" name="reset" class="btn btn-danger" data-bs-dismiss="modal">Reset</button>
-                </div>
-            </div>
+    <div class="modal" id="resetModal" popover role="dialog" aria-labelledby="resetModalLabel">
+        {{ modal_header('resetModal', 'Confirm Reset') }}
+        <div class="modal-body">
+            <p>Are you sure you want to reset? All current new member information will be lost.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" popovertarget="resetModal" popovertargetaction="hide">No</button>
+            <button type="submit" name="reset" class="btn btn-danger">Reset</button>
         </div>
     </div>
 

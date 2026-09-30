@@ -4,21 +4,21 @@
 {% block title %}Login{% endblock %}
 
 {% block content %}
-<div class="mx-auto" style="max-width: 300px;">
+<div class="narrow-xs stack">
     {{ back_header('Login') }}
-    <form class="mb-4" method="POST">
-        <div class="mb-2">
-            <label for="username" class="form-label">Username</label>
-            <input type="text" class="form-control" id="username" name="username" required>
+    <form class="form" method="POST">
+        <div class="field">
+            <label for="username" class="label">Username</label>
+            <input type="text" class="input" id="username" name="username" autocomplete="username" spellcheck="false" required>
         </div>
-        <div class="mb-2">
-            <label for="password" class="form-label">Password</label>
-            <input type="password" class="form-control" id="password" name="password" required>
+        <div class="field">
+            <label for="password" class="label">Password</label>
+            <input type="password" class="input" id="password" name="password" autocomplete="current-password" required>
         </div>
         {% if error %}
-            <p class="text-danger mb-2">{{ error }}</p>
+            <p class="text-danger">{{ error }}</p>
         {% endif %}
-        <button type="submit" class="btn btn-primary mt-2">Login</button>
+        <button type="submit" class="btn btn-primary">Login</button>
     </form>
 </div>
 {% endblock %}

@@ -1,40 +1,38 @@
 {% from 'macros.html' import arm_toggle with context %}
 {{ arm_toggle('ranking', '#rankings') }}
 
-<div class="table-responsive rounded mb-2">
+<div class="table-wrap">
     <table class="table table-hover">
-        <thead class="table-dark">
+        <thead>
             <tr>
                 <th>Rank</th>
-                <th class="ps-3 w-100">Name</th>
-                <th class="text-end text-nowrap">{{ "Right ELO" if arm == 'right' else "Left ELO" }}</th>
+                <th class="w-full">Name</th>
+                <th class="num">{{ "Right ELO" if arm == 'right' else "Left ELO" }}</th>
                 {% if current_user %}
-                <th class="text-center">Action</th>
+                <th class="action">Action</th>
                 {% endif %}
             </tr>
         </thead>
         <tbody>
             {% for armwrestler in active_armwrestlers %}
             <tr>
-                <td class="align-middle text-center"><strong>#{{ armwrestler['rank'] }}</strong></td>
-                <td class="align-middle w-100">
-                    <a href="{{ url_for('view_member', id=armwrestler['id'], arm=arm) }}" class="btn btn-generic text-start px-2 py-1 m-0">
-                        {{ armwrestler['name'] }}
-                    </a>
-                    {% if armwrestler['id'] in armwrestler_badges_dict %}
-                        <div>
+                <td class="rank">#{{ armwrestler['rank'] }}</td>
+                <td>
+                    <div class="name-cell">
+                        <a href="{{ url_for('view_member', id=armwrestler['id'], arm=arm) }}" class="name-link">{{ armwrestler['name'] }}</a>
+                        {% if armwrestler['id'] in armwrestler_badges_dict %}
                         {% for bname, bcolor in armwrestler_badges_dict[armwrestler['id']] %}
-                            <span class="badge ms-2 mb-2 {{ bcolor }}">{{ bname }}</span>
+                        <span class="badge {{ bcolor }}">{{ bname }}</span>
                         {% endfor %}
-                        </div>
-                    {% endif %}
+                        {% endif %}
+                    </div>
                 </td>
-                <td class="align-middle text-end"><strong>{{ armwrestler['elo'] }}</strong></td>
+                <td class="num"><strong>{{ armwrestler['elo'] }}</strong></td>
                 {% if current_user %}
-                <td class="align-middle text-center">
+                <td class="action">
                     <form action="{{ url_for('edit_member') }}" method="POST">
                         <input type="hidden" name="id" value="{{ armwrestler['id'] }}">
-                        <button type="submit" class="btn btn-success btn-sm">Edit</button>
+                        <button type="submit" class="btn btn-secondary">Edit</button>
                     </form>
                 </td>
                 {% endif %}
@@ -44,40 +42,38 @@
     </table>
 </div>
 
-<h2 class="mb-4">Inactive armwrestlers</h2>
+<h2 class="section-title">Inactive armwrestlers</h2>
 
-<div class="table-responsive rounded mb-4">
+<div class="table-wrap">
     <table class="table table-hover">
-        <thead class="table-dark">
+        <thead>
             <tr>
-                <th class="ps-3 w-100">Name</th>
-                <th class="text-end text-nowrap">{{ "Right ELO" if arm == 'right' else "Left ELO" }}</th>
+                <th class="w-full">Name</th>
+                <th class="num">{{ "Right ELO" if arm == 'right' else "Left ELO" }}</th>
                 {% if current_user %}
-                <th class="text-center">Action</th>
+                <th class="action">Action</th>
                 {% endif %}
             </tr>
         </thead>
         <tbody>
             {% for armwrestler in inactive_armwrestlers %}
             <tr>
-                <td class="align-middle w-100">
-                    <a href="{{ url_for('view_member', id=armwrestler['id'], arm=arm) }}" class="btn btn-generic text-start px-2 py-1 m-0">
-                        {{ armwrestler['name'] }}
-                    </a>
-                    {% if armwrestler['id'] in armwrestler_badges_dict %}
-                        <div>
+                <td>
+                    <div class="name-cell">
+                        <a href="{{ url_for('view_member', id=armwrestler['id'], arm=arm) }}" class="name-link">{{ armwrestler['name'] }}</a>
+                        {% if armwrestler['id'] in armwrestler_badges_dict %}
                         {% for bname, bcolor in armwrestler_badges_dict[armwrestler['id']] %}
-                            <span class="badge ms-2 mb-2 {{ bcolor }}">{{ bname }}</span>
+                        <span class="badge {{ bcolor }}">{{ bname }}</span>
                         {% endfor %}
-                        </div>
-                    {% endif %}
+                        {% endif %}
+                    </div>
                 </td>
-                <td class="align-middle text-end"><strong>{{ armwrestler['elo'] }}</strong></td>
+                <td class="num"><strong>{{ armwrestler['elo'] }}</strong></td>
                 {% if current_user %}
-                <td class="align-middle text-center">
+                <td class="action">
                     <form action="{{ url_for('edit_member') }}" method="POST">
                         <input type="hidden" name="id" value="{{ armwrestler['id'] }}">
-                        <button type="submit" class="btn btn-success btn-sm">Edit</button>
+                        <button type="submit" class="btn btn-secondary">Edit</button>
                     </form>
                 </td>
                 {% endif %}

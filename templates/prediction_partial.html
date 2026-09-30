@@ -1,13 +1,15 @@
 {% from 'macros.html' import radio_toggle %}
-<form class="mb-4" hx-get="{{ url_for('prediction') }}" hx-trigger="change" hx-swap="outerMorph" hx-push-url="true">
-    <label class="form-label">Choose arm for the prediction:</label>
-    {{ radio_toggle('arm', 'right', 'Right arm', 'left', 'Left arm', arm) }}
+<form class="form" hx-get="{{ url_for('prediction') }}" hx-trigger="change" hx-swap="outerMorph" hx-push-url="true">
+    <div class="field">
+        <label class="label">Choose arm for the prediction:</label>
+        {{ radio_toggle('arm', 'right', 'Right arm', 'left', 'Left arm', arm) }}
+    </div>
 
     <!-- Armwrestler selection dropdowns -->
-    <div class="row mb-2">
-        <div class="col">
-            <label for="armwrestler1" class="form-label">Armwrestler 1:</label>
-            <select class="form-select text-truncate" id="armwrestler1" name="armwrestler1" required>
+    <div class="versus">
+        <div class="field">
+            <label for="armwrestler1" class="label">Armwrestler 1:</label>
+            <select class="select" id="armwrestler1" name="armwrestler1" required>
                 <option disabled selected value="none">Choose...</option>
                 {% for armwrestler in armwrestlers %}
                 <option value="{{ armwrestler['id'] }}" {% if selected_armwrestler_1_id == armwrestler['id'] %}selected{% endif %}>{{ armwrestler['name'] }}</option>
@@ -15,94 +17,66 @@
             </select>
         </div>
 
-        <div class="col-1 d-flex justify-content-center align-items-center pt-4">
-            <div class="text-center fs-5">
-                <span class="badge bg-dark">VS</span>
-            </div>
-        </div>
+        <span class="vs">VS</span>
 
-        <div class="col">
-            
-            <label for="armwrestler2" class="form-label">Armwrestler 2:</label>
+        <div class="field">
+            <label for="armwrestler2" class="label">Armwrestler 2:</label>
             {% if selected_armwrestler_1_id %}
-                <select class="form-select text-truncate" id="armwrestler2" name="armwrestler2" required>
+                <select class="select" id="armwrestler2" name="armwrestler2" required>
                     <option disabled selected value="none">Choose...</option>
                     {% for armwrestler in armwrestlers_2 %}
                     <option value="{{ armwrestler['id'] }}" {% if selected_armwrestler_2_id == armwrestler['id'] %}selected{% endif %}>{{ armwrestler['name'] }}</option>
                     {% endfor %}
                 </select>
             {% else %}
-                <select class="form-select text-truncate" id="armwrestler2" name="armwrestler2" required disabled>
+                <select class="select" id="armwrestler2" name="armwrestler2" required disabled>
                     <option value="none">Choose Armwrestler 1</option>
                 </select>
             {% endif %}
-             
         </div>
     </div>
-    <div class="row mb-2">
-        <div class="col">
-            <label for="supermatch_format" class="form-label">Choose supermatch format:</label>
-            <select class="form-select text-truncate" id="supermatch_format" name="supermatch_format" required>
-            {% for format in supermatch_formats %}
-            <option value="{{ format }}" {% if selected_format == format %}selected{% endif %}>{{ format }}</option>
-            {% endfor %}
-            </select>
-        </div>
+
+    <div class="field">
+        <label for="supermatch_format" class="label">Choose supermatch format:</label>
+        <select class="select" id="supermatch_format" name="supermatch_format" required>
+        {% for format in supermatch_formats %}
+        <option value="{{ format }}" {% if selected_format == format %}selected{% endif %}>{{ format }}</option>
+        {% endfor %}
+        </select>
     </div>
+
     {% if prediction_ready %}
-    <label class="form-label mb-2">Current ELO:</label>
-    <div class="row mb-2">
-        <div class="col"></div>
-
-        <div class="col d-flex justify-content-center align-items-center">
-            <div class="text-center fs-5">
-                <span class="text-{{ win_chance_color[0] }}">{{armwrestler_1_elo}}</span>
-            </div>
-        </div>
-        
-        <div class="col-1 d-flex justify-content-center align-items-center text-center fs-2">:</div>
-
-        <div class="col d-flex justify-content-center align-items-center">
-            <div class="text-center fs-5">
-                <span class="text-{{ win_chance_color[1] }}">{{armwrestler_2_elo}}</span>
-            </div>
-        </div>
-
-        <div class="col"></div>
-    </div>
-    <label class="form-label mb-2">Approximate expected score:</label>
-    <div class="row mb-2">
-        <div class="col d-flex justify-content-center align-items-center"></div>
-
-        <div class="col d-flex justify-content-center align-items-center">
-            <div class="text-center fs-3">
-                <span class="badge bg-{{ score_color[0] }}">{{ expected_1 }}</span>
-            </div>
-        </div>
-        
-        <div class="col-1 d-flex justify-content-center align-items-center text-center fs-2">:</div>
-
-        <div class="col d-flex justify-content-center align-items-center">
-            <div class="text-center fs-3">
-                <span class="badge bg-{{ score_color[1] }}">{{ expected_2 }}</span>
-            </div>
-        </div>
-
-        <div class="col d-flex justify-content-center align-items-center"></div>
-    </div> 
-
-    <label class="form-label mb-2">Win chance:</label>
-    <div class="row mb-4">
-        <div class="col">
-            <div class="progress" style="height: 2.5rem;" >
-                <div class="progress-bar bg-{{ win_chance_color[0] }} fs-6" role="progressbar" style="width: {{ binom_predicted_1 }}%" aria-valuenow="{{ binom_predicted_1 }}" aria-valuemin="0" aria-valuemax="100"><strong>{{ binom_predicted_1 }}%</strong></div>
-                <div class="progress-bar bg-secondary fs-6" role="progressbar" style="width: {{ binom_draw }}%" aria-valuenow="{{ binom_draw }}" aria-valuemin="0" aria-valuemax="100"><strong>{{ binom_draw }}%</strong></div>
-                <div class="progress-bar bg-{{ win_chance_color[1] }} fs-6" role="progressbar" style="width: {{ binom_predicted_2 }}%" aria-valuenow="{{ binom_predicted_2 }}" aria-valuemin="0" aria-valuemax="100"><strong>{{ binom_predicted_2 }}%</strong></div>
-            </div>
+    <div class="field">
+        <label class="label">Current ELO:</label>
+        <div class="score-grid">
+            <span class="score-elo score-left text-{{ win_chance_color[0] }}">{{armwrestler_1_elo}}</span>
+            <span class="score-sep">:</span>
+            <span class="score-elo score-right text-{{ win_chance_color[1] }}">{{armwrestler_2_elo}}</span>
         </div>
     </div>
-    <div class="alert alert-secondary mb-2" role="alert">
+
+    <div class="field">
+        <label class="label">Approximate expected score:</label>
+        <div class="score-grid">
+            <span></span>
+            <span class="score bg-{{ score_color[0] }}">{{ expected_1 }}</span>
+            <span class="score-sep">:</span>
+            <span class="score bg-{{ score_color[1] }}">{{ expected_2 }}</span>
+            <span></span>
+        </div>
+    </div>
+
+    <div class="field">
+        <label class="label">Win chance:</label>
+        <div class="meter">
+            <div class="bg-{{ win_chance_color[0] }}" role="progressbar" style="width: {{ binom_predicted_1 }}%" aria-valuenow="{{ binom_predicted_1 }}" aria-valuemin="0" aria-valuemax="100">{{ binom_predicted_1 }}%</div>
+            <div class="bg-secondary" role="progressbar" style="width: {{ binom_draw }}%" aria-valuenow="{{ binom_draw }}" aria-valuemin="0" aria-valuemax="100">{{ binom_draw }}%</div>
+            <div class="bg-{{ win_chance_color[1] }}" role="progressbar" style="width: {{ binom_predicted_2 }}%" aria-valuenow="{{ binom_predicted_2 }}" aria-valuemin="0" aria-valuemax="100">{{ binom_predicted_2 }}%</div>
+        </div>
+    </div>
+
+    <div class="note" role="note">
         The win chance takes into account the number of rounds and uses the binomial distribution to determine the probability of an armwrestler winning/losing the match in percent.
     </div>
     {% endif %}
-</form>  
+</form>

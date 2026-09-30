@@ -4,34 +4,30 @@
 {% block title %}Supermatch{% endblock %}
 
 {% block content %}
-<div class="mx-auto" style="max-width: 800px;">
+<div class="narrow stack">
     {{ back_header('Supermatch') }}
     {% if not current_user %}
-    <div class="alert alert-secondary" role="alert">
+    <div class="note" role="note">
         You can add a supermatch to the system, without logging in.<br>
         Select the arm, armwrestlers, the supermatch format and the result in the form below, then submit it for confirmation.
     </div>
     {% endif %}
-    <form class="mb-4" method="POST" action="{{ url_for('supermatch') }}">
-        <div id="form-content" hx-post="{{ url_for('supermatch') }}" hx-trigger="change" hx-swap="innerMorph">
+    <form class="form" method="POST" action="{{ url_for('supermatch') }}">
+        <div id="form-content" class="form" hx-post="{{ url_for('supermatch') }}" hx-trigger="change" hx-swap="innerMorph">
             {% include 'supermatch_partial.html' %}
         </div>
         {% if not current_user %}
         <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" nonce="{{ csp_nonce() }}"></script>
-        <div class="checkbox mt-4">
-            <div class="cf-turnstile" data-sitekey="0x4AAAAAAAyqdmZPnUPAkQNL" data-theme="light"></div>
-        </div>
+        <div class="cf-turnstile" data-sitekey="0x4AAAAAAAyqdmZPnUPAkQNL" data-theme="dark"></div>
         {% endif %}
     </form>
 </div>
 
 {% if matches %}
 
-<div class="col-auto text-center mb-4">
-    <h2>Unconfirmed matches</h2>
-</div>
+<h2 class="section-title">Unconfirmed matches</h2>
 
-<div class="alert alert-secondary">
+<div class="note">
     This is a list of the supermatches submitted for confirmation by the admin.<br>
     These matches are not valid until confirmed.
 </div>

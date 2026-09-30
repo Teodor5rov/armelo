@@ -14,7 +14,7 @@ The ArmElo Ranking System is a web-based application designed for the Armwrestli
 ## Technical Details
 - Flask
 - HTMX
-- Bootstrap
+- Plain CSS
 - SQLite
 
 ## Contributing

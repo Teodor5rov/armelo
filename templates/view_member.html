@@ -4,42 +4,36 @@
 {% block title %}View member{% endblock %}
 
 {% block content %}
-<div class="mx-auto" style="max-width: 800px;">
+<div class="narrow stack">
     {{ back_header(name) }}
-    <div class="table-responsive rounded">
+    <div class="table-wrap">
         <table class="table">
-            <thead class="table-dark">
+            <thead>
                 <tr>
-                    <th colspan="2" class="align-middle">Activity</th>
+                    <th colspan="2">Activity</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td class="w-50 align-middle">Status</td>
-                    <td class="text-center align-middle">
-                        <span class="{% if current_status == 'active' %}text-success{% else %}text-secondary{% endif %}">
-                            <strong>{{ current_status }}</strong>
-                        </span>
+                    <td class="w-50">Status</td>
+                    <td class="text-center">
+                        <strong class="{% if current_status == 'active' %}text-success{% else %}text-secondary{% endif %}">{{ current_status }}</strong>
                     </td>
                 </tr>
                 <tr>
-                    <td class="w-50 align-middle">Wins / Losses</td>
-                    <td class="text-center align-middle">
-                        <strong>{{ wins }} / {{ losses }}</strong>
-                    </td>
+                    <td class="w-50">Wins / Losses</td>
+                    <td class="text-center"><strong>{{ wins }} / {{ losses }}</strong></td>
                 </tr>
                 <tr>
-                    <td class="w-50 align-middle">Total matches</td>
-                    <td class="text-center align-middle">
-                        <strong>{{ total_matches }}</strong>
-                    </td>
+                    <td class="w-50">Total matches</td>
+                    <td class="text-center"><strong>{{ total_matches }}</strong></td>
                 </tr>
             </tbody>
         </table>
     </div>
 </div>
 
-<div id="arm_info">
+<div id="arm_info" class="stack">
     {% include 'view_member_partial.html' %}
 </div>
 

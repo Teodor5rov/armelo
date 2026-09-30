@@ -1,58 +1,1139 @@
-* {
-    font-family: 'Roboto Mono', monospace;
+/*
+ * Armwrestling Zurich design system - dark only.
+ * Based on Vercel Geist: neutral scale, type scale and Geist Mono.
+ *
+ * Rules:
+ * - Sharp corners everywhere, no border-radius.
+ * - Every interactive control (button, input, select, segmented control,
+ *   nav link, slider) is exactly --control-height tall.
+ * - A control inside a bordered box has the same gap to the border on every side
+ *   (8px in table cells, 16px in modals).
+ * - Three fluid font sizes, assigned in the Typography section only: --text-base (default),
+ *   --text-xl (titles, big numbers) and --text-sm (only text inside tags: badges, VS).
+ * - Navy is only used for notes / tips. Orange is only used for accents.
+ * - Green and red only carry meaning (win / loss, errors).
+ */
+
+/* ---------- Tokens ---------- */
+
+:root {
+    color-scheme: dark;
+
+    --bg: #000;
+    --bg-100: #0a0a0a;
+    --gray-100: #1a1a1a;
+    --gray-200: #1f1f1f;
+    --gray-300: #292929;
+    --gray-600: #878787;
+    --gray-900: #a0a0a0;
+    --gray-1000: #ededed;
+    --alpha-100: #ffffff12;
+    --alpha-400: #ffffff24;
+    --alpha-500: #ffffff3d;
+
+    --navy: #000032;
+    --accent: #fc6d47;
+
+    --green: #00ca52;
+    --green-bg: #003110;
+    --red: #ff5e63;
+    --red-bg: #440d13;
+
+    --font: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+    /* Fluid sizes, linear from 375px to 1280px (utopia.fyi clamp formula):
+       sm 12 -> 14px, base 14 -> 16px, xl 20 -> 24px. */
+    --text-sm: clamp(0.75rem, 0.6982rem + 0.221vw, 0.875rem);
+    --text-base: clamp(0.875rem, 0.8232rem + 0.221vw, 1rem);
+    --text-xl: clamp(1.25rem, 1.1464rem + 0.442vw, 1.5rem);
+
+    --control-height: 40px;
+    --indicator-size: 16px; /* slider thumb and toggle indicator */
+    --gutter: 16px;
+    --header-height: 64px;
+}
+
+@media (min-width: 768px) {
+    :root {
+        --gutter: 24px;
+    }
+}
+
+/* ---------- Base ---------- */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    border-radius: 0;
+}
+
+body, h1, h2, h3, p, dl, dd {
+    margin: 0;
 }
 
 html, body {
-    height: 100%;
     scrollbar-width: none;
-    -ms-overflow-style: none;
-}
-
-body {
-    display: flex;
-    flex-direction: column;
 }
 
 html::-webkit-scrollbar, body::-webkit-scrollbar {
     display: none;
 }
 
-.hover-text {
-    transition: opacity 0.15s ease;
-}
-.hover-text:hover {
-    opacity: 0.8;
-}
-
-.btn-generic {
-    --bs-btn-bg: transparent;
-    --bs-btn-border-color: transparent;
-    --bs-btn-hover-bg: transparent;
-    --bs-btn-hover-border-color: var(--bs-secondary);
-    --bs-btn-active-border-color: var(--bs-secondary);
-    --bs-btn-active-bg: transparent;
+body {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    color: var(--gray-1000);
+    font: 400 var(--text-base)/1.5 var(--font);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.card-wider-border {
-    --bs-card-border-width: 2px;
+a {
+    color: inherit;
+    text-decoration: none;
 }
 
-.loading-container {
-    width: 20rem;
-    height: 0.5rem;
-    background-color: var(--bs-secondary-bg);
-    border-radius: 0.5rem;
+button, input, select {
+    font: inherit;
+    color: inherit;
+}
+
+strong {
+    font-weight: 600;
+}
+
+::selection {
+    background: var(--accent);
+    color: var(--bg);
+}
+
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+/* ---------- Layout ---------- */
+
+.container {
+    width: 100%;
+    max-width: calc(1320px + 2 * var(--gutter));
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+}
+
+.main {
+    flex: 1;
+    max-width: calc(1080px + 2 * var(--gutter));
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding-block: 24px;
+}
+
+.narrow, .narrow-sm, .narrow-xs {
+    width: 100%;
+    margin-inline: auto;
+}
+
+.narrow { max-width: 800px; }
+.narrow-sm { max-width: 400px; }
+.narrow-xs { max-width: 320px; }
+
+.stack, .form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+/* History filters: equally wide controls in one row, stacked full width on phones. */
+.filters {
+    display: grid;
+    gap: 8px;
+    width: 100%;
+}
+
+.filters form {
+    display: contents;
+}
+
+@media (min-width: 768px) {
+    .filters {
+        width: auto;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+    }
+}
+
+@media (min-width: 768px) {
+    .main {
+        padding-block: 40px;
+    }
+}
+
+/* ---------- Header ---------- */
+
+.header {
+    border-bottom: 1px solid var(--alpha-400);
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: var(--header-height);
+}
+
+/* Shrinks to fit when the nav is tight. */
+.brand {
+    min-width: 0;
+    font-size: var(--text-xl);
+}
+
+.nav-links {
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-link, .nav-user {
+    display: flex;
+    align-items: center;
+    height: var(--control-height);
+    color: var(--gray-900);
+    white-space: nowrap;
+}
+
+.nav-link {
+    transition: color 0.15s, background-color 0.15s;
+}
+
+.nav-link:hover, .nav-link[aria-current="page"] {
+    color: var(--gray-1000);
+}
+
+.nav-link[aria-current="page"] {
+    text-decoration: underline 2px var(--accent);
+    text-underline-offset: 6px;
+}
+
+.nav-user {
+    display: block;
+    max-width: 100px;
     overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: var(--control-height);
+    color: var(--gray-600);
 }
 
-.loading-slider {
-    height: 100%;
+/* Mobile: the menu is a native popover opened by the toggle button (no JS). */
+@media (max-width: 1279.98px) {
+    .nav-toggle {
+        margin-inline-start: auto;
+    }
+
+    .nav-menu:popover-open {
+        position: absolute;
+        inset: var(--header-height) 0 auto;
+        width: auto;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 8px var(--gutter) 16px;
+        background: var(--bg);
+        color: inherit;
+        border: 0;
+        border-bottom: 1px solid var(--alpha-400);
+    }
+
+    .nav-menu::backdrop {
+        background: rgb(0 0 0 / 0.6);
+    }
+
+    .nav-links + .nav-links {
+        padding-top: 8px;
+        border-top: 1px solid var(--alpha-400);
+    }
+}
+
+/* Desktop: the same popover element is shown inline. */
+@media (min-width: 1280px) {
+    .nav .nav-toggle {
+        display: none;
+    }
+
+    .nav-menu {
+        position: static;
+        inset: auto;
+        width: auto;
+        height: auto;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: inherit;
+        overflow: visible;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .nav-links {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .nav-link, .nav-user {
+        padding-inline: 8px;
+    }
+
+    .nav-link:hover {
+        background: var(--alpha-100);
+    }
+}
+
+/* ---------- Footer ---------- */
+
+.footer {
+    border-top: 1px solid var(--alpha-400);
+    color: var(--gray-900);
+}
+
+.footer-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-block: 24px;
+}
+
+.footer a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.15s;
+}
+
+.footer a:hover {
+    color: var(--gray-1000);
+}
+
+.footer-links {
+    display: flex;
+    gap: 24px;
+}
+
+@media (min-width: 768px) {
+    .footer-inner {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+}
+
+/* ---------- Typography ---------- */
+
+/* Everything else uses --text-base, set on body. */
+.vs, .badge {
+    font-size: var(--text-sm);
+}
+
+.page-title, .section-title, .modal-title, .kv-value, .score, .score-sep, .score-elo, .estimate {
+    font-size: var(--text-xl);
+}
+
+.page-title, .section-title, .modal-title, .kv-value, .estimate {
+    line-height: 1.25;
+    letter-spacing: 0.02em;
+    font-weight: 700;
+}
+
+/* Outlined text in an SVG (box = ink); 0.774em matches the cap height of the font it was set in. */
+.wordmark {
+    display: block;
+    height: 0.774em;
+    width: auto;
+    max-width: 100%;
+}
+
+/* The Rankings title is 75% of the button next to it and shrinks to fit on phones instead of wrapping. */
+.actions > .page-title {
+    flex: 1;
+}
+
+.page-title .wordmark {
+    height: calc(0.75 * var(--control-height));
+}
+
+/* The gap between the back button and the title equals a word space of the title (measured ink gap). */
+.page-header {
+    display: flex;
+    align-items: center;
+    gap: calc(0.66 * var(--text-xl));
+}
+
+.page-title {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.section-title:not(:first-child) {
+    margin-top: 16px;
+}
+
+.lead {
+    color: var(--gray-900);
+}
+
+.lead strong, .muted strong {
+    color: var(--gray-1000);
+}
+
+/* ---------- Buttons ---------- */
+
+/* The gap between an indicator / icon and the label equals a word space of the label. */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65em;
+    height: var(--control-height);
+    padding: 0 12px;
+    border: 1px solid transparent;
+    background: none;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn-icon {
+    width: var(--control-height);
+    padding: 0;
+}
+
+.btn-icon .icon {
+    width: 20px;
+    height: 20px;
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+}
+
+.btn-primary:hover {
+    background: color-mix(in srgb, var(--accent), #fff 20%);
+}
+
+.btn-secondary {
+    background: var(--bg-100);
+    border-color: var(--alpha-400);
+    color: var(--gray-1000);
+}
+
+.btn-secondary:hover {
+    background: var(--gray-100);
+    border-color: var(--alpha-500);
+}
+
+.btn-tertiary:hover {
+    background: var(--alpha-100);
+}
+
+.btn-danger {
+    background: var(--red-bg);
+    color: var(--red);
+}
+
+.btn-danger:hover {
+    border-color: var(--red);
+}
+
+/* Buttons that wrap a hidden radio / checkbox (toggles). */
+.btn:has(:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.btn:has(:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-toggle::before {
+    content: "";
+    width: var(--indicator-size);
+    height: var(--indicator-size);
+    border: 1px solid var(--gray-600);
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.btn-toggle:has(:checked)::before {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+/* ---------- Forms ---------- */
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.label {
+    color: var(--gray-900);
+}
+
+.input, .select {
+    width: 100%;
+    height: var(--control-height);
+    padding: 0 12px;
+    background-color: var(--bg-100);
+    color: var(--gray-1000);
+    border: 1px solid var(--alpha-400);
+    transition: border-color 0.15s;
+}
+
+.input:hover, .select:hover {
+    border-color: var(--alpha-500);
+}
+
+.input:disabled, .select:disabled {
+    background-color: var(--gray-100);
+    color: var(--gray-900);
+    border-color: var(--alpha-400);
+    cursor: not-allowed;
+}
+
+.select {
+    appearance: none;
+    padding-right: 36px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a0a0a0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.select option {
+    background-color: var(--bg-100);
+    color: var(--gray-1000);
+}
+
+/* iOS Safari zooms into form fields under 16px on focus. */
+@supports (-webkit-touch-callout: none) {
+    .input, .select {
+        font-size: 16px;
+    }
+}
+
+.range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: var(--control-height);
+    margin: 0;
+    background: none;
+    cursor: pointer;
+}
+
+.range::-webkit-slider-runnable-track {
+    height: 4px;
+    background: var(--alpha-500);
+}
+
+.range::-moz-range-track {
+    height: 4px;
+    background: var(--alpha-500);
+}
+
+.range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: var(--indicator-size);
+    height: var(--indicator-size);
+    margin-top: calc((4px - var(--indicator-size)) / 2);
+    border: 0;
+    background: var(--accent);
+}
+
+.range::-moz-range-thumb {
+    width: var(--indicator-size);
+    height: var(--indicator-size);
+    border: 0;
+    border-radius: 0;
+    background: var(--accent);
+}
+
+.form-row {
+    display: grid;
+    align-items: center;
+    gap: 8px;
+}
+
+@media (min-width: 768px) {
+    .form-row {
+        grid-template-columns: 5fr 7fr;
+    }
+}
+
+/* ---------- Segmented control ---------- */
+
+.segmented {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    height: var(--control-height);
+    background: var(--bg-100);
+    border: 1px solid var(--alpha-400);
+}
+
+.segment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gray-900);
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.segment:hover {
+    color: var(--gray-1000);
+    background: var(--alpha-100);
+}
+
+.segment.active, .segment:has(:checked) {
+    background: var(--gray-300);
+    color: var(--gray-1000);
+}
+
+.segment:has(:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+}
+
+/* ---------- Versus rows ---------- */
+
+.vs {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    padding: 0 6px;
+    background: var(--gray-300);
+    color: var(--gray-1000);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.06em;
+}
+
+.versus {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: end;
+    gap: 8px;
+}
+
+.versus > .vs {
+    margin-bottom: 8px;
+}
+
+.vs-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ---------- Score ---------- */
+
+/* Score tiles and custom score inputs are control-sized boxes in fixed columns; the outer columns hold the ELO. */
+.score-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--control-height) 12px var(--control-height) minmax(0, 1fr);
+    align-items: center;
+    justify-items: center;
+    gap: 8px;
+}
+
+.score {
+    display: grid;
+    place-items: center;
+    width: var(--control-height);
+    height: var(--control-height);
+    border: 1px solid var(--alpha-400);
+    background: var(--gray-100);
+    font-weight: 700;
+}
+
+.score-sep {
+    color: var(--gray-900);
+    font-weight: 700;
+}
+
+.score-elo {
+    text-align: center;
+    font-weight: 500;
+}
+
+/* A row of bare values wider than the boxes: each takes its side and hugs the colon. */
+.score-left {
+    grid-column: 1 / 3;
+    justify-self: end;
+}
+
+.score-right {
+    grid-column: 4 / 6;
+    justify-self: start;
+}
+
+.score-inputs {
+    justify-items: stretch;
+}
+
+.score-inputs > :first-child { grid-column: 2; }
+.score-inputs > :last-child { grid-column: 4; }
+
+/* Too narrow for spin buttons: typing and arrow keys still work. */
+.score-inputs .input {
+    padding: 0;
+    text-align: center;
+    appearance: textfield;
+}
+
+.score-inputs .input::-webkit-inner-spin-button,
+.score-inputs .input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.kv {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.estimate {
+    text-align: center;
+}
+
+.meter {
+    display: flex;
+    height: var(--control-height);
+    overflow: hidden;
+    background: var(--gray-100);
+    font-weight: 600;
+}
+
+.meter > * {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.meter > * + * {
+    border-left: 2px solid var(--bg);
+}
+
+/* ---------- Tables ---------- */
+
+.table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--alpha-400);
+    background: var(--bg-100);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th, .table td {
+    padding: 0 8px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+/* Fixed row heights: header = one control, body row = one control + 8px above and below. */
+.table th {
+    height: var(--control-height);
+    background: var(--gray-100);
+    color: var(--gray-900);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.table td {
+    height: calc(var(--control-height) + 16px);
+    border-top: 1px solid var(--alpha-400);
+}
+
+/* Shrink-to-fit column around a control: 8px on every side of the button. */
+.table .action {
+    width: 1%;
+    padding-inline: 8px;
+    text-align: center;
+}
+
+.table-hover tbody tr {
+    transition: background-color 0.15s;
+}
+
+.table-hover tbody tr:hover {
+    background: var(--alpha-100);
+}
+
+.table .num {
+    text-align: right;
+}
+
+.table .text-center {
+    text-align: center;
+}
+
+.rank {
+    color: var(--gray-900);
+}
+
+.name-link {
+    overflow-wrap: anywhere;
+    font-weight: 500;
+    text-decoration-color: var(--gray-600);
+    text-underline-offset: 3px;
+}
+
+.name-link:hover {
+    text-decoration-line: underline;
+}
+
+/* Below the smallest target screen (375px) the table with the Edit column wraps its labels instead of scrolling sideways. */
+@media (max-width: 374.98px) {
+    .table:has(.action) th {
+        white-space: normal;
+    }
+}
+
+@media (min-width: 768px) {
+    .table th, .table td {
+        padding-inline: 16px;
+    }
+}
+
+/* ---------- Badges ---------- */
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    padding: 0 6px;
+    background: var(--gray-200);
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.badge-score {
+    min-width: 24px;
+    font-weight: 700;
+}
+
+.name-cell, .badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+}
+
+.badges {
+    justify-content: center;
+}
+
+/* ---------- Cards & matches ---------- */
+
+.card {
+    background: var(--bg-100);
+    border: 1px solid var(--alpha-400);
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.card-button {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    text-align: inherit;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.card-button:hover .card {
+    background: var(--gray-100);
+    border-color: var(--alpha-500);
+}
+
+.match-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.match.win {
+    border-left: 3px solid var(--green);
+}
+
+.match.loss {
+    border-left: 3px solid var(--red);
+}
+
+.match-players {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    border-bottom: 1px solid var(--alpha-400);
+}
+
+.player {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px 8px;
+}
+
+.elo {
+    color: var(--gray-900);
+    white-space: nowrap;
+}
+
+.match-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding: 16px;
+}
+
+.match-meta dt {
+    margin-bottom: 4px;
+    color: var(--gray-900);
+}
+
+.match-meta dd {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+}
+
+@media (min-width: 768px) {
+    .match-players {
+        flex-direction: row;
+        gap: 16px;
+    }
+
+    .match-meta {
+        display: flex;
+        flex-wrap: wrap;
+        column-gap: 48px;
+    }
+}
+
+/* ---------- Notes (tips) ---------- */
+
+.note {
+    padding: 12px 16px;
+    border: 1px solid var(--alpha-400);
+    background: var(--navy);
+    color: var(--gray-1000);
+}
+
+.note-error {
+    background: var(--red-bg);
+    color: var(--red);
+}
+
+/* ---------- Modal (native popover, no JS) ---------- */
+
+.modal {
+    width: min(100% - 32px, 540px);
+    max-height: calc(100dvh - 32px);
+    padding: 0;
+    border: 1px solid var(--alpha-400);
+    background: var(--bg-100);
+    color: var(--gray-1000);
+    box-shadow: 0 8px 16px -4px rgb(0 0 0 / 0.5), 0 24px 48px -8px rgb(0 0 0 / 0.6);
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+
+.modal-xl {
+    width: min(100% - 32px, 1000px);
+}
+
+.modal:popover-open {
+    display: flex;
+    flex-direction: column;
+    animation: modal-in 0.15s ease-out;
+}
+
+.modal::backdrop {
+    background: rgb(0 0 0 / 0.7);
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px;
+    border-bottom: 1px solid var(--alpha-400);
+}
+
+.modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+}
+
+.modal-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 16px;
+    border-top: 1px solid var(--alpha-400);
+    background: var(--bg);
+}
+
+.modal-footer form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+@keyframes modal-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.98);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .modal:popover-open {
+        animation: none;
+    }
+}
+
+/* ---------- Confirmation screen ---------- */
+
+.confirm {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    padding-block: 48px;
+    text-align: center;
+}
+
+.loading {
+    width: min(320px, 100%);
+    height: 4px;
+    overflow: hidden;
+    background: var(--gray-200);
+}
+
+.loading::after {
+    content: "";
+    display: block;
     width: 0;
-    background-color: var(--bs-primary);
+    height: 100%;
+    background: var(--accent);
     animation: fill 1s ease-in-out forwards;
 }
 
 @keyframes fill {
-    0% { width: 0; }
-    100% { width: 100%; }
+    to {
+        width: 100%;
+    }
+}
+
+/* ---------- Utilities ---------- */
+
+.visually-hidden {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.push { margin-inline-start: auto; }
+.muted { color: var(--gray-900); }
+.w-full { width: 100%; }
+.w-50 { width: 50%; }
+.w-25 { width: 25%; }
+
+/* State colors - some of these class names are emitted by the backend. */
+.text-success { color: var(--green); }
+.text-danger { color: var(--red); }
+.text-secondary { color: var(--gray-900); }
+
+.bg-success, .text-bg-success {
+    background: var(--green-bg);
+    color: var(--green);
+}
+
+.bg-danger {
+    background: var(--red-bg);
+    color: var(--red);
+}
+
+.bg-secondary {
+    background: var(--gray-200);
+    color: var(--gray-1000);
 }

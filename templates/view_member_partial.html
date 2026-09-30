@@ -1,52 +1,44 @@
-<div class="mx-auto" style="max-width: 800px;">
 {% from 'macros.html' import arm_toggle with context %}
-{{ arm_toggle('view_member', '#arm_info', push=true, url_kwargs={'id': id}) }}
+<div class="narrow stack">
+    {{ arm_toggle('view_member', '#arm_info', push=true, url_kwargs={'id': id}) }}
 
-    <div class="table-responsive rounded">
+    <div class="table-wrap">
         <table class="table">
-            <thead class="table-dark">
+            <thead>
                 <tr>
-                    <th class="w-50 align-middle">Records</th>
-                    <th class="text-center w-25 align-middle">Current</th>
-                    <th class="text-center w-25 align-middle">Best</th>
+                    <th class="w-50">Records</th>
+                    <th class="text-center w-25">Current</th>
+                    <th class="text-center w-25">Best</th>
                 </tr>
             </thead>
             <tbody>
                 {% if arm == 'right' %}
                 <tr>
-                    <td class="align-middle">Right ELO</td>
-                    <td class="text-center align-middle"><strong>{{ current_right_elo }}</strong></td>
-                    <td class="text-center align-middle"><strong>{{ best_right_elo }}</strong></td>
+                    <td>Right ELO</td>
+                    <td class="text-center"><strong>{{ current_right_elo }}</strong></td>
+                    <td class="text-center"><strong>{{ best_right_elo }}</strong></td>
                 </tr>
                 <tr>
-                    <td class="align-middle">Right Rank</td>
-                    <td class="text-center align-middle">
-                        <strong>{% if current_right_rank %}#{% endif %}{{ current_right_rank }}</strong>
-                    </td>
-                    <td class="text-center align-middle">
-                        <strong>{% if best_right_rank %}#{% endif %}{{ best_right_rank }}</strong>
-                    </td>
+                    <td>Right Rank</td>
+                    <td class="text-center"><strong>{% if current_right_rank %}#{% endif %}{{ current_right_rank }}</strong></td>
+                    <td class="text-center"><strong>{% if best_right_rank %}#{% endif %}{{ best_right_rank }}</strong></td>
                 </tr>
                 {% elif arm == 'left' %}
                 <tr>
-                    <td class="align-middle">Left ELO</td>
-                    <td class="text-center align-middle"><strong>{{ current_left_elo }}</strong></td>
-                    <td class="text-center align-middle"><strong>{{ best_left_elo }}</strong></td>
+                    <td>Left ELO</td>
+                    <td class="text-center"><strong>{{ current_left_elo }}</strong></td>
+                    <td class="text-center"><strong>{{ best_left_elo }}</strong></td>
                 </tr>
                 <tr>
-                    <td class="align-middle">Left Rank</td>
-                    <td class="text-center align-middle">
-                        <strong>{% if current_left_rank %}#{% endif %}{{ current_left_rank }}</strong>
-                    </td>
-                    <td class="text-center align-middle">
-                        <strong>{% if best_left_rank %}#{% endif %}{{ best_left_rank }}</strong>
-                    </td>
+                    <td>Left Rank</td>
+                    <td class="text-center"><strong>{% if current_left_rank %}#{% endif %}{{ current_left_rank }}</strong></td>
+                    <td class="text-center"><strong>{% if best_left_rank %}#{% endif %}{{ best_left_rank }}</strong></td>
                 </tr>
                 {% endif %}
                 {% if badges_for_arm and badges_for_arm|length > 0 %}
                 <tr>
-                    <td class="text-center align-middle" colspan="3">
-                        <div class="d-flex justify-content-center align-items-center flex-wrap gap-2">
+                    <td colspan="3">
+                        <div class="badges">
                         {% for badge in badges_for_arm %}
                             <span class="badge {{ badge['color'] }}">{{ badge['name'] }}</span>
                         {% endfor %}
@@ -59,9 +51,7 @@
     </div>
 </div>
 
-<div class="col-auto text-center mb-4">
-    <h2>Matches</h2>
-</div>
+<h2 class="section-title">Matches</h2>
 
 {% if matches %}
 
@@ -69,8 +59,8 @@
 
 {% else %}
 
-<div class="alert alert-secondary">
+<div class="note">
     The armwrestler has not had any matches on the <strong>{{ arm }}</strong> arm.
 </div>
 
-{% endif%}
+{% endif %}
