@@ -16,9 +16,9 @@
         <tbody>
             {% for armwrestler in active_armwrestlers %}
             <tr>
-                <td class="rank">#{{ armwrestler['rank'] }}</td>
+                <td class="muted">#{{ armwrestler['rank'] }}</td>
                 <td>
-                    <div class="name-cell">
+                    <div class="row">
                         <a href="{{ url_for('view_member', id=armwrestler['id'], arm=arm) }}" class="name-link">{{ armwrestler['name'] }}</a>
                         {% if armwrestler['id'] in armwrestler_badges_dict %}
                         {% for bname, bcolor in armwrestler_badges_dict[armwrestler['id']] %}
@@ -59,7 +59,7 @@
             {% for armwrestler in inactive_armwrestlers %}
             <tr>
                 <td>
-                    <div class="name-cell">
+                    <div class="row">
                         <a href="{{ url_for('view_member', id=armwrestler['id'], arm=arm) }}" class="name-link">{{ armwrestler['name'] }}</a>
                         {% if armwrestler['id'] in armwrestler_badges_dict %}
                         {% for bname, bcolor in armwrestler_badges_dict[armwrestler['id']] %}

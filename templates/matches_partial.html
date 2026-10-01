@@ -1,5 +1,5 @@
 {% from 'macros.html' import modal_header %}
-<div class="match-list">
+<div class="stack">
 {% for match in matches %}
 {% set data = formatted_data[loop.index0] %}
 {% if can_confirm_matches %}
@@ -7,17 +7,17 @@
 {% endif %}
     <div class="card match {{ wins_losses[loop.index0] if wins_losses else '' }}">
         <div class="match-players">
-            <div class="player">
+            <div>
                 {% if match['armwrestler1_rank'] %}
-                <span class="rank">#{{ match['armwrestler1_rank'] }}</span>
+                <span class="muted">#{{ match['armwrestler1_rank'] }}</span>
                 {% endif %}
                 <a href="{{ url_for('view_member', id=match['armwrestler1_id'], arm=match['arm']) }}" class="name-link">{{ match['armwrestler1_name'] }}</a>
                 <span class="elo">{{ match['armwrestler1_elo'] }} <span class="{{ data.diff1_color }}">{{ data.diff1_text }}</span></span>
             </div>
-            <span class="vs">VS</span>
-            <div class="player">
+            <span class="badge">VS</span>
+            <div>
                 {% if match['armwrestler2_rank'] %}
-                <span class="rank">#{{ match['armwrestler2_rank'] }}</span>
+                <span class="muted">#{{ match['armwrestler2_rank'] }}</span>
                 {% endif %}
                 <a href="{{ url_for('view_member', id=match['armwrestler2_id'], arm=match['arm']) }}" class="name-link">{{ match['armwrestler2_name'] }}</a>
                 <span class="elo">{{ match['armwrestler2_elo'] }} <span class="{{ data.diff2_color }}">{{ data.diff2_text }}</span></span>
@@ -25,19 +25,19 @@
         </div>
         <dl class="match-meta">
             <div>
-                <dt>Arm</dt>
+                <dt>Arm:</dt>
                 <dd>{{ match['arm'] }}</dd>
             </div>
             <div>
-                <dt>Format</dt>
+                <dt>Format:</dt>
                 <dd>{{ match['selected_format'] }}</dd>
             </div>
             <div>
-                <dt>Result</dt>
-                <dd><span class="badge badge-score {{ data.score1_color }}">{{ match['armwrestler1_score'] }}</span>:<span class="badge badge-score {{ data.score2_color }}">{{ match['armwrestler2_score'] }}</span></dd>
+                <dt>Result:</dt>
+                <dd><span class="badge {{ data.score1_color }}">{{ match['armwrestler1_score'] }}</span> : <span class="badge {{ data.score2_color }}">{{ match['armwrestler2_score'] }}</span></dd>
             </div>
             <div>
-                <dt>Date</dt>
+                <dt>Date:</dt>
                 <dd>{{ data.date }}</dd>
             </div>
         </dl>

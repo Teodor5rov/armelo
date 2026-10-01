@@ -1,5 +1,5 @@
 {% from 'macros.html' import modal_header %}
-<form class="form" method="POST" action="{{ url_for('edit_member') }}" hx-post="{{ url_for('edit_member') }}" hx-trigger="change" hx-swap:inherited="outerMorph">
+<form class="stack" method="POST" action="{{ url_for('edit_member') }}" hx-post="{{ url_for('edit_member') }}" hx-trigger="change" hx-swap:inherited="outerMorph">
     <input type="hidden" name="id" value="{{ id }}">
     <div class="field">
         <label for="name" class="label">Name</label>
@@ -26,7 +26,7 @@
         </select>
     </div>
 
-    <div class="actions">
+    <div class="row">
         {% if member_ready %}
         <button type="button" class="btn btn-primary" popovertarget="saveChangesModal">Save changes</button>
         {% elif error %}

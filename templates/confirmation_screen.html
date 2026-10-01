@@ -5,7 +5,7 @@
 {% block content %}
 
 <div class="confirm" hx-get="{{ url_for('confirmation_redirect', redirect=redirect) }}" hx-trigger="load delay:1s" hx-swap="none">
-    <h3 class="section-title">{{ message }}</h3>
+    <h3>{{ message }}</h3>
     <div class="loading"></div>
 </div>
 

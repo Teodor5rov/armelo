@@ -5,13 +5,13 @@
 
 {% block content %}
 
-<div class="actions">
+<div class="row">
     <h2 class="page-title">{{ wordmark('rankings', 'Rankings', 13650, 1584) }}</h2>
     <form action="{{ url_for('supermatch') }}" method="POST">
         <button type="submit" class="btn btn-primary">New supermatch</button>
     </form>
 </div>
-<p class="lead">Official rankings for armwrestlers at the <strong>Armwrestling Zurich</strong> club. Scores are based on the ELO rating system.</p>
+<p class="muted">Official rankings for armwrestlers at the <strong>Armwrestling Zurich</strong> club. Scores are based on the ELO rating system.</p>
 
 <div id="rankings" class="stack">
     {% include 'ranking_partial.html' %}

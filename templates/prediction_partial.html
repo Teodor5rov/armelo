@@ -1,57 +1,21 @@
-{% from 'macros.html' import radio_toggle %}
-<form class="form" hx-get="{{ url_for('prediction') }}" hx-trigger="change" hx-swap="outerMorph" hx-push-url="true">
+{% from 'macros.html' import radio_toggle, armwrestler_selects, format_select with context %}
+<form class="stack" hx-get="{{ url_for('prediction') }}" hx-trigger="change" hx-swap="outerMorph" hx-push-url="true">
     <div class="field">
         <label class="label">Choose arm for the prediction:</label>
         {{ radio_toggle('arm', 'right', 'Right arm', 'left', 'Left arm', arm) }}
     </div>
 
-    <!-- Armwrestler selection dropdowns -->
-    <div class="versus">
-        <div class="field">
-            <label for="armwrestler1" class="label">Armwrestler 1:</label>
-            <select class="select" id="armwrestler1" name="armwrestler1" required>
-                <option disabled selected value="none">Choose...</option>
-                {% for armwrestler in armwrestlers %}
-                <option value="{{ armwrestler['id'] }}" {% if selected_armwrestler_1_id == armwrestler['id'] %}selected{% endif %}>{{ armwrestler['name'] }}</option>
-                {% endfor %}
-            </select>
-        </div>
+    {{ armwrestler_selects() }}
 
-        <span class="vs">VS</span>
-
-        <div class="field">
-            <label for="armwrestler2" class="label">Armwrestler 2:</label>
-            {% if selected_armwrestler_1_id %}
-                <select class="select" id="armwrestler2" name="armwrestler2" required>
-                    <option disabled selected value="none">Choose...</option>
-                    {% for armwrestler in armwrestlers_2 %}
-                    <option value="{{ armwrestler['id'] }}" {% if selected_armwrestler_2_id == armwrestler['id'] %}selected{% endif %}>{{ armwrestler['name'] }}</option>
-                    {% endfor %}
-                </select>
-            {% else %}
-                <select class="select" id="armwrestler2" name="armwrestler2" required disabled>
-                    <option value="none">Choose Armwrestler 1</option>
-                </select>
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="field">
-        <label for="supermatch_format" class="label">Choose supermatch format:</label>
-        <select class="select" id="supermatch_format" name="supermatch_format" required>
-        {% for format in supermatch_formats %}
-        <option value="{{ format }}" {% if selected_format == format %}selected{% endif %}>{{ format }}</option>
-        {% endfor %}
-        </select>
-    </div>
+    {{ format_select() }}
 
     {% if prediction_ready %}
     <div class="field">
         <label class="label">Current ELO:</label>
         <div class="score-grid">
-            <span class="score-elo score-left text-{{ win_chance_color[0] }}">{{armwrestler_1_elo}}</span>
-            <span class="score-sep">:</span>
-            <span class="score-elo score-right text-{{ win_chance_color[1] }}">{{armwrestler_2_elo}}</span>
+            <span class="score-left text-{{ win_chance_color[0] }}">{{armwrestler_1_elo}}</span>
+            <span class="muted">:</span>
+            <span class="score-right text-{{ win_chance_color[1] }}">{{armwrestler_2_elo}}</span>
         </div>
     </div>
 
@@ -60,7 +24,7 @@
         <div class="score-grid">
             <span></span>
             <span class="score bg-{{ score_color[0] }}">{{ expected_1 }}</span>
-            <span class="score-sep">:</span>
+            <span class="muted">:</span>
             <span class="score bg-{{ score_color[1] }}">{{ expected_2 }}</span>
             <span></span>
         </div>

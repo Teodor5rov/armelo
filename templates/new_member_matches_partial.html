@@ -1,35 +1,35 @@
 {% from 'macros.html' import modal_header %}
-<div class="match-list">
+<div class="stack">
 {% for match in new_member_matches %}
 <button type="button" class="card-button" hx-post="{{ url_for('remove_new_member_match', match_id=match['id']) }}" hx-target="#removeMatch" popovertarget="removeModal" popovertargetaction="show">
     <div class="card match">
         <div class="match-players">
-            <div class="player">
+            <div>
                 <strong>{{ match['armwrestler1_name'] }}</strong>
             </div>
-            <span class="vs">VS</span>
-            <div class="player">
+            <span class="badge">VS</span>
+            <div>
                 {% if match['armwrestler2_rank'] %}
-                <span class="rank">#{{ match['armwrestler2_rank'] }}</span>
+                <span class="muted">#{{ match['armwrestler2_rank'] }}</span>
                 {% endif %}
                 <a href="{{ url_for('view_member', id=match['armwrestler2_id'], arm=match['arm']) }}" class="name-link">{{ match['armwrestler2_name'] }}</a>
             </div>
         </div>
         <dl class="match-meta">
             <div>
-                <dt>Arm</dt>
+                <dt>Arm:</dt>
                 <dd>{{ match['arm'] }}</dd>
             </div>
             <div>
-                <dt>Format</dt>
+                <dt>Format:</dt>
                 <dd>{{ match['selected_format'] }}</dd>
             </div>
             <div>
-                <dt>Score</dt>
-                <dd><span class="badge badge-score {{ 'bg-success' if match['armwrestler1_score'] > match['armwrestler2_score'] else ('bg-secondary' if match['armwrestler1_score'] == match['armwrestler2_score'] else 'bg-danger') }}">{{ match['armwrestler1_score'] }}</span>:<span class="badge badge-score {{ 'bg-success' if match['armwrestler2_score'] > match['armwrestler1_score'] else ('bg-secondary' if match['armwrestler1_score'] == match['armwrestler2_score'] else 'bg-danger') }}">{{ match['armwrestler2_score'] }}</span></dd>
+                <dt>Score:</dt>
+                <dd><span class="badge {{ 'bg-success' if match['armwrestler1_score'] > match['armwrestler2_score'] else ('bg-secondary' if match['armwrestler1_score'] == match['armwrestler2_score'] else 'bg-danger') }}">{{ match['armwrestler1_score'] }}</span> : <span class="badge {{ 'bg-success' if match['armwrestler2_score'] > match['armwrestler1_score'] else ('bg-secondary' if match['armwrestler1_score'] == match['armwrestler2_score'] else 'bg-danger') }}">{{ match['armwrestler2_score'] }}</span></dd>
             </div>
             <div>
-                <dt>Elo from match</dt>
+                <dt>Elo from match:</dt>
                 <dd>{{ match['elo_from_match'] }}</dd>
             </div>
         </dl>

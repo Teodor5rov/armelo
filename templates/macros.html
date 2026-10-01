@@ -21,39 +21,69 @@
 
 {% macro arm_toggle(endpoint, target, push=false, url_kwargs={}) %}
 <div class="segmented">
-    <a href="{{ url_for(endpoint, arm='right', **url_kwargs) }}"
-       class="segment {{ 'active' if arm == 'right' else '' }}"
-       role="button"
-       hx-get="{{ url_for(endpoint, arm='right', **url_kwargs) }}"
-       hx-target="{{ target }}"
-       hx-swap="innerMorph"
-       {% if push %}hx-push-url="true"{% endif %}
-       aria-pressed="{{ 'true' if arm == 'right' else 'false' }}">Right arm</a>
-    <a href="{{ url_for(endpoint, arm='left', **url_kwargs) }}"
-       class="segment {{ 'active' if arm == 'left' else '' }}"
-       role="button"
-       hx-get="{{ url_for(endpoint, arm='left', **url_kwargs) }}"
-       hx-target="{{ target }}"
-       hx-swap="innerMorph"
-       {% if push %}hx-push-url="true"{% endif %}
-       aria-pressed="{{ 'true' if arm == 'left' else 'false' }}">Left arm</a>
+    {% for value, label in [('right', 'Right arm'), ('left', 'Left arm')] %}
+    {% set url = url_for(endpoint, arm=value, **url_kwargs) %}
+    <a href="{{ url }}" class="segment" role="button" hx-get="{{ url }}" hx-target="{{ target }}" hx-swap="innerMorph"{% if push %} hx-push-url="true"{% endif %} aria-pressed="{{ 'true' if arm == value else 'false' }}">{{ label }}</a>
+    {% endfor %}
 </div>
 {% endmacro %}
 
 {% macro radio_toggle(name, left_value, left_label, right_value, right_label, selected) %}
 <div class="segmented">
-    <label class="segment">
-        <input type="radio" name="{{ name }}" id="{{ left_value }}" value="{{ left_value }}" autocomplete="off" {{ 'checked' if selected == left_value else '' }} class="visually-hidden">{{ left_label }}
-    </label>
-    <label class="segment">
-        <input type="radio" name="{{ name }}" id="{{ right_value }}" value="{{ right_value }}" autocomplete="off" {{ 'checked' if selected == right_value else '' }} class="visually-hidden">{{ right_label }}
-    </label>
+    {% for value, label in [(left_value, left_label), (right_value, right_label)] %}
+    <label class="segment"><input type="radio" name="{{ name }}" id="{{ value }}" value="{{ value }}" autocomplete="off" {{ 'checked' if selected == value else '' }} class="visually-hidden">{{ label }}</label>
+    {% endfor %}
+</div>
+{% endmacro %}
+
+{# Armwrestler 1 VS armwrestler 2 selects. Import with context: uses armwrestlers, armwrestlers_2 and the selected ids. #}
+{% macro armwrestler_selects() %}
+<div class="versus">
+    <div class="field">
+        <label for="armwrestler1" class="label">Armwrestler 1:</label>
+        <select class="select" id="armwrestler1" name="armwrestler1" required>
+            <option disabled selected value="none">Choose...</option>
+            {% for armwrestler in armwrestlers %}
+            <option value="{{ armwrestler['id'] }}" {% if selected_armwrestler_1_id == armwrestler['id'] %}selected{% endif %}>{{ armwrestler['name'] }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <span class="badge">VS</span>
+
+    <div class="field">
+        <label for="armwrestler2" class="label">Armwrestler 2:</label>
+        {% if selected_armwrestler_1_id %}
+        <select class="select" id="armwrestler2" name="armwrestler2" required>
+            <option disabled selected value="none">Choose...</option>
+            {% for armwrestler in armwrestlers_2 %}
+            <option value="{{ armwrestler['id'] }}" {% if selected_armwrestler_2_id == armwrestler['id'] %}selected{% endif %}>{{ armwrestler['name'] }}</option>
+            {% endfor %}
+        </select>
+        {% else %}
+        <select class="select" id="armwrestler2" name="armwrestler2" required disabled>
+            <option value="none">Choose Armwrestler 1</option>
+        </select>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+{# Import with context: uses supermatch_formats and selected_format. #}
+{% macro format_select() %}
+<div class="field">
+    <label for="supermatch_format" class="label">Choose supermatch format:</label>
+    <select class="select" id="supermatch_format" name="supermatch_format" required>
+        {% for format in supermatch_formats %}
+        <option value="{{ format }}" {% if selected_format == format %}selected{% endif %}>{{ format }}</option>
+        {% endfor %}
+    </select>
 </div>
 {% endmacro %}
 
 {% macro modal_header(modal_id, title) %}
 <div class="modal-header">
-    <h3 class="modal-title" id="{{ modal_id }}Label">{{ title }}</h3>
+    <h3 id="{{ modal_id }}Label">{{ title }}</h3>
     <button type="button" class="btn btn-tertiary btn-icon" popovertarget="{{ modal_id }}" popovertargetaction="hide" aria-label="Close">{{ icon('x') }}</button>
 </div>
 {% endmacro %}

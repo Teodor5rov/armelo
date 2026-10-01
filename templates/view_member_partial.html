@@ -38,10 +38,10 @@
                 {% if badges_for_arm and badges_for_arm|length > 0 %}
                 <tr>
                     <td colspan="3">
-                        <div class="badges">
-                        {% for badge in badges_for_arm %}
+                        <div class="row text-center">
+                            {% for badge in badges_for_arm %}
                             <span class="badge {{ badge['color'] }}">{{ badge['name'] }}</span>
-                        {% endfor %}
+                            {% endfor %}
                         </div>
                     </td>
                 </tr>

@@ -1,7 +1,7 @@
 {% from 'macros.html' import arm_toggle with context %}
 {{ arm_toggle('closest_matches', '#closest_matches', push=true) }}
 
-<div class="match-list">
+<div class="stack">
 {% for match in closest_matches_with_predictions %}
 {% if supermatch_add %}
 <form action="{{ url_for('supermatch') }}" method="POST">
@@ -14,17 +14,17 @@
     <button type="submit" class="card-button">
         <div class="card match">
             <div class="match-players">
-                <div class="player">
+                <div>
                     {% if match['rank1'] %}
-                    <span class="rank">#{{ match['rank1'] }}</span>
+                    <span class="muted">#{{ match['rank1'] }}</span>
                     {% endif %}
                     <a href="{{ url_for('view_member', id=match['armwrestler1_id'], arm=arm) }}" class="name-link">{{ match['armwrestler1_name'] }}</a>
                     <span class="elo">{{ match['elo1'] }}</span>
                 </div>
-                <span class="vs">VS</span>
-                <div class="player">
+                <span class="badge">VS</span>
+                <div>
                     {% if match['rank2'] %}
-                    <span class="rank">#{{ match['rank2'] }}</span>
+                    <span class="muted">#{{ match['rank2'] }}</span>
                     {% endif %}
                     <a href="{{ url_for('view_member', id=match['armwrestler2_id'], arm=arm) }}" class="name-link">{{ match['armwrestler2_name'] }}</a>
                     <span class="elo">{{ match['elo2'] }}</span>
@@ -32,11 +32,11 @@
             </div>
             <dl class="match-meta">
                 <div>
-                    <dt>Win chance</dt>
-                    <dd><span class="text-{{ match['color1'] }}">{{ match['win1'] }}%</span><span class="muted">|</span><span class="text-{{ match['color2'] }}">{{ match['win2'] }}%</span></dd>
+                    <dt>Win chance:</dt>
+                    <dd><span class="text-{{ match['color1'] }}">{{ match['win1'] }}%</span> <span class="muted">|</span> <span class="text-{{ match['color2'] }}">{{ match['win2'] }}%</span></dd>
                 </div>
                 <div>
-                    <dt>ELO difference</dt>
+                    <dt>ELO difference:</dt>
                     <dd>{{ match['elo_difference'] }}</dd>
                 </div>
             </dl>

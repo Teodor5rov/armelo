@@ -12,8 +12,8 @@
         Select the arm, armwrestlers, the supermatch format and the result in the form below, then submit it for confirmation.
     </div>
     {% endif %}
-    <form class="form" method="POST" action="{{ url_for('supermatch') }}">
-        <div id="form-content" class="form" hx-post="{{ url_for('supermatch') }}" hx-trigger="change" hx-swap="innerMorph">
+    <form class="stack" method="POST" action="{{ url_for('supermatch') }}">
+        <div id="form-content" class="stack" hx-post="{{ url_for('supermatch') }}" hx-trigger="change" hx-swap="innerMorph">
             {% include 'supermatch_partial.html' %}
         </div>
         {% if not current_user %}

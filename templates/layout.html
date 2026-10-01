@@ -21,7 +21,7 @@
         <header class="header">
             <nav class="container nav" aria-label="Main">
                 <a class="brand" href="{{ url_for('ranking') }}">{{ wordmark('armwrestling-zurich', 'Armwrestling Zurich', 31978, 1585) }}</a>
-                <button type="button" class="btn btn-tertiary btn-icon nav-toggle" popovertarget="nav-menu" aria-label="Toggle navigation">{{ icon('menu') }}</button>
+                <button type="button" class="btn btn-tertiary btn-icon nav-toggle push" popovertarget="nav-menu" aria-label="Toggle navigation">{{ icon('menu') }}</button>
                 <div class="nav-menu" id="nav-menu" popover>
                     <div class="nav-links">
                         {% if username %}

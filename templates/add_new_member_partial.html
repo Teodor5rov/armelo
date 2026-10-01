@@ -1,18 +1,18 @@
-{% from 'macros.html' import radio_toggle, modal_header %}
+{% from 'macros.html' import radio_toggle, modal_header, format_select with context %}
 <form class="stack" method="POST" action="{{ url_for('add_new_member') }}" hx-post="{{ url_for('add_new_member') }}" hx-trigger="change" hx-swap="outerMorph">
-    <div class="narrow form">
-        <div class="narrow-sm form">
+    <div class="narrow stack">
+        <div class="narrow-sm stack">
             <div class="field">
                 <label for="name" class="label">New member name</label>
                 <input type="text" class="input" id="name" name="name" value="{{ name if name else '' }}" autocomplete="name">
             </div>
-            <div class="kv">
+            <div class="row">
                 <span class="muted">Calculated Right ELO:</span>
-                <strong class="kv-value">{{ right_elo }}</strong>
+                <strong class="value push">{{ right_elo }}</strong>
             </div>
-            <div class="kv">
+            <div class="row">
                 <span class="muted">Calculated Left ELO:</span>
-                <strong class="kv-value">{{ left_elo }}</strong>
+                <strong class="value push">{{ left_elo }}</strong>
             </div>
         </div>
 
@@ -29,7 +29,7 @@
                 </select>
             </div>
 
-            <span class="vs">VS</span>
+            <span class="badge">VS</span>
 
             <div class="field">
                 <label for="armwrestler2" class="label">Ranked member:</label>
@@ -42,14 +42,7 @@
             </div>
         </div>
 
-        <div class="field">
-            <label for="supermatch_format" class="label">Choose supermatch format:</label>
-            <select class="select" id="supermatch_format" name="supermatch_format" required>
-                {% for format in supermatch_formats %}
-                <option value="{{ format }}" {% if selected_format==format %}selected{% endif %}>{{ format }}</option>
-                {% endfor %}
-            </select>
-        </div>
+        {{ format_select() }}
 
         {% if calculation_ready %}
         <div class="field">
@@ -57,7 +50,7 @@
             <div class="score-grid">
                 <span></span>
                 <span class="score">{{ armwrestler_1_score }}</span>
-                <span class="score-sep">:</span>
+                <span class="muted">:</span>
                 <span class="score">{{ armwrestler_2_score }}</span>
                 <span></span>
             </div>
@@ -70,9 +63,9 @@
         {% else %}
         <input type="range" class="range" id="score" name="score" min="0" max="{{ max_rounds }}" value="{{ value_for_score }}" aria-label="Score">
         {% endif %}
-        <div class="actions">
-            <span class="muted">ELO from match: <strong class="kv-value">{{ elo_from_match }}</strong></span>
-            <div class="btn-group">
+        <div class="row">
+            <span class="muted">ELO from match: <strong class="value">{{ elo_from_match }}</strong></span>
+            <div class="row push">
                 <label class="btn btn-secondary">
                     <input type="radio" name="add_to_avg" id="add_to_avg" value="true" autocomplete="off" {{ 'disabled' if elo_from_match is none }} class="visually-hidden">Add to average
                 </label>
@@ -83,7 +76,7 @@
         </div>
         {% endif %}
 
-        <div class="actions">
+        <div class="row">
             {% if error %}
             <p class="text-danger">{{ error }}</p>
             {% endif %}
