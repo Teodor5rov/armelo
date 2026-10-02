@@ -12,11 +12,17 @@
 
 {% macro back_header(title) %}
 <div class="page-header">
-    <form action="{{ url_for('ranking') }}" method="GET">
-        <button type="submit" class="btn btn-secondary btn-icon" aria-label="Back to rankings">{{ icon('arrow-left') }}</button>
-    </form>
+    <a href="{{ url_for('ranking') }}" class="btn btn-secondary btn-icon" aria-label="Back to rankings">{{ icon('arrow-left') }}</a>
     <h2 class="page-title">{{ title }}</h2>
 </div>
+{% endmacro %}
+
+{% macro score_tile(name, value, label, editable) %}
+{% if editable %}
+<input type="number" inputmode="numeric" class="score" id="{{ name }}" name="{{ name }}" value="{{ value }}" aria-label="{{ label }}">
+{% else %}
+<span class="score">{{ value }}</span>
+{% endif %}
 {% endmacro %}
 
 {% macro arm_toggle(endpoint, target, push=false, url_kwargs={}) %}
@@ -36,7 +42,7 @@
 </div>
 {% endmacro %}
 
-{# Armwrestler 1 VS armwrestler 2 selects. Import with context: uses armwrestlers, armwrestlers_2 and the selected ids. #}
+{# Import with context. #}
 {% macro armwrestler_selects() %}
 <div class="versus">
     <div class="field">
@@ -69,7 +75,7 @@
 </div>
 {% endmacro %}
 
-{# Import with context: uses supermatch_formats and selected_format. #}
+{# Import with context. #}
 {% macro format_select() %}
 <div class="field">
     <label for="supermatch_format" class="label">Choose supermatch format:</label>

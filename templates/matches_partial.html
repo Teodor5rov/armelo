@@ -2,10 +2,10 @@
 <div class="stack">
 {% for match in matches %}
 {% set data = formatted_data[loop.index0] %}
-{% if can_confirm_matches %}
-<button type="button" class="card-button" hx-post="{{ url_for('confirm_match', match_id=match['id']) }}" hx-target="#confirmMatch" popovertarget="confirmModal" popovertargetaction="show">
-{% endif %}
     <div class="card match {{ wins_losses[loop.index0] if wins_losses else '' }}">
+        {% if can_confirm_matches %}
+        <button type="button" class="card-button" hx-post="{{ url_for('confirm_match', match_id=match['id']) }}" hx-target="#confirmMatch" popovertarget="confirmModal" popovertargetaction="show" aria-label="Confirm match: {{ match['armwrestler1_name'] }} vs {{ match['armwrestler2_name'] }}"></button>
+        {% endif %}
         <div class="match-players">
             <div>
                 {% if match['armwrestler1_rank'] %}
@@ -42,9 +42,6 @@
             </div>
         </dl>
     </div>
-{% if can_confirm_matches %}
-</button>
-{% endif %}
 {% endfor %}
 </div>
 

@@ -9,9 +9,5 @@
 </div>
 <div class="modal-footer">
     <button type="button" class="btn btn-secondary" popovertarget="confirmModal" popovertargetaction="hide">No</button>
-    <form action="{{ url_for('confirm_remove') }}" method="POST">
-        <input type="hidden" name="id" value="{{ id }}">
-        <input type="hidden" name="current_name" value="{{ current_name }}">
-        <button type="submit" name="confirm_remove" class="btn btn-danger">Yes</button>
-    </form>
+    <button type="submit" name="confirm_remove" formaction="{{ url_for('confirm_remove', id=id, current_name=current_name) }}" class="btn btn-danger">Yes</button>
 </div>

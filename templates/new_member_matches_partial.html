@@ -1,8 +1,10 @@
 {% from 'macros.html' import modal_header %}
 <div class="stack">
 {% for match in new_member_matches %}
-<button type="button" class="card-button" hx-post="{{ url_for('remove_new_member_match', match_id=match['id']) }}" hx-target="#removeMatch" popovertarget="removeModal" popovertargetaction="show">
     <div class="card match">
+        {% if can_remove_matches %}
+        <button type="button" class="card-button" hx-post="{{ url_for('remove_new_member_match', match_id=match['id']) }}" hx-target="#removeMatch" popovertarget="removeModal" popovertargetaction="show" aria-label="Remove match: {{ match['armwrestler1_name'] }} vs {{ match['armwrestler2_name'] }}"></button>
+        {% endif %}
         <div class="match-players">
             <div>
                 <strong>{{ match['armwrestler1_name'] }}</strong>
@@ -34,11 +36,12 @@
             </div>
         </dl>
     </div>
-</button>
 {% endfor %}
 </div>
 
+{% if can_remove_matches %}
 <div class="modal modal-xl" id="removeModal" popover role="dialog" aria-labelledby="removeModalLabel">
     {{ modal_header('removeModal', 'Remove Match') }}
     <div id="removeMatch"></div>
 </div>
+{% endif %}

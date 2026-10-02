@@ -1,4 +1,4 @@
-{% from 'macros.html' import radio_toggle, armwrestler_selects, format_select with context %}
+{% from 'macros.html' import radio_toggle, armwrestler_selects, format_select, score_tile with context %}
 <div class="field">
     <label class="label">Choose arm for the supermatch:</label>
     {{ radio_toggle('arm', 'right', 'Right arm', 'left', 'Left arm', arm) }}
@@ -8,27 +8,19 @@
 
 {{ format_select() }}
 
-<!-- Submit Match button, shown only if all selections are made and none of them is 'none' -->
 {% if supermatch_ready %}
 <div class="field">
     <label class="label">Supermatch result:</label>
     <div class="score-grid">
         <span class="text-center {{ armwrestler_1_color }}">{{armwrestler_1_elo}} {{ armwrestler_1_diff }}</span>
-        <span class="score">{{ armwrestler_1_score }}</span>
+        {{ score_tile('custom_score_1', armwrestler_1_score, 'Armwrestler 1 score', custom_score) }}
         <span class="muted">:</span>
-        <span class="score">{{ armwrestler_2_score }}</span>
+        {{ score_tile('custom_score_2', armwrestler_2_score, 'Armwrestler 2 score', custom_score) }}
         <span class="text-center {{ armwrestler_2_color }}">{{armwrestler_2_elo}} {{ armwrestler_2_diff }}</span>
     </div>
 </div>
 
-{% if custom_score %}
-<div class="score-grid score-inputs">
-    <input type="number" class="input" id="custom_score_1" name="custom_score_1" value="{{ custom_score_1 }}" aria-label="Armwrestler 1 score">
-    <input type="number" class="input" id="custom_score_2" name="custom_score_2" value="{{ custom_score_2 }}" aria-label="Armwrestler 2 score">
-</div>
-{% else %}
-<input type="range" class="range" id="score" name="score" min="0" max="{{ max_rounds }}" value="{{ value_for_score }}" aria-label="Score">
-{% endif %}
+<input type="range" class="range" id="score" name="score" min="0" max="{{ max_rounds }}" value="{{ value_for_score }}" aria-label="Score" {{ 'disabled' if custom_score }}>
 
 <div class="row">
     <button type="submit" name="submit_match" class="btn btn-primary">Submit match</button>

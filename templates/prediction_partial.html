@@ -21,6 +21,9 @@
 
     <div class="field">
         <label class="label">Approximate expected score:</label>
+        {% if expected_1 == 'Equal' %}
+        <p class="value text-center">Equal</p>
+        {% else %}
         <div class="score-grid">
             <span></span>
             <span class="score bg-{{ score_color[0] }}">{{ expected_1 }}</span>
@@ -28,14 +31,15 @@
             <span class="score bg-{{ score_color[1] }}">{{ expected_2 }}</span>
             <span></span>
         </div>
+        {% endif %}
     </div>
 
     <div class="field">
         <label class="label">Win chance:</label>
         <div class="meter">
-            <div class="bg-{{ win_chance_color[0] }}" role="progressbar" style="width: {{ binom_predicted_1 }}%" aria-valuenow="{{ binom_predicted_1 }}" aria-valuemin="0" aria-valuemax="100">{{ binom_predicted_1 }}%</div>
-            <div class="bg-secondary" role="progressbar" style="width: {{ binom_draw }}%" aria-valuenow="{{ binom_draw }}" aria-valuemin="0" aria-valuemax="100">{{ binom_draw }}%</div>
-            <div class="bg-{{ win_chance_color[1] }}" role="progressbar" style="width: {{ binom_predicted_2 }}%" aria-valuenow="{{ binom_predicted_2 }}" aria-valuemin="0" aria-valuemax="100">{{ binom_predicted_2 }}%</div>
+            <div class="bg-{{ win_chance_color[0] }}" role="progressbar" style="width: {{ binom_predicted_1 }}%" aria-valuenow="{{ binom_predicted_1 }}" aria-valuemin="0" aria-valuemax="100"><span>{{ binom_predicted_1 }}%</span></div>
+            <div class="bg-secondary" role="progressbar" style="width: {{ binom_draw }}%" aria-valuenow="{{ binom_draw }}" aria-valuemin="0" aria-valuemax="100"><span>{{ binom_draw }}%</span></div>
+            <div class="bg-{{ win_chance_color[1] }}" role="progressbar" style="width: {{ binom_predicted_2 }}%" aria-valuenow="{{ binom_predicted_2 }}" aria-valuemin="0" aria-valuemax="100"><span>{{ binom_predicted_2 }}%</span></div>
         </div>
     </div>
 

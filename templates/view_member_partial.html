@@ -20,8 +20,8 @@
                 </tr>
                 <tr>
                     <td>Right Rank</td>
-                    <td class="text-center"><strong>{% if current_right_rank %}#{% endif %}{{ current_right_rank }}</strong></td>
-                    <td class="text-center"><strong>{% if best_right_rank %}#{% endif %}{{ best_right_rank }}</strong></td>
+                    <td class="text-center"><strong>{{ '#' ~ current_right_rank if current_right_rank else '–' }}</strong></td>
+                    <td class="text-center"><strong>{{ '#' ~ best_right_rank if best_right_rank else '–' }}</strong></td>
                 </tr>
                 {% elif arm == 'left' %}
                 <tr>
@@ -31,8 +31,8 @@
                 </tr>
                 <tr>
                     <td>Left Rank</td>
-                    <td class="text-center"><strong>{% if current_left_rank %}#{% endif %}{{ current_left_rank }}</strong></td>
-                    <td class="text-center"><strong>{% if best_left_rank %}#{% endif %}{{ best_left_rank }}</strong></td>
+                    <td class="text-center"><strong>{{ '#' ~ current_left_rank if current_left_rank else '–' }}</strong></td>
+                    <td class="text-center"><strong>{{ '#' ~ best_left_rank if best_left_rank else '–' }}</strong></td>
                 </tr>
                 {% endif %}
                 {% if badges_for_arm and badges_for_arm|length > 0 %}

@@ -1,6 +1,8 @@
 from config import *
 from elo import *
 from helpers import *
+from werkzeug.exceptions import HTTPException
+from werkzeug.routing import BuildError
 
 
 @app.route('/robots.txt')
@@ -39,9 +41,12 @@ def logout():
 
 @app.route("/confirmation_redirect")
 def confirmation_redirect():
-    redirect = request.args.get('redirect')
+    try:
+        location = url_for(request.args.get('redirect', 'ranking'))
+    except BuildError:
+        location = url_for('ranking')
     response = make_response("")
-    response.headers["HX-Redirect"] = url_for(redirect)
+    response.headers["HX-Redirect"] = location
     return response
 
 
@@ -336,7 +341,7 @@ def add_new_member():
             try:
                 armwrestler_1_score = int(request.form.get('custom_score_1', (max_rounds // 2) + 1))
                 armwrestler_2_score = int(request.form.get('custom_score_2', (max_rounds - ((max_rounds // 2) + 1))))
-                if not (0 <= armwrestler_1_score <= max_rounds and 0 <= armwrestler_2_score <= max_rounds):
+                if not (0 <= armwrestler_1_score <= max_rounds and 0 <= armwrestler_2_score <= max_rounds) or armwrestler_1_score + armwrestler_2_score == 0:
                     raise ValueError
             except (ValueError, TypeError):
                 armwrestler_1_score = (max_rounds // 2) + 1
@@ -507,18 +512,17 @@ def confirm_remove():
     has_history = bool(db_execute('SELECT 1 FROM history WHERE armwrestler1_id = ? OR armwrestler2_id = ? LIMIT 1', id, id))
 
     if 'confirm_remove' in request.form:
+        message = "Member hidden from rankings" if has_history else "Member deleted"
         try:
             if has_history:
                 db_execute("UPDATE armwrestlers SET hidden = 1 WHERE id = ?", id)
                 db_execute("DELETE FROM unconfirmed_matches WHERE armwrestler1_id = ? OR armwrestler2_id = ?", id, id)
                 db_execute("DELETE FROM new_member_matches WHERE armwrestler2_id = ?", id)
-                message = "Member hidden from rankings"
             else:
                 db_execute("DELETE FROM unconfirmed_matches WHERE armwrestler1_id = ? OR armwrestler2_id = ?", id, id)
                 db_execute("DELETE FROM new_member_matches WHERE armwrestler2_id = ?", id)
                 db_execute("DELETE FROM armwrestler_badges WHERE armwrestler_id = ?", id)
                 db_execute("DELETE FROM armwrestlers WHERE id = ?", id)
-                message = "Member deleted"
             update_ranks()
         except sqlite3.DatabaseError as db_error:
             app.logger.error(f"Database error occurred: {db_error}", exc_info=True)
@@ -582,6 +586,8 @@ def history():
     else:
         try:
             selected_year = int(selected_year)
+            if not 1 <= selected_year < 9999:
+                raise ValueError
         except ValueError:
             selected_year = current_year
 
@@ -637,6 +643,8 @@ def undo_last_match():
     if 'undo_match' in request.form:
         try:
             last_match = db_execute('SELECT armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo FROM history ORDER BY id DESC LIMIT 1')
+            if not last_match:
+                return redirect(url_for('history'))
             armwrestler1_id, armwrestler2_id, arm, armwrestler1_elo, armwrestler2_elo = last_match[0]
             dbarm = 'right_elo' if arm == 'right' else 'left_elo'
             for armwrestler_id, elo in ((armwrestler1_id, armwrestler1_elo), (armwrestler2_id, armwrestler2_elo)):
@@ -741,7 +749,7 @@ def supermatch():
             try:
                 armwrestler_1_score = int(request.form.get('custom_score_1', (max_rounds // 2) + 1))
                 armwrestler_2_score = int(request.form.get('custom_score_2', (max_rounds - ((max_rounds // 2) + 1))))
-                if not (0 <= armwrestler_1_score <= max_rounds and 0 <= armwrestler_2_score <= max_rounds):
+                if not (0 <= armwrestler_1_score <= max_rounds and 0 <= armwrestler_2_score <= max_rounds) or armwrestler_1_score + armwrestler_2_score == 0:
                     raise ValueError
             except (ValueError, TypeError):
                 armwrestler_1_score = (max_rounds // 2) + 1
@@ -993,7 +1001,7 @@ def elo_from_match():
             try:
                 armwrestler_1_score = int(request.args.get('custom_score_1', (max_rounds // 2) + 1))
                 armwrestler_2_score = int(request.args.get('custom_score_2', (max_rounds - ((max_rounds // 2) + 1))))
-                if not (0 <= armwrestler_1_score <= max_rounds and 0 <= armwrestler_2_score <= max_rounds):
+                if not (0 <= armwrestler_1_score <= max_rounds and 0 <= armwrestler_2_score <= max_rounds) or armwrestler_1_score + armwrestler_2_score == 0:
                     raise ValueError
             except (ValueError, TypeError):
                 armwrestler_1_score = (max_rounds // 2) + 1
@@ -1015,7 +1023,7 @@ def elo_from_match():
 
         elif ranked == 'unranked':
             armwrestler_1_elo = get_current_elo(arm, [selected_armwrestler_1_id])[0]
-            elo_from_match = expected_elo_from_score(armwrestler_1_elo, (armwrestler_2_score, armwrestler_1_score))
+            elo_from_match = expected_elo_from_score(armwrestler_1_elo, (armwrestler_1_score, armwrestler_2_score))
 
     template_data = {
         'ranked': ranked, 'arm': arm,
@@ -1041,6 +1049,12 @@ def elo_from_match():
 def page_not_found(e):
     app.logger.error(f"404 Error: {e}, path: {request.path}")
     return render_template('error.html', error_code="404", error_message=f"Page not found - {request.path}"), 404
+
+
+@app.errorhandler(HTTPException)
+def http_error(e):
+    app.logger.error(f"{e.code} Error: {e}, path: {request.path}")
+    return render_template('error.html', error_code=e.code, error_message=f"{e.name} - {request.path}"), e.code
 
 
 @app.errorhandler(500)

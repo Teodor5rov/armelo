@@ -27,7 +27,7 @@
                 {% endfor %}
             </select>
         </form>
-        {% if username %}
+        {% if username and total_matches %}
         <button type="button" class="btn btn-danger" hx-post="{{ url_for('undo_last_match') }}" hx-target="#undoMatch" popovertarget="undoModal" popovertargetaction="show">
             Undo last match
         </button>

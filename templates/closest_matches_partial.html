@@ -11,37 +11,36 @@
     <input type="hidden" name="arm" value="{{ arm }}">
     <input type="hidden" name="armwrestler1" value="{{ match['armwrestler1_id'] }}">
     <input type="hidden" name="armwrestler2" value="{{ match['armwrestler2_id'] }}">
-    <button type="submit" class="card-button">
-        <div class="card match">
-            <div class="match-players">
-                <div>
-                    {% if match['rank1'] %}
-                    <span class="muted">#{{ match['rank1'] }}</span>
-                    {% endif %}
-                    <a href="{{ url_for('view_member', id=match['armwrestler1_id'], arm=arm) }}" class="name-link">{{ match['armwrestler1_name'] }}</a>
-                    <span class="elo">{{ match['elo1'] }}</span>
-                </div>
-                <span class="badge">VS</span>
-                <div>
-                    {% if match['rank2'] %}
-                    <span class="muted">#{{ match['rank2'] }}</span>
-                    {% endif %}
-                    <a href="{{ url_for('view_member', id=match['armwrestler2_id'], arm=arm) }}" class="name-link">{{ match['armwrestler2_name'] }}</a>
-                    <span class="elo">{{ match['elo2'] }}</span>
-                </div>
+    <div class="card match">
+        <button type="submit" class="card-button" aria-label="{{ 'New supermatch' if supermatch_add else 'Prediction' }}: {{ match['armwrestler1_name'] }} vs {{ match['armwrestler2_name'] }}"></button>
+        <div class="match-players">
+            <div>
+                {% if match['rank1'] %}
+                <span class="muted">#{{ match['rank1'] }}</span>
+                {% endif %}
+                <a href="{{ url_for('view_member', id=match['armwrestler1_id'], arm=arm) }}" class="name-link">{{ match['armwrestler1_name'] }}</a>
+                <span class="elo">{{ match['elo1'] }}</span>
             </div>
-            <dl class="match-meta">
-                <div>
-                    <dt>Win chance:</dt>
-                    <dd><span class="text-{{ match['color1'] }}">{{ match['win1'] }}%</span> <span class="muted">|</span> <span class="text-{{ match['color2'] }}">{{ match['win2'] }}%</span></dd>
-                </div>
-                <div>
-                    <dt>ELO difference:</dt>
-                    <dd>{{ match['elo_difference'] }}</dd>
-                </div>
-            </dl>
+            <span class="badge">VS</span>
+            <div>
+                {% if match['rank2'] %}
+                <span class="muted">#{{ match['rank2'] }}</span>
+                {% endif %}
+                <a href="{{ url_for('view_member', id=match['armwrestler2_id'], arm=arm) }}" class="name-link">{{ match['armwrestler2_name'] }}</a>
+                <span class="elo">{{ match['elo2'] }}</span>
+            </div>
         </div>
-    </button>
+        <dl class="match-meta">
+            <div>
+                <dt>Win chance:</dt>
+                <dd><span class="text-{{ match['color1'] }}">{{ match['win1'] }}%</span> <span class="muted">|</span> <span class="text-{{ match['color2'] }}">{{ match['win2'] }}%</span></dd>
+            </div>
+            <div>
+                <dt>ELO difference:</dt>
+                <dd>{{ match['elo_difference'] }}</dd>
+            </div>
+        </dl>
+    </div>
 </form>
 {% endfor %}
 </div>

@@ -1,6 +1,5 @@
 /*
  * Armwrestling Zurich design system - dark only.
- * Based on Vercel Geist: neutral scale, type scale and Geist Mono.
  *
  * Rules:
  * - Sharp corners everywhere, no border-radius.
@@ -17,8 +16,7 @@
  * - Three font weights: 400 text, 500 controls, tags, table headers and names, 700 headings and emphasis.
  * - Icons are --icon-size, like the toggle indicator and the slider thumb; in icon-only buttons
  *   they are half the button.
- * - An icon or indicator is one word space (--word-space) away from its label,
- *   and so is the back button from the page title.
+ * - An icon or indicator is one word space (--word-space) away from its label.
  * - Navy is only used for notes / tips. Orange is only used for accents.
  * - Green and red only carry meaning (win / loss, errors).
  */
@@ -49,8 +47,7 @@
 
     --font: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
-    /* Fluid sizes, linear from 375px to 1280px:
-       sm 10 -> 12px, base 14 -> 16px, xl 20 -> 24px. */
+    /* Fluid from 375px to 1280px: sm 10 -> 12px, base 14 -> 16px, xl 20 -> 24px. */
     --text-sm: clamp(0.625rem, 0.5732rem + 0.221vw, 0.75rem);
     --text-base: clamp(0.875rem, 0.8232rem + 0.221vw, 1rem);
     --text-xl: clamp(1.25rem, 1.1464rem + 0.442vw, 1.5rem);
@@ -62,8 +59,6 @@
     --space-md: 16px;
     --space-lg: 24px;
 
-    /* Compact controls on phones, regular from 768px. The inline padding equals the gap around
-       an --icon-size icon in a square control, so icons and indicators are inset equally on every side. */
     --control-height: 32px;
     --control-padding: 8px;
     --icon-size: 16px;
@@ -90,11 +85,11 @@ body, h2, h3, p, dl, dd {
     margin: 0;
 }
 
-html, body {
+html {
     scrollbar-width: none;
 }
 
-html::-webkit-scrollbar, body::-webkit-scrollbar {
+html::-webkit-scrollbar {
     display: none;
 }
 
@@ -130,7 +125,7 @@ th {
     color: var(--bg);
 }
 
-a, .btn, .btn-toggle::before, .segment, .input, .select, .card, .table-hover tr {
+a, .btn, .btn-toggle::before, .segment, .input, .select, .score, .card, .table-hover tr {
     transition: color 0.15s, background-color 0.15s, border-color 0.15s;
 }
 
@@ -142,13 +137,13 @@ a, .btn, .btn-toggle::before, .segment, .input, .select, .card, .table-hover tr 
     user-select: none;
 }
 
-/* Toggle buttons are labels around a hidden radio / checkbox, so they take the focus and disabled state of their input. */
+/* Toggle buttons are labels around a hidden input. */
 :focus-visible, label:has(:focus-visible) {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
 
-.input:disabled, .select:disabled, label:has(:disabled) {
+:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
@@ -161,7 +156,6 @@ a, .btn, .btn-toggle::before, .segment, .input, .select, .card, .table-hover tr 
 
 /* ---------- Layout ---------- */
 
-/* Header and footer span the full width; .main narrows the page content. */
 .container {
     width: 100%;
     margin-inline: auto;
@@ -185,14 +179,12 @@ a, .btn, .btn-toggle::before, .segment, .input, .select, .card, .table-hover tr 
 .narrow { max-width: 800px; }
 .narrow-sm { max-width: 400px; }
 
-/* Blocks below each other. */
 .stack, .modal-body {
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
 }
 
-/* Items next to each other, wrapping when tight. .push moves an item (and the ones after it) to the end. */
 .row {
     display: flex;
     flex-wrap: wrap;
@@ -211,24 +203,11 @@ a, .btn, .btn-toggle::before, .segment, .input, .select, .card, .table-hover tr 
 }
 
 .nav {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: var(--header-height);
     align-items: center;
-    gap: var(--space-md);
-    height: var(--header-height);
-}
-
-/* Shrinks to fit when the nav is tight. */
-.brand {
-    min-width: 0;
-}
-
-/* A native popover: the mobile menu, shown inline on desktop (no JS). */
-.nav-menu {
-    margin: 0;
-    padding: 0;
-    border: 0;
-    background: var(--bg);
-    color: inherit;
+    column-gap: var(--space-md);
 }
 
 .nav-links {
@@ -260,33 +239,54 @@ a, .btn, .btn-toggle::before, .segment, .input, .select, .card, .table-hover tr 
 }
 
 @media (max-width: 1279.98px) {
-    .nav-menu:popover-open {
-        position: absolute;
-        inset: var(--header-height) 0 auto;
-        width: auto;
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-sm);
-        padding: var(--space-sm) var(--gutter);
-        border-bottom: var(--border);
+    /* The hidden checkbox in the toggle slides the menu open. */
+    .nav {
+        grid-template-rows: var(--header-height) 0fr;
+        transition: grid-template-rows 0.2s ease-out;
+    }
+
+    .nav:has(.nav-toggle :checked) {
+        grid-template-rows: var(--header-height) 1fr;
+    }
+
+    /* Clipped while it slides, and out of the tab order while closed. */
+    .nav-menu {
+        grid-column: 1 / -1;
+        align-self: stretch;
+        overflow: hidden;
+        visibility: hidden;
+        transition: visibility 0.2s;
+    }
+
+    .nav:has(.nav-toggle :checked) .nav-menu {
+        visibility: visible;
+    }
+
+    .nav-links {
+        padding-bottom: var(--space-sm);
     }
 
     .nav-links + .nav-links {
         padding-top: var(--space-sm);
         border-top: var(--border);
     }
+
+    /* Inside the link, where the menu doesn't clip it. */
+    .nav-link:focus-visible {
+        outline-offset: -2px;
+    }
 }
 
 @media (min-width: 1280px) {
+    .nav {
+        grid-template-columns: minmax(0, max-content) 1fr;
+    }
+
     .nav .nav-toggle {
         display: none;
     }
 
-    /* Pages right after the brand, user links at the far right. */
     .nav-menu {
-        position: static;
-        overflow: visible;
-        flex: 1;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -297,7 +297,6 @@ a, .btn, .btn-toggle::before, .segment, .input, .select, .card, .table-hover tr 
         flex-direction: row;
     }
 
-    /* Same padding as a button, so the hover highlight is as far from the text sideways as vertically. */
     .nav-link, .nav-user {
         padding-inline: var(--control-padding);
     }
@@ -346,13 +345,12 @@ a, .btn, .btn-toggle::before, .segment, .input, .select, .card, .table-hover tr 
 
 /* ---------- Typography ---------- */
 
-/* Everything else uses --text-base, set on body. */
 .badge {
     font-size: var(--text-sm);
 }
 
-/* The wordmark heights and the gap in the page header are em-based, so they follow this size. */
-.brand, .page-header {
+/* The em-based wordmark follows this size. */
+.brand {
     font-size: var(--text-xl);
 }
 
@@ -362,12 +360,12 @@ h2, h3, .value, .score-grid {
     line-height: 1.25;
 }
 
-/* Not on score rows, so "1480 +113" still fits its column on a 375px phone. */
+/* Not on score rows, so "1480 +113" fits on a 375px phone. */
 h2, h3, .value {
     letter-spacing: 0.02em;
 }
 
-/* Outlined text in an SVG (box = ink); 0.774em matches the cap height of the font it was set in. */
+/* 0.774em is the cap height of the text. */
 .wordmark {
     display: block;
     height: 0.774em;
@@ -377,28 +375,21 @@ h2, h3, .value {
 .page-header {
     display: flex;
     align-items: center;
-    gap: var(--word-space);
+    gap: var(--space-md);
 }
 
-/* Takes the remaining width: long names wrap and the Rankings wordmark shrinks on phones. */
 .page-title {
     flex: 1;
     min-width: 0;
     overflow-wrap: anywhere;
 }
 
-/* The Rankings wordmark scales with the title size like the brand does: 25px tall at 375px,
-   30px at 1280px (75% of the button next to it). */
+/* Fluid from 375px to 1280px: 20 -> 26px. */
 .page-title .wordmark {
-    height: 1.25em;
+    height: clamp(1.25rem, 1.0946rem + 0.663vw, 1.625rem);
 }
 
-/* A title next to a button (Rankings) gets more room than buttons next to each other. */
-.row:has(> .page-title) {
-    gap: var(--space-md);
-}
-
-.section-title:not(:first-child) {
+.section-title {
     margin-top: var(--space-md);
 }
 
@@ -417,17 +408,11 @@ h2, h3, .value {
     white-space: nowrap;
 }
 
-/* Always square: never squeezed by a long title or brand next to it. */
 .btn-icon {
+    --icon-size: calc(var(--control-height) / 2);
     flex-shrink: 0;
     width: var(--control-height);
     padding: 0;
-}
-
-/* Half the button: 16px on phones, 20px from 768px. */
-.btn-icon .icon {
-    width: calc(var(--control-height) / 2);
-    height: calc(var(--control-height) / 2);
 }
 
 .btn-primary {
@@ -462,7 +447,6 @@ h2, h3, .value {
     border-color: var(--red);
 }
 
-/* A checkbox button: the square indicator fills when its hidden checkbox is checked. */
 .btn-toggle::before {
     content: "";
     width: var(--icon-size);
@@ -481,7 +465,6 @@ h2, h3, .value {
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
-    min-width: 0;
 }
 
 .label {
@@ -500,7 +483,6 @@ h2, h3, .value {
     border-color: var(--alpha-500);
 }
 
-/* The chevron is centered in a control-sized square at the end. */
 .select {
     appearance: none;
     padding-right: var(--control-height);
@@ -526,7 +508,6 @@ h2, h3, .value {
 }
 
 .range {
-    -webkit-appearance: none;
     appearance: none;
     width: 100%;
     height: var(--control-height);
@@ -545,7 +526,6 @@ h2, h3, .value {
 }
 
 .range::-webkit-slider-thumb {
-    -webkit-appearance: none;
     appearance: none;
     width: var(--icon-size);
     height: var(--icon-size);
@@ -562,14 +542,12 @@ h2, h3, .value {
     background: var(--accent);
 }
 
-/* Label next to its input on wider screens (edit member). */
 .form-row {
     display: grid;
     align-items: center;
     gap: var(--space-sm);
 }
 
-/* History filters: equally wide controls in one row, stacked full width on phones. */
 .filters {
     display: grid;
     gap: var(--space-sm);
@@ -629,7 +607,6 @@ h2, h3, .value {
     gap: var(--space-sm);
 }
 
-/* Centers the VS tag on the selects. */
 .versus > .badge {
     margin-bottom: calc((var(--control-height) - var(--tag-height)) / 2);
 }
@@ -642,8 +619,6 @@ h2, h3, .value {
 
 /* ---------- Score ---------- */
 
-/* Score tiles and custom score inputs are control-sized boxes around a one-character colon column,
-   so every score row lines up; the outer columns hold the ELO. */
 .score-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) var(--control-height) 1ch var(--control-height) minmax(0, 1fr);
@@ -661,7 +636,6 @@ h2, h3, .value {
     background: var(--gray-100);
 }
 
-/* A row of bare values wider than the boxes: each takes its side and hugs the colon. */
 .score-left {
     grid-column: 1 / 3;
     justify-self: end;
@@ -672,23 +646,23 @@ h2, h3, .value {
     justify-self: start;
 }
 
-.score-inputs > :first-child { grid-column: 2; }
-.score-inputs > :last-child { grid-column: 4; }
-
-/* Too narrow for spin buttons: typing and arrow keys still work. */
-.score-inputs .input {
+input.score {
     padding: 0;
+    background: var(--bg-100);
     text-align: center;
     appearance: textfield;
 }
 
-.score-inputs .input::-webkit-inner-spin-button,
-.score-inputs .input::-webkit-outer-spin-button {
-    -webkit-appearance: none;
+input.score:hover {
+    border-color: var(--alpha-500);
+}
+
+input.score::-webkit-inner-spin-button,
+input.score::-webkit-outer-spin-button {
+    appearance: none;
     margin: 0;
 }
 
-/* Win chance bar: the segments shrink to fit the 2px gaps between them. */
 .meter {
     display: flex;
     gap: 2px;
@@ -701,6 +675,14 @@ h2, h3, .value {
     place-items: center;
     overflow: hidden;
     white-space: nowrap;
+    container-type: inline-size;
+}
+
+/* Hides labels in segments too narrow for them. */
+@container (width < 3.5em) {
+    .meter span {
+        visibility: hidden;
+    }
 }
 
 /* ---------- Tables ---------- */
@@ -720,7 +702,6 @@ h2, h3, .value {
     padding: 0 var(--space-sm);
 }
 
-/* Fixed row heights: header = one control, body row = one control + --space-sm above and below. */
 .table th {
     height: var(--control-height);
     background: var(--gray-100);
@@ -734,7 +715,6 @@ h2, h3, .value {
     border-top: var(--border);
 }
 
-/* Shrink-to-fit column around a control, --space-sm on every side of it. */
 .table .action {
     width: 1%;
     padding-inline: var(--space-sm);
@@ -749,6 +729,10 @@ h2, h3, .value {
     text-align: right;
 }
 
+.table .row {
+    row-gap: 0;
+}
+
 .name-link {
     overflow-wrap: anywhere;
     font-weight: 500;
@@ -760,7 +744,7 @@ h2, h3, .value {
     text-decoration-line: underline;
 }
 
-/* Below the smallest target screen (375px) the table with the Edit column wraps its labels instead of scrolling sideways. */
+/* Under 375px the Edit table wraps its headers instead of scrolling. */
 @media (max-width: 374.98px) {
     .table:has(.action) th {
         white-space: normal;
@@ -773,9 +757,8 @@ h2, h3, .value {
     }
 }
 
-/* ---------- Badges (small tags: VS, statuses, scores) ---------- */
+/* ---------- Badges ---------- */
 
-/* Sized from their text, so the space around it is about the same on every side and scales with it. */
 .badge {
     display: inline-grid;
     place-items: center;
@@ -791,20 +774,25 @@ h2, h3, .value {
 /* ---------- Cards & matches ---------- */
 
 .card {
+    position: relative;
     background: var(--bg-100);
     border: var(--border);
 }
 
+/* Covers the card; the links in it stay clickable on top. */
 .card-button {
-    display: block;
-    width: 100%;
+    position: absolute;
+    inset: 0;
     padding: 0;
     border: 0;
     background: none;
-    text-align: inherit;
 }
 
-.card-button:hover .card {
+.card a {
+    position: relative;
+}
+
+.card:has(> .card-button):hover {
     background: var(--gray-100);
     border-color: var(--alpha-500);
 }
@@ -832,7 +820,6 @@ h2, h3, .value {
     white-space: nowrap;
 }
 
-/* "Label: value" pairs, one per line on phones and side by side on wider screens. */
 .match-meta {
     display: flex;
     flex-direction: column;
@@ -840,7 +827,6 @@ h2, h3, .value {
     padding: var(--space-md);
 }
 
-/* Rows, so the score tags are centered on the text next to them. */
 .match-meta > div, .match-meta dd {
     display: flex;
     align-items: center;
@@ -867,16 +853,15 @@ h2, h3, .value {
     }
 }
 
-/* ---------- Notes (tips) ---------- */
+/* ---------- Notes ---------- */
 
-/* Errors add .bg-danger. */
 .note {
     padding: var(--space-md);
     border: var(--border);
     background: var(--navy);
 }
 
-/* ---------- Modal (native popover, no JS) ---------- */
+/* ---------- Modal ---------- */
 
 .modal {
     width: calc(100% - 2 * var(--space-md));
@@ -898,7 +883,6 @@ h2, h3, .value {
     animation: modal-in 0.15s ease-out;
 }
 
-/* Behind open popovers: modals and the mobile menu. */
 ::backdrop {
     background: rgb(0 0 0 / 0.7);
 }
@@ -928,12 +912,6 @@ h2, h3, .value {
     from {
         opacity: 0;
         transform: translateY(8px) scale(0.98);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .modal:popover-open {
-        animation: none;
     }
 }
 
@@ -973,7 +951,7 @@ h2, h3, .value {
 /* ---------- Utilities ---------- */
 
 .visually-hidden {
-    position: absolute !important;
+    position: absolute;
     width: 1px;
     height: 1px;
     padding: 0;
@@ -984,7 +962,6 @@ h2, h3, .value {
     border: 0;
 }
 
-/* Centers text, and the items of a .row. */
 .text-center { text-align: center; justify-content: center; }
 .w-full { width: 100%; }
 .w-50 { width: 50%; }
@@ -993,7 +970,7 @@ h2, h3, .value {
 .muted, .text-secondary { color: var(--gray-900); }
 .muted strong { color: var(--gray-1000); }
 
-/* State colors - some of these class names are emitted by the backend. */
+/* Some of these class names come from the backend. */
 .text-success { color: var(--green); }
 .text-danger { color: var(--red); }
 
